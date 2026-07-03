@@ -1,13 +1,33 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { ShieldAlert, Crosshair, Sparkles, Brain, Dna } from 'lucide-react';
-import { NPC } from '../lib/game-data';
+import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X } from 'lucide-react';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId } from '../lib/game-data';
 
 export function People() {
-  const { state } = useGame();
+  const { state, assignPosto } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const vivos = state.npcs.filter(n => n.vivo).length;
+
+  const getProfIcon = (id: ProfissaoId) => {
+    switch (id) {
+      case 'combatente': return <Swords size={10} />;
+      case 'batedor': return <Wind size={10} />;
+      case 'erudito': return <BookOpen size={10} />;
+      case 'sentinela': return <Shield size={10} />;
+    }
+  };
+
+  // Edifícios de trabalho construídos com vaga livre para este NPC
+  const postosDisponiveis = (npc: NPC): EdificioTipo[] => {
+    return state.edificios
+      .filter(e => e.nivel >= 1 && (e.tipo in POSTO_AFIM))
+      .filter(e => {
+        const ocupados = state.npcs.filter(n => n.vivo && n.posto === e.tipo && n.id !== npc.id).length;
+        return ocupados < e.nivel;
+      })
+      .map(e => e.tipo);
+  };
 
   const getFadigaLabel = (f: number) => {
     if (f >= 90) return { label: 'INCAPACITADO', color: 'text-destructive bg-destructive/10 border-destructive/30' };
@@ -116,9 +136,17 @@ export function People() {
                   <span className="text-[10px]" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
+                    {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
+                  </span>
                   <span className="text-[9px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                     {getHabIcon(npc.habilidade)} {npc.habilidade}
                   </span>
+                  {npc.posto && (
+                    <span className="text-[9px] px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                      <Hammer size={9} /> {npc.posto}
+                    </span>
+                  )}
                   {npc.obscuro && (
                     <span className="text-[9px] bg-orange/10 border border-orange text-orange px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
                       <ShieldAlert size={10}/> OBSCURO
@@ -166,6 +194,51 @@ export function People() {
                 <div>SAN: <span className="text-foreground">{Math.floor(npc.sanidade)}</span>/100</div>
                 <div>LEA: <span className="text-foreground">{Math.floor(npc.lealdade)}</span>/100</div>
                 <div>FAD: <span className="text-foreground">{Math.floor(npc.fadiga)}</span>/100</div>
+              </div>
+
+              {/* Alocação de trabalho */}
+              <div className="mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-1">
+                  <Hammer size={10} className="text-primary" /> POSTO DE TRABALHO
+                </div>
+                {npc.emExpedicao ? (
+                  <div className="text-[10px] text-warning/80 italic">Em expedição — não pode trabalhar agora.</div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(() => {
+                        const disponiveis = postosDisponiveis(npc);
+                        const opcoes = Array.from(new Set([...(npc.posto ? [npc.posto] : []), ...disponiveis]));
+                        if (opcoes.length === 0) {
+                          return <span className="text-[10px] text-muted-foreground italic">Nenhum edifício de trabalho com vaga. Construa/melhore na Cidadela.</span>;
+                        }
+                        return opcoes.map(tipo => {
+                          const ativo = npc.posto === tipo;
+                          const afim = POSTO_AFIM[tipo];
+                          const compat = afim === getProfissao(npc);
+                          return (
+                            <button
+                              key={tipo}
+                              onClick={() => assignPosto(npc.id, ativo ? null : tipo)}
+                              className={`text-[10px] px-2 py-1 rounded-sm border transition-all touch-manipulation flex items-center gap-1 ${
+                                ativo
+                                  ? 'bg-success/15 border-success text-success font-bold'
+                                  : compat
+                                    ? 'bg-primary/10 border-primary/40 text-primary hover:bg-primary/20'
+                                    : 'bg-black/30 border-card-border text-secondary hover:border-primary/40'
+                              }`}
+                            >
+                              {ativo && <X size={10} />}
+                              {BUILDINGS[tipo].nome}
+                              {compat && !ativo && <span className="text-[8px] text-primary">★</span>}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-1.5">★ = profissão compatível (bônus maior). Toque no posto ativo para dispensar.</div>
+                  </>
+                )}
               </div>
             </div>
           )}

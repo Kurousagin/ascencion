@@ -78,14 +78,56 @@ export interface NPC {
   emExpedicao: boolean;
   raridade: Raridade;
   habilidade: HabilidadeId;
+  posto: EdificioTipo | null; // edifício onde trabalha (null = ocioso)
 }
 
-export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem';
+export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento';
 
 export interface Edificio {
   tipo: EdificioTipo;
   nivel: number;
 }
+
+// ─── PROFISSÕES (derivadas do atributo dominante) ─────────────────────────────
+
+export type ProfissaoId = 'combatente' | 'batedor' | 'erudito' | 'sentinela';
+
+export interface Profissao {
+  id: ProfissaoId;
+  nome: string;
+  descricao: string;
+  stat: 'forca' | 'agilidade' | 'inteligencia' | 'resistencia';
+}
+
+export const PROFISSOES: Record<ProfissaoId, Profissao> = {
+  combatente: { id: 'combatente', nome: 'Combatente', stat: 'forca',        descricao: '+8% poder em combate. Ideal no Quartel.' },
+  batedor:    { id: 'batedor',    nome: 'Batedor',    stat: 'agilidade',     descricao: 'Aumenta o loot e sofre menos fadiga em expedições.' },
+  erudito:    { id: 'erudito',    nome: 'Erudito',    stat: 'inteligencia',  descricao: 'Potencializa Fazenda e Enfermaria.' },
+  sentinela:  { id: 'sentinela',  nome: 'Sentinela',  stat: 'resistencia',   descricao: 'Eleva o moral no Templo e na Fogueira.' },
+};
+
+export function getProfissao(npc: Pick<NPC, 'forca' | 'agilidade' | 'inteligencia' | 'resistencia'>): ProfissaoId {
+  const entries: [ProfissaoId, number][] = [
+    ['combatente', npc.forca],
+    ['batedor', npc.agilidade],
+    ['erudito', npc.inteligencia],
+    ['sentinela', npc.resistencia],
+  ];
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
+}
+
+// Which profession each workplace prefers (compatible worker = bônus maior).
+export const POSTO_AFIM: Partial<Record<EdificioTipo, ProfissaoId>> = {
+  Fazenda: 'erudito',
+  Enfermaria: 'erudito',
+  Quartel: 'combatente',
+  Templo: 'sentinela',
+  Fogueira: 'sentinela',
+};
+
+// Buildings that accept workers (slots = nível atual do edifício).
+export const aceitaTrabalho = (tipo: EdificioTipo) => tipo in POSTO_AFIM;
 
 export type LogTipo = 'morte' | 'descoberta' | 'traicao' | 'evento' | 'vitoria' | 'alerta' | 'info';
 
@@ -157,6 +199,7 @@ export const generateNPC = (isObscuro = false): NPC => {
     vivo: true,
     obscuro: isObscuro,
     emExpedicao: false,
+    posto: null,
   };
   return {
     ...base,
@@ -179,6 +222,9 @@ export function calcNpcPower(npc: NPC): number {
 
   const intFactor = npc.habilidade === 'estrategista' ? 0.4 : 0.2;
   let p = forca * 0.3 + agilidade * 0.25 + resistencia * 0.25 + inteligencia * intFactor;
+
+  // Combatentes (FOR dominante) são +8% mais fortes em combate
+  if (getProfissao(npc) === 'combatente') p *= 1.08;
 
   if (npc.fadiga >= 50 && npc.fadiga <= 69) p *= 0.85;
   else if (npc.fadiga >= 70 && npc.fadiga <= 89) p *= 0.65;
@@ -227,6 +273,7 @@ export interface EfeitoEdificio {
   fadigaRec?: number;      // extra fatigue recovered per NPC per day
   poderBonus?: number;     // fraction added to expedition group power (0.10 = +10%)
   capacidadeArmazem?: number; // absolute storage capacity
+  capPopulacao?: number;   // absolute population cap
 }
 
 export interface NivelEdificio {
@@ -310,13 +357,43 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
       { custo: { madeira: 60, pedra: 40, ferro: 15 }, resumo: 'Capacidade 600', efeito: { capacidadeArmazem: 600 } },
     ],
   },
+  Alojamento: {
+    tipo: 'Alojamento',
+    nome: 'Alojamento',
+    descricao: 'Abriga sobreviventes. Define o limite de população da cidadela.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 20, pedra: 8 },             resumo: 'Limite de 9 moradores',  efeito: { capPopulacao: 9 } },
+      { custo: { madeira: 40, pedra: 25 },            resumo: 'Limite de 12 moradores', efeito: { capPopulacao: 12 } },
+      { custo: { madeira: 70, pedra: 45, ferro: 15 }, resumo: 'Limite de 16 moradores', efeito: { capPopulacao: 16 } },
+    ],
+  },
 };
 
-// Aggregate all built levels into the daily effect bundle.
-export function getEfeitos(edificios: Edificio[]): Required<EfeitoEdificio> {
+// População base sem Alojamento construído.
+export const POP_BASE = 6;
+
+// Custo do Ritual de Invocação — sobe com a população viva atual.
+export function calcCustoInvocacao(popViva: number): { comida: number; madeira: number; ferro: number } {
+  return {
+    comida:  20 + popViva * 6,
+    madeira: 10 + popViva * 3,
+    ferro:   Math.floor(popViva / 3),
+  };
+}
+
+// Workers assigned to (and currently able to work at) a building: alive, not on
+// an expedition, and posted there. Slots are limited to the building's level.
+export function trabalhadoresDe(tipo: EdificioTipo, nivel: number, npcs: NPC[]): NPC[] {
+  const workers = npcs.filter(n => n.vivo && !n.emExpedicao && n.posto === tipo);
+  return workers.slice(0, Math.max(0, nivel));
+}
+
+// Aggregate all built levels + assigned workers into the daily effect bundle.
+export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<EfeitoEdificio> {
   const ef: Required<EfeitoEdificio> = {
     comidaDia: 0, moralDia: 0, sanidadeDia: 0, fadigaRec: 0, poderBonus: 0,
-    capacidadeArmazem: CAPACIDADE_BASE,
+    capacidadeArmazem: CAPACIDADE_BASE, capPopulacao: POP_BASE,
   };
   for (const e of edificios) {
     const def = BUILDINGS[e.tipo];
@@ -330,6 +407,22 @@ export function getEfeitos(edificios: Edificio[]): Required<EfeitoEdificio> {
     if (x.fadigaRec)   ef.fadigaRec += x.fadigaRec;
     if (x.poderBonus)  ef.poderBonus += x.poderBonus;
     if (x.capacidadeArmazem) ef.capacidadeArmazem = Math.max(ef.capacidadeArmazem, x.capacidadeArmazem);
+    if (x.capPopulacao) ef.capPopulacao = Math.max(ef.capPopulacao, x.capPopulacao);
+
+    // Contribuição dos trabalhadores alocados neste edifício
+    const afim = POSTO_AFIM[e.tipo];
+    if (afim) {
+      for (const w of trabalhadoresDe(e.tipo, e.nivel, npcs)) {
+        const mult = getProfissao(w) === afim ? 1.5 : 1;
+        switch (e.tipo) {
+          case 'Fazenda':    ef.comidaDia += Math.round(w.inteligencia * 0.5 * mult); break;
+          case 'Enfermaria': ef.fadigaRec += Math.round(w.inteligencia * 0.4 * mult); break;
+          case 'Quartel':    ef.poderBonus += w.forca * 0.006 * mult; break;
+          case 'Templo':     ef.moralDia += Math.round(w.resistencia * 0.25 * mult); break;
+          case 'Fogueira':   ef.moralDia += Math.round(w.resistencia * 0.2 * mult); break;
+        }
+      }
+    }
   }
   return ef;
 }

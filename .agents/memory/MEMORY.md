@@ -1,0 +1,1 @@
+- [Torre Obscura game loop](torre-obscura-game-loop.md) — expeditions resolve instantly (emExpedicao flag is vestigial); pop growth is two-step gated (Alojamento cap + rising invoke cost); professions are derived, combatente power baked into calcNpcPower.

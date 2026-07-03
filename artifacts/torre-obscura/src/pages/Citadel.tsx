@@ -1,14 +1,21 @@
 import { useGame } from '../context/GameContext';
-import { BUILDINGS, getEfeitos, EdificioTipo } from '../lib/game-data';
-import { Wheat, Trees, Mountain, Zap, TrendingUp, TrendingDown, ArrowUp } from 'lucide-react';
+import { BUILDINGS, getEfeitos, EdificioTipo, POSTO_AFIM, PROFISSOES, calcCustoInvocacao } from '../lib/game-data';
+import { Wheat, Trees, Mountain, Zap, TrendingUp, TrendingDown, ArrowUp, Users, Hammer, Sparkles } from 'lucide-react';
 
 export function Citadel() {
-  const { state, buildEdificio } = useGame();
+  const { state, buildEdificio, invocarMorador } = useGame();
 
-  const ef = getEfeitos(state.edificios);
+  const ef = getEfeitos(state.edificios, state.npcs);
   const vivos = state.npcs.filter(n => n.vivo).length;
   const consumoComida = +(vivos * 1.2).toFixed(1);
   const saldoComida = +(ef.comidaDia - consumoComida).toFixed(1);
+
+  const custoInvoc = calcCustoInvocacao(vivos);
+  const semEspaco = vivos >= ef.capPopulacao;
+  const podeInvocar = !semEspaco &&
+    state.recursos.comida >= custoInvoc.comida &&
+    state.recursos.madeira >= custoInvoc.madeira &&
+    state.recursos.ferro >= custoInvoc.ferro;
 
   const getProgressColor = (current: number, max: number) => {
     const p = current / max;
@@ -82,6 +89,21 @@ export function Citadel() {
               <TrendingUp size={11} /> Atual: {efeitoAtual}
             </div>
           )}
+          {built && POSTO_AFIM[tipo] && (() => {
+            const afim = POSTO_AFIM[tipo]!;
+            const workers = state.npcs.filter(n => n.vivo && !n.emExpedicao && n.posto === tipo);
+            return (
+              <div className="text-[10px] mt-2 flex items-start gap-1 text-secondary">
+                <Hammer size={11} className="text-primary/70 mt-0.5 shrink-0" />
+                <span>
+                  Trabalho ({PROFISSOES[afim].nome}): <span className="text-primary font-bold">{workers.length}/{nivelAtual}</span>
+                  {workers.length > 0 && (
+                    <span className="text-foreground/70"> — {workers.map(w => w.nome).join(', ')}</span>
+                  )}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {isMax ? (
@@ -115,7 +137,7 @@ export function Citadel() {
     );
   };
 
-  const buildingOrder: EdificioTipo[] = ['Fogueira', 'Fazenda', 'Enfermaria', 'Templo', 'Armazem', 'Quartel'];
+  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem'];
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
@@ -177,10 +199,48 @@ export function Citadel() {
         </div>
       </section>
 
+      {/* Ritual de Invocação */}
+      <section>
+        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+          RITUAL DE INVOCAÇÃO
+        </h3>
+        <div className="bg-gradient-to-b from-[#231A2E] to-[#161B22] border border-primary/30 rounded-sm p-4 relative overflow-hidden">
+          <Sparkles className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
+          <div className="flex justify-between items-center mb-3 relative z-10">
+            <span className="text-secondary tracking-wide flex items-center gap-2 text-sm">
+              <Users size={15} className="text-primary" /> População
+            </span>
+            <span className={`font-cinzel font-bold text-lg ${semEspaco ? 'text-warning' : 'text-foreground'}`}>
+              {vivos} / {ef.capPopulacao}
+            </span>
+          </div>
+          <p className="text-[10px] text-secondary/80 leading-relaxed mb-3 relative z-10">
+            Convoque um novo sobrevivente. O custo cresce a cada morador. Aumente o limite construindo o <span className="text-primary font-bold">Alojamento</span>.
+          </p>
+          <div className="flex gap-2 flex-wrap text-[10px] font-bold font-inter mb-3 relative z-10">
+            <CostChip have={state.recursos.comida} need={custoInvoc.comida} icon={Wheat} />
+            <CostChip have={state.recursos.madeira} need={custoInvoc.madeira} icon={Trees} />
+            {custoInvoc.ferro > 0 && <CostChip have={state.recursos.ferro} need={custoInvoc.ferro} icon={Zap} />}
+          </div>
+          <button
+            disabled={!podeInvocar}
+            onClick={invocarMorador}
+            className={`w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold transition-all rounded-sm touch-manipulation relative z-10 flex items-center justify-center gap-2 ${
+              podeInvocar
+                ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98]'
+                : 'border-card-border text-muted-foreground opacity-50 cursor-not-allowed bg-black/20'
+            }`}
+          >
+            <Sparkles size={14} /> {semEspaco ? 'ALOJAMENTO LOTADO' : 'INVOCAR SOBREVIVENTE'}
+          </button>
+        </div>
+      </section>
+
       <section>
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
           INFRAESTRUTURA
         </h3>
+        <p className="text-[10px] text-secondary/70 mb-4 -mt-2">Aloque moradores ociosos aos edifícios na aba HABITANTES para potencializar os efeitos.</p>
         <div className="grid grid-cols-2 gap-4">
           {buildingOrder.map(tipo => renderEdificio(tipo))}
         </div>

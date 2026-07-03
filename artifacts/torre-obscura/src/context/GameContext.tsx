@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import {
   GameState, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
-  calcCustoExpedicao, calcRecompensaAndar,
-  EdificioTipo,
+  calcCustoExpedicao, calcRecompensaAndar, calcCustoInvocacao,
+  getProfissao, aceitaTrabalho, EdificioTipo,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -15,6 +15,8 @@ interface GameContextType {
   setSpeed: (speed: 1 | 2 | 5) => void;
   buildEdificio: (tipo: EdificioTipo) => void;
   sendExpedition: (npcIds: string[]) => void;
+  invocarMorador: () => void;
+  assignPosto: (npcId: string, tipo: EdificioTipo | null) => void;
 }
 
 // Time: at 1x, one real-world day equals five in-game days.
@@ -57,8 +59,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const vivos = draft.npcs.filter(n => n.vivo);
     if (vivos.length === 0) { draft.gameOver = true; return draft; }
 
-    // Aggregate building effects (levels included) once per day
-    const ef = getEfeitos(draft.edificios);
+    // Aggregate building effects (levels + workers) once per day
+    const ef = getEfeitos(draft.edificios, draft.npcs);
     draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
 
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
@@ -214,8 +216,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       startNewGame();
       return;
     }
+    // Migração de saves antigos: garante o campo posto em todos os NPCs
+    parsed.npcs.forEach(n => { if (n.posto === undefined) n.posto = null; });
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
-    parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios).capacidadeArmazem;
+    parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
     let missed = Math.min(40, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
     if (missed > 0) {
@@ -271,7 +275,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     s.recursos.comida -= cost;
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
-    const ef = getEfeitos(s.edificios);
+    const ef = getEfeitos(s.edificios, s.npcs);
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
     const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
@@ -280,15 +284,33 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (isVictory) {
       const r = calcRecompensaAndar(floorData.floor, floorData.tier);
+      // Batedores no grupo aumentam o loot (+15% por batedor)
+      const batedores = group.filter(n => getProfissao(n) === 'batedor').length;
+      const lootMult = 1 + batedores * 0.15;
+      const comidaG = Math.round(r.comida * lootMult);
+      const madeiraG = Math.round(r.madeira * lootMult);
+      const pedraG = Math.round(r.pedra * lootMult);
+      const ferroG = r.ferro ? Math.round(r.ferro * lootMult) : 0;
       // Tower loot is banked into the warehouse, clamped to its capacity
-      s.recursos.comida  = Math.min(cap, s.recursos.comida  + r.comida);
-      s.recursos.madeira = Math.min(cap, s.recursos.madeira + r.madeira);
-      s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + r.pedra);
-      if (r.ferro) s.recursos.ferro = Math.min(cap, s.recursos.ferro + r.ferro);
+      s.recursos.comida  = Math.min(cap, s.recursos.comida  + comidaG);
+      s.recursos.madeira = Math.min(cap, s.recursos.madeira + madeiraG);
+      s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + pedraG);
+      if (ferroG) s.recursos.ferro = Math.min(cap, s.recursos.ferro + ferroG);
       s.andarAtual++;
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
-      addLog(s, 'vitoria', `ANDAR ${floorData.floor} CONQUISTADO. +${r.madeira} madeira, +${r.pedra} pedra${r.ferro ? `, +${r.ferro} ferro` : ''}, +${r.comida} comida.`);
+      addLog(s, 'vitoria', `ANDAR ${floorData.floor} CONQUISTADO. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}`);
       if (s.andarAtual > 20) s.vitoria = true;
+
+      // Resgate: chance de encontrar um sobrevivente (maior em andares de chefe)
+      const popViva = s.npcs.filter(n => n.vivo).length;
+      if (popViva < ef.capPopulacao) {
+        const chanceResgate = floorData.isBoss ? 0.35 : 0.12;
+        if (Math.random() < chanceResgate) {
+          const novo = generateNPC(Math.random() < 0.1);
+          s.npcs.push(novo);
+          addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
+        }
+      }
     } else {
       group.forEach(n => { n.lealdade -= 5; n.sanidade -= 5; });
       const falta = Math.ceil(floorData.difficulty - groupPower);
@@ -308,17 +330,55 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (Math.random() * 100 < mort) {
         n.vivo = false;
         n.emExpedicao = false;
+        n.posto = null;
         s.moral -= 5;
         s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
         addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
       } else {
-        // Veterano gains 25% less fatigue
-        const fatigueGain = getRandomInt(20, 35);
-        n.fadiga = Math.min(100, n.fadiga + (n.habilidade === 'veterano' ? Math.round(fatigueGain * 0.75) : fatigueGain));
+        // Veterano (-25%) e Batedor (-20%) sofrem menos fadiga
+        let fatigueGain = getRandomInt(20, 35);
+        if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
+        if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
+        n.fadiga = Math.min(100, n.fadiga + fatigueGain);
         n.emExpedicao = false;
       }
     });
 
+    saveState(s);
+  };
+
+  const invocarMorador = () => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const popViva = s.npcs.filter(n => n.vivo).length;
+    const ef = getEfeitos(s.edificios, s.npcs);
+    if (popViva >= ef.capPopulacao) return; // sem espaço no alojamento
+    const custo = calcCustoInvocacao(popViva);
+    if (s.recursos.comida < custo.comida) return;
+    if (s.recursos.madeira < custo.madeira) return;
+    if (s.recursos.ferro < custo.ferro) return;
+    s.recursos.comida -= custo.comida;
+    s.recursos.madeira -= custo.madeira;
+    s.recursos.ferro -= custo.ferro;
+    const novo = generateNPC(false);
+    s.npcs.push(novo);
+    addLog(s, 'descoberta', `RITUAL DE INVOCAÇÃO: ${novo.nome.toUpperCase()} respondeu ao chamado do Observador.`);
+    saveState(s);
+  };
+
+  const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const npc = s.npcs.find(n => n.id === npcId);
+    if (!npc || !npc.vivo || npc.emExpedicao) return;
+    if (tipo === null) { npc.posto = null; saveState(s); return; }
+    if (!aceitaTrabalho(tipo)) return; // não é um edifício de trabalho
+    const ed = s.edificios.find(e => e.tipo === tipo);
+    if (!ed || ed.nivel < 1) return; // edifício não construído
+    // Slots disponíveis = nível do edifício
+    const ocupados = s.npcs.filter(n => n.vivo && n.posto === tipo && n.id !== npcId).length;
+    if (ocupados >= ed.nivel) return; // sem vaga
+    npc.posto = tipo;
     saveState(s);
   };
 
@@ -332,6 +392,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       setSpeed,
       buildEdificio,
       sendExpedition,
+      invocarMorador,
+      assignPosto,
     }}>
       {children}
     </GameContext.Provider>
