@@ -11,6 +11,7 @@ import {
   podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
+  HABITANTES, BOSS_ECO_LORE, verificarQuestAndar,
 } from '../lib/game-data';
 
 export interface ExpeditionResult {
@@ -22,6 +23,8 @@ export interface ExpeditionResult {
   loot: { comida: number; madeira: number; pedra: number; ferro: number };
   mortos: Array<{ nome: string }>;
   resgatado: { nome: string; raridade: Raridade } | null;
+  habitanteDescoberto?: string;              // nome do habitante descoberto neste andar
+  bossEco?: { titulo: string; texto: string }; // lore do capítulo desbloqueado ao derrotar boss
 }
 
 interface GameContextType {
@@ -53,6 +56,9 @@ interface GameContextType {
   responderGuerra: (tropaIds: string[]) => boolean;
   // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
+  // Habitantes da Torre: interação com entidades descobertas nos andares.
+  // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
+  interagirHabitante: (floor: number) => void;
   // Resultado da última expedição (exibido em modal; nulo quando fechado).
   lastExpeditionResult: ExpeditionResult | null;
   clearExpeditionResult: () => void;
@@ -334,6 +340,23 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    // 9.8 Habitantes da Torre — temporal+semGuerra: reset do contador quando em guerra.
+    // Se uma quest do tipo temporal com semGuerra=true está ativa e há guerra em curso,
+    // o contador é reiniciado para hoje (o jogador precisará sobreviver os dias exigidos
+    // sem guerra a partir deste dia, não contando o período de guerra).
+    if (draft.guerra || draft.guerraPendente) {
+      Object.entries(draft.habitantesEstado).forEach(([floorStr, est]) => {
+        if (est !== 'quest_ativa') return;
+        const fl = Number(floorStr);
+        const hab = HABITANTES[fl];
+        if (hab?.quest.tipo === 'temporal' && hab.quest.semGuerra) {
+          // Registra o dia atual como novo "dia zero" para o contador de paz.
+          if (!draft.habitantesQuestResetDia) draft.habitantesQuestResetDia = {};
+          draft.habitantesQuestResetDia[fl] = draft.dia;
+        }
+      });
+    }
+
     // 10. Fim do dia
     draft.dia++;
     if (draft.npcs.filter(n => n.vivo).length === 0) {
@@ -396,6 +419,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (parsed.guerra === undefined) parsed.guerra = null;
     if (parsed.guerraPendente === undefined) parsed.guerraPendente = null;
     if (!parsed.guerrasHistorico) parsed.guerrasHistorico = [];
+    // Migração: sistema de Habitantes da Torre.
+    if (!parsed.habitantesEstado)        parsed.habitantesEstado = {};
+    if (!parsed.habitantesDiaDescoberta) parsed.habitantesDiaDescoberta = {};
+    if (!parsed.habitantesQuestResetDia) parsed.habitantesQuestResetDia = {};
+    if (!parsed.ecos)                    parsed.ecos = [];
+    if (!parsed.ecosCapitulo)            parsed.ecosCapitulo = [];
+    if (!parsed.lores)                   parsed.lores = [];
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
@@ -472,8 +502,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const r = calcRecompensaAndar(floorData.floor, floorData.bioma);
       // Batedores no grupo aumentam o loot (+15% por batedor).
       // Modo farm: loot reduzido a 70% (sem o incentivo de avançar).
+      // Eco ativo no andar: aplica bônus percentual sobre o loot base.
       const batedores = group.filter(n => getProfissao(n) === 'batedor').length;
-      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15);
+      const ecoBonus = s.ecos.includes(floorData.floor)
+        ? (HABITANTES[floorData.floor]?.quest.ecoBonus ?? 0) / 100
+        : 0;
+      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus);
       const comidaG = Math.round(r.comida * lootMult);
       const madeiraG = Math.round(r.madeira * lootMult);
       const pedraG = Math.round(r.pedra * lootMult);
@@ -483,7 +517,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       s.recursos.madeira = Math.min(cap, s.recursos.madeira + madeiraG);
       s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + pedraG);
       if (ferroG) s.recursos.ferro = Math.min(cap, s.recursos.ferro + ferroG);
-      // Só avança o andare em modo avançar.
+      // Só avança o andar em modo avançar.
       if (!isFarming) {
         s.andarAtual++;
         if (s.andarAtual > 20) s.vitoria = true;
@@ -491,7 +525,34 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
       const biomaStr = biomaMultiplier !== 1.0 ? ` [Bioma ${biomaMultiplier > 1 ? '+30% poder' : '−20% poder'}]` : '';
-      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}`);
+      const ecoStr = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}`);
+
+      // Descoberta de habitante (apenas ao avançar, andares não-boss)
+      let habitanteDescoberto: string | undefined;
+      if (!isFarming && !floorData.isBoss && HABITANTES[floorData.floor]
+          && !s.habitantesEstado[floorData.floor]) {
+        s.habitantesEstado[floorData.floor] = 'descoberto';
+        s.habitantesDiaDescoberta[floorData.floor] = s.dia;
+        const hab = HABITANTES[floorData.floor];
+        habitanteDescoberto = hab.nome;
+        addLog(s, 'descoberta', `HABITANTE DETECTADO — ${hab.nome} (${hab.papel}) aguarda contato no andar ${floorData.floor}.`);
+      }
+
+      // Eco do boss (apenas ao avançar andares-boss)
+      let bossEco: { titulo: string; texto: string } | undefined;
+      if (!isFarming && floorData.isBoss) {
+        const tier = floorData.tier;
+        if (!s.ecosCapitulo.includes(tier)) {
+          s.ecosCapitulo.push(tier);
+          const bossLore = BOSS_ECO_LORE[floorData.floor];
+          if (bossLore) {
+            bossEco = bossLore;
+            s.lores.push({ floor: floorData.floor, titulo: bossLore.titulo, texto: bossLore.texto });
+            addLog(s, 'descoberta', `ECO DO CAPÍTULO ${tier} DESBLOQUEADO — ${bossLore.titulo}`);
+          }
+        }
+      }
 
       // Resgate: chance de encontrar um sobrevivente (apenas ao avançar, chefes têm mais chance)
       let resgatado: { nome: string; raridade: Raridade } | null = null;
@@ -513,7 +574,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         vitoria: true, isFarming, floor: floorData.floor,
         poder: groupPower, dificuldade: floorData.difficulty,
         loot: { comida: comidaG, madeira: madeiraG, pedra: pedraG, ferro: ferroG },
-        mortos: [], resgatado,
+        mortos: [], resgatado, habitanteDescoberto, bossEco,
       };
 
       // Mortality per NPC (vitória)
@@ -922,6 +983,60 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  // ─── HABITANTES DA TORRE ─────────────────────────────────────────────────
+  // Aceita ou conclui a quest de um habitante descoberto num andar conquistado.
+  const interagirHabitante = (floor: number) => {
+    if (!state) return;
+    const hab = HABITANTES[floor];
+    if (!hab) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const est = s.habitantesEstado[floor] ?? 'oculto';
+
+    if (est === 'descoberto') {
+      const q = hab.quest;
+      // Missão de sacrifício: custo imediato ao aceitar
+      if (q.tipo === 'sacrificio' && q.custo) {
+        if (q.custo.moral !== undefined && s.moral < q.custo.moral) return;
+        if (q.custo.comida !== undefined && s.recursos.comida < q.custo.comida) return;
+        if (q.custo.ferro !== undefined && s.recursos.ferro < q.custo.ferro) return;
+        if (q.custo.moral)  s.moral = Math.max(0, s.moral - q.custo.moral);
+        if (q.custo.comida) s.recursos.comida -= q.custo.comida;
+        if (q.custo.ferro)  s.recursos.ferro  -= q.custo.ferro;
+      }
+      s.habitantesEstado[floor] = 'quest_ativa';
+      if (!s.habitantesDiaDescoberta[floor]) s.habitantesDiaDescoberta[floor] = s.dia;
+      addLog(s, 'descoberta', `${hab.nome.toUpperCase()}: missão aceita — ${q.descricaoObj}.`);
+      saveState(s);
+      return;
+    }
+
+    if (est === 'quest_ativa' && verificarQuestAndar(s, floor)) {
+      const q = hab.quest;
+      const ef = getEfeitos(s.edificios, s.npcs);
+      const cap = ef.capacidadeArmazem;
+      // Consumir recurso(s) ao concluir (pode ter até dois recursos exigidos)
+      if (q.tipo === 'recurso') {
+        if (q.recurso)  s.recursos[q.recurso.tipo]  -= q.recurso.qtd;
+        if (q.recurso2) s.recursos[q.recurso2.tipo] -= q.recurso2.qtd;
+      }
+      // Conceder recompensas
+      if (q.recursosBonus) {
+        if (q.recursosBonus.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + q.recursosBonus.comida);
+        if (q.recursosBonus.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + q.recursosBonus.madeira);
+        if (q.recursosBonus.pedra)   s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + q.recursosBonus.pedra);
+        if (q.recursosBonus.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + q.recursosBonus.ferro);
+      }
+      if (q.moralBonus) s.moral = Math.min(100, s.moral + q.moralBonus);
+      // Ativar Eco de loot neste andar
+      if (!s.ecos.includes(floor)) s.ecos.push(floor);
+      // Registrar lore desbloqueado
+      s.lores.push({ floor, titulo: `${hab.nome} — Andar ${floor}`, texto: q.lore });
+      s.habitantesEstado[floor] = 'concluido';
+      addLog(s, 'descoberta', `ECO ATIVADO — ${hab.nome} (Andar ${floor}): ${q.recompensaDesc}.`);
+      saveState(s);
+    }
+  };
+
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -962,6 +1077,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       declararGuerra,
       responderGuerra,
       treinarNpc,
+      interagirHabitante,
       lastExpeditionResult: expeditionResult,
       clearExpeditionResult: () => setExpeditionResult(null),
     }}>

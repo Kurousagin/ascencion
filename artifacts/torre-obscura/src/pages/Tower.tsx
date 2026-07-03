@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus } from 'lucide-react';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar } from '../lib/game-data';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
 export function Tower() {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
   const [farmAndar, setFarmAndar] = useState<number | null>(null);
+  // Modal do habitante — qual andar está aberto
+  const [habitanteModalFloor, setHabitanteModalFloor] = useState<number | null>(null);
 
   // Quando o andar avança, sai do modo farm automaticamente.
   useEffect(() => { setFarmAndar(null); }, [state.andarAtual]);
@@ -235,30 +237,257 @@ export function Tower() {
         <div className="space-y-2">
           {conquistados.map(f => {
             const isSelected = farmAndar === f.floor;
+            const habEst = state.habitantesEstado[f.floor];
+            const habData = HABITANTES[f.floor];
+            const isBossFloor = f.isBoss;
+            const bossEcoAtivo = isBossFloor && state.ecosCapitulo.includes(f.tier);
+            const ecoAtivo = !isBossFloor && state.ecos.includes(f.floor);
+            const habCompletavel = habData && verificarQuestAndar(state, f.floor);
+            const habEstIcon = habEst === 'descoberto' ? '👁' : habEst === 'quest_ativa' ? '⚡' : habEst === 'concluido' ? '✦' : null;
             return (
-              <button
-                key={f.floor}
-                onClick={() => setFarmAndar(isSelected ? null : f.floor)}
-                className={`w-full flex justify-between items-center p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
-                  isSelected
-                    ? 'bg-secondary/10 border-secondary text-foreground'
-                    : 'bg-gradient-to-r from-[#161B22] to-transparent border-card-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex flex-col">
-                  <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
-                    <span>{BIOMA_META[f.bioma].icone}</span> {f.nome}
+              <div key={f.floor} className="flex gap-1 items-stretch">
+                <button
+                  onClick={() => setFarmAndar(isSelected ? null : f.floor)}
+                  className={`flex-1 flex justify-between items-center p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
+                    isSelected
+                      ? 'bg-secondary/10 border-secondary text-foreground'
+                      : habCompletavel
+                        ? 'bg-gradient-to-r from-[#161B22] to-transparent border-success animate-pulse hover:border-success'
+                        : 'bg-gradient-to-r from-[#161B22] to-transparent border-card-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
+                      <span>{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
+                      <span>{f.nome}</span>
+                      {bossEcoAtivo && <span className="text-[9px] text-primary ml-0.5" title="Eco do Capítulo desbloqueado">✦</span>}
+                      {ecoAtivo && <span className="text-[9px] text-success ml-0.5" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
+                      {ecoAtivo && (
+                        <span className="text-[9px] text-success/80 font-bold">+{HABITANTES[f.floor]?.quest.ecoBonus}% LOOT</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
+                    {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}
                   </span>
-                  <span className="text-[9px] text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
-                </div>
-                <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
-                  {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}
-                </span>
-              </button>
+                </button>
+                {/* Botão do habitante (andares não-boss com habitante descoberto) */}
+                {habData && habEst && habEst !== 'oculto' && (
+                  <button
+                    onClick={() => setHabitanteModalFloor(f.floor)}
+                    title={`${habData.nome} — ${habEst === 'concluido' ? 'Concluído' : habEst === 'quest_ativa' ? 'Quest Ativa' : 'Descoberto'}`}
+                    className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
+                      habCompletavel
+                        ? 'bg-success/10 border-success text-success animate-pulse'
+                        : habEst === 'concluido'
+                          ? 'bg-primary/10 border-primary/40 text-primary'
+                          : habEst === 'quest_ativa'
+                            ? 'bg-warning/10 border-warning/40 text-warning'
+                            : 'bg-card-border/20 border-card-border text-white/50'
+                    }`}
+                  >
+                    {habEstIcon}
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
       </div>
+
+      {/* ── Modal de diálogo com o Habitante ────────────────────────────────── */}
+      <Dialog.Root
+        open={habitanteModalFloor !== null}
+        onOpenChange={open => { if (!open) setHabitanteModalFloor(null); }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 transition-opacity" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 p-5 flex flex-col gap-4 z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-y-auto custom-scrollbar">
+            {habitanteModalFloor !== null && (() => {
+              const hf = habitanteModalFloor;
+              const hab = HABITANTES[hf];
+              if (!hab) return null;
+              const est = state.habitantesEstado[hf] ?? 'oculto';
+              const completavel = verificarQuestAndar(state, hf);
+              const q = hab.quest;
+              const diaDesc = state.habitantesDiaDescoberta[hf];
+              const diasRestantes = q.tipo === 'temporal' && q.dias && diaDesc
+                ? Math.max(0, q.dias - (state.dia - diaDesc))
+                : 0;
+              const falaAtual = est === 'concluido' ? hab.falaConcluso
+                : est === 'quest_ativa' ? hab.falamissão
+                : hab.fala;
+              const loreItem = est === 'concluido' ? state.lores.find(l => l.floor === hf) : null;
+
+              return (
+                <>
+                  {/* Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl leading-none">{hab.icone}</div>
+                      <div>
+                        <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
+                          {hab.nome}
+                        </Dialog.Title>
+                        <div className="text-[9px] text-secondary tracking-[0.2em] mt-0.5">{hab.papel.toUpperCase()} · ANDAR {hf}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-sm border ${
+                        est === 'concluido' ? 'border-primary/40 text-primary bg-primary/10'
+                          : est === 'quest_ativa' ? 'border-warning/40 text-warning bg-warning/10'
+                          : 'border-card-border text-white/40'
+                      }`}>
+                        {est === 'concluido' ? '✦ ECO ATIVO' : est === 'quest_ativa' ? '⚡ QUEST ATIVA' : '👁 DESCOBERTO'}
+                      </span>
+                      <Dialog.Close asChild>
+                        <button className="w-8 h-8 flex items-center justify-center border border-card-border text-secondary hover:text-foreground rounded-sm touch-manipulation">
+                          <X size={16} />
+                        </button>
+                      </Dialog.Close>
+                    </div>
+                  </div>
+
+                  {/* Fala do habitante */}
+                  <div className="bg-black/30 rounded-sm p-4 border-l-2 border-primary/40 relative">
+                    <div className="text-[9px] text-primary/50 tracking-widest mb-1">{hab.nome.toUpperCase()}</div>
+                    <p className="text-[12px] text-white/70 italic leading-relaxed">"{falaAtual}"</p>
+                  </div>
+
+                  {/* Quest info */}
+                  {est !== 'concluido' && (
+                    <div className={`rounded-sm p-4 border ${completavel && est === 'quest_ativa' ? 'border-success/50 bg-success/5' : 'border-white/10 bg-black/20'}`}>
+                      <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-1">
+                        <Swords size={9} /> MISSÃO
+                        {completavel && est === 'quest_ativa' && (
+                          <span className="ml-auto text-success font-bold animate-pulse">✓ PRONTO PARA CONCLUIR</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-foreground/90 mb-3 font-medium">{q.descricaoObj}</div>
+                      {/* Detalhe da condição */}
+                      <div className="text-[10px] text-secondary/70 leading-relaxed mb-3">
+                        {q.tipo === 'temporal' && diaDesc && (
+                          <span>
+                            {diasRestantes > 0
+                              ? `⏳ Faltam ${diasRestantes} dias (dia ${diaDesc + (q.dias ?? 0)} )`
+                              : '✓ Condição temporal cumprida'}
+                            {q.semGuerra && state.guerra && ' · ⚔️ Paz necessária'}
+                          </span>
+                        )}
+                        {q.tipo === 'recurso' && (q.recurso || q.recurso2) && (
+                          <span>
+                            {q.recurso && (
+                              <span>
+                                {state.recursos[q.recurso.tipo]} / {q.recurso.qtd} {q.recurso.tipo}
+                                {state.recursos[q.recurso.tipo] >= q.recurso.qtd ? ' ✓' : ''}
+                              </span>
+                            )}
+                            {q.recurso && q.recurso2 && <span> · </span>}
+                            {q.recurso2 && (
+                              <span>
+                                {state.recursos[q.recurso2.tipo]} / {q.recurso2.qtd} {q.recurso2.tipo}
+                                {state.recursos[q.recurso2.tipo] >= q.recurso2.qtd ? ' ✓' : ''}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {q.tipo === 'sacrificio' && est === 'descoberto' && q.custo && (
+                          <span className="text-destructive/80">
+                            Custo imediato ao aceitar: {q.custo.moral ? `-${q.custo.moral} moral` : ''}{q.custo.comida ? ` -${q.custo.comida} comida` : ''}{q.custo.ferro ? ` -${q.custo.ferro} ferro` : ''}
+                          </span>
+                        )}
+                        {q.tipo === 'expedicao' && (
+                          <span>
+                            {q.profissoes ? q.profissoes.map(p => {
+                              const temProf = state.npcs.some(n => n.vivo && getProfissao(n) === p);
+                              return <span key={p} className={temProf ? 'text-success' : 'text-destructive/70'}>
+                                {temProf ? '✓' : '✗'} {p}
+                              </span>;
+                            }).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, ' · ', el], []) : null}
+                            {q.npcsMinCombate && (
+                              <span>
+                                {state.npcs.filter(n => n.vivo && (getProfissao(n) === 'combatente' || getProfissao(n) === 'batedor' || getProfissao(n) === 'sentinela')).length}
+                                {' '}/{' '}{q.npcsMinCombate} NPCs de combate
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      {/* Recompensa */}
+                      <div className="flex items-center gap-2 border-t border-white/5 pt-2">
+                        <span className="text-[9px] text-primary/60 tracking-widest">RECOMPENSA</span>
+                        <span className="text-[10px] text-primary/90 font-medium">{q.recompensaDesc}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lore desbloqueado (pós-conclusão) */}
+                  {est === 'concluido' && loreItem && (
+                    <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
+                      <div className="text-[9px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
+                        <BookOpen size={9} /> FRAGMENTO REVELADO
+                      </div>
+                      <div className="text-[10px] text-primary/50 mb-1 font-cinzel">{loreItem.titulo}</div>
+                      <p className="text-[11px] text-white/60 italic leading-relaxed">{loreItem.texto}</p>
+                      <div className="mt-2 text-[9px] text-success/70 flex items-center gap-1">
+                        <Zap size={8} /> ECO ATIVO: +{q.ecoBonus}% loot neste andar ao explorar
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Eco ativo (sem lore guardado) */}
+                  {est === 'concluido' && !loreItem && (
+                    <div className="rounded-sm p-3 border border-success/30 bg-success/5 text-[10px] text-success/80 flex items-center gap-2">
+                      <Zap size={10} /> ECO ATIVO neste andar: +{q.ecoBonus}% loot ao explorar.
+                    </div>
+                  )}
+
+                  {/* Botão de ação */}
+                  {est === 'descoberto' && (
+                    <button
+                      onClick={() => {
+                        interagirHabitante(hf);
+                        if (q.tipo !== 'sacrificio') {
+                          // quest aceita, modal permanece aberto para mostrar estado atualizado
+                        } else {
+                          // sacrificio: fecha após aceitar pois quest vai para quest_ativa
+                        }
+                      }}
+                      className="w-full h-12 bg-primary/20 border border-primary/50 text-primary font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm hover:bg-primary/30 transition-colors"
+                    >
+                      {q.tipo === 'sacrificio' ? 'PAGAR E ACEITAR' : 'ACEITAR MISSÃO'}
+                    </button>
+                  )}
+                  {est === 'quest_ativa' && (
+                    <button
+                      onClick={() => { interagirHabitante(hf); }}
+                      disabled={!completavel}
+                      className={`w-full h-12 font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm transition-colors ${
+                        completavel
+                          ? 'bg-success/80 text-background hover:bg-success border-0 shadow-[0_0_10px_rgba(63,185,80,0.3)]'
+                          : 'bg-card-border/30 text-white/30 border border-card-border cursor-not-allowed'
+                      }`}
+                    >
+                      {completavel ? 'CONCLUIR MISSÃO' : 'AGUARDANDO CONDIÇÕES…'}
+                    </button>
+                  )}
+                  {est === 'concluido' && (
+                    <button
+                      onClick={() => setHabitanteModalFloor(null)}
+                      className="w-full h-12 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm"
+                    >
+                      FECHAR
+                    </button>
+                  )}
+                </>
+              );
+            })()}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <Dialog.Root open={modalOpen} onOpenChange={setModalOpen}>
         <Dialog.Portal>
@@ -397,7 +626,7 @@ export function Tower() {
 // ── Componente de card de resultado ──────────────────────────────────────────
 
 function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; onClose: () => void }) {
-  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado } = result;
+  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado, habitanteDescoberto, bossEco } = result;
   const pct = Math.min(100, Math.round((poder / dificuldade) * 100));
 
   return (
@@ -477,6 +706,28 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
             <span className="text-[10px] text-primary/70 ml-1">{resgatado.raridade}</span>
           </div>
           <div className="text-[9px] text-secondary mt-1">Adicionado aos habitantes da cidadela.</div>
+        </div>
+      )}
+
+      {/* Habitante descoberto */}
+      {habitanteDescoberto && (
+        <div className="bg-white/5 border border-white/20 rounded-sm p-3">
+          <div className="text-[10px] text-white/60 tracking-widest mb-2 flex items-center gap-1 font-bold">
+            👁 HABITANTE DETECTADO
+          </div>
+          <div className="text-sm font-bold text-foreground font-cinzel">{habitanteDescoberto}</div>
+          <div className="text-[9px] text-secondary mt-1">Aguarda contato no histórico da Torre.</div>
+        </div>
+      )}
+
+      {/* Eco do Capítulo (boss conquistado) */}
+      {bossEco && (
+        <div className="bg-primary/5 border border-primary/50 rounded-sm p-4">
+          <div className="text-[9px] text-primary tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
+            <BookOpen size={9} /> ECO DO CAPÍTULO DESBLOQUEADO
+          </div>
+          <div className="text-[10px] font-cinzel text-primary/80 mb-2">{bossEco.titulo}</div>
+          <p className="text-[11px] text-white/55 italic leading-relaxed border-l border-primary/30 pl-3">{bossEco.texto}</p>
         </div>
       )}
 

@@ -5,4 +5,5 @@
 - [Expedition reinforcement (reforço) multiplayer](reforco-expedicao.md) — tipo 'reforco' reuses devolver; reforcoConcluido flag set in sendExpedition triggers auto-return; removerEmprestado handles both emprestado/reforco.
 - [Guerra entre cidadelas](guerra-cidadelas.md) — war is client-local (GameState.guerra, resolved in processDay/avancarGuerra); server only serves bot pool; clear emGuerra on ALL committed troops at resolution.
 - [Floor narrative arcs + NPC stat UX](floor-narrative-npc-stat.md) — each 5-floor chapter has lore; NPC modal sorts/highlights by biome statPrimario; boss floors show boss name/epiteto.
+- [Habitantes da Torre system](habitantes-torre.md) — 16 floor inhabitants with 4 quest types (recurso/expedicao/temporal/sacrificio); eco loot bonus; dual-resource support via recurso2; semGuerra reset via habitantesQuestResetDia.
 - [Combatant training system](combatant-training.md) — treinarNpc in GameContext; podeTreinarNpc/calcCustoTreinamento in game-data; UI in People.tsx expanded card; treinamentos optional field defaults via ?? 0.

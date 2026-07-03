@@ -183,6 +183,322 @@ export interface LogEntry {
   dia: number;
 }
 
+// ─── HABITANTES DA TORRE ─────────────────────────────────────────────────────
+// Cada andar não-boss tem um Habitante — entidade descoberta ao conquistar o andar.
+// O habitante oferece uma mini-quest e recompensa com um Eco (bônus permanente de loot).
+
+export type QuestTipo = 'recurso' | 'expedicao' | 'temporal' | 'sacrificio';
+export type HabitanteEstado = 'oculto' | 'descoberto' | 'quest_ativa' | 'concluido';
+
+export interface HabitanteQuest {
+  tipo: QuestTipo;
+  descricaoObj: string;                // objetivo exibido na UI
+  // recurso: ter X de um tipo (pode ter até dois recursos exigidos simultaneamente)
+  recurso?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
+  recurso2?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
+  // expedicao: ter NPCs dessas profissões vivos na cidadela
+  profissoes?: ProfissaoId[];
+  npcsMinCombate?: number;             // mínimo de NPCs de combate vivos (floor 12)
+  // temporal: dias CONSECUTIVOS de paz (ou simples dias) desde a descoberta / último reset
+  dias?: number;
+  semGuerra?: boolean;                 // guerra durante o intervalo reseta o contador (floor 19)
+  // sacrificio: custo imediato ao aceitar
+  custo?: { moral?: number; comida?: number; ferro?: number };
+  // recompensa
+  ecoBonus: number;                    // % extra de loot neste andar ao farmar (ex: 25 = +25%)
+  recursosBonus?: { comida?: number; madeira?: number; pedra?: number; ferro?: number };
+  moralBonus?: number;
+  lore: string;                        // fragmento narrativo revelado ao concluir
+  recompensaDesc: string;              // texto legível da recompensa
+}
+
+export interface HabitanteAndar {
+  floor: number;
+  nome: string;
+  papel: string;
+  icone: string;
+  fala: string;         // diálogo inicial
+  falamissão: string;  // diálogo durante quest ativa
+  falaConcluso: string; // diálogo ao concluir
+  quest: HabitanteQuest;
+}
+
+export const HABITANTES: Record<number, HabitanteAndar> = {
+  1: {
+    floor: 1, nome: 'Arauto da Névoa', papel: 'Mensageiro Selado', icone: '🌫️',
+    fala: 'Aguardo há séculos carregando uma mensagem que nunca deveria ter saído daqui. Se você tem alguém ágil o suficiente para decifrar o símbolo de entrega... talvez valha a pena.',
+    falamissão: 'Um Batedor poderia percorrer os rastros da névoa e encontrar o destinatário. Ou o que sobrou dele.',
+    falaConcluso: 'A mensagem foi entregue. O destinatário era você. Desde o início.',
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter um Batedor vivo na cidadela',
+      profissoes: ['batedor'],
+      ecoBonus: 20, moralBonus: 5,
+      lore: 'A mensagem que nunca chegou era uma ordem para abrir o selo — não para mantê-lo. Alguém a interceptou antes do destinatário a receber. Esse alguém ainda está aqui.',
+      recompensaDesc: '+20% loot neste andar · +5 Moral',
+    },
+  },
+  2: {
+    floor: 2, nome: 'Eco dos Construtores', papel: 'Memória Coletiva', icone: '⚒️',
+    fala: 'Somos muitos em um. Escavamos este lugar sabendo que nunca sairíamos. Dê-nos pedra — para que possamos lembrar o peso do que construímos.',
+    falamissão: 'Pedra. Apenas pedra. Para que nossa memória seja completa.',
+    falaConcluso: 'Agora lembramos tudo. O que construímos. Por que construímos. E quem nos mentiu sobre o propósito.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 25 pedra',
+      recurso: { tipo: 'pedra', qtd: 25 },
+      ecoBonus: 25, recursosBonus: { pedra: 10 },
+      lore: 'Os Construtores sabiam que seriam selados. Aceitaram porque a criatura dentro prometeu libertá-los depois. Nunca os libertou. O Eco lembra — e aguarda alguém que possa.',
+      recompensaDesc: '+25% loot neste andar · +10 Pedra',
+    },
+  },
+  3: {
+    floor: 3, nome: 'Tecelã de Raízes', papel: 'Guardiã do Crescimento', icone: '🌱',
+    fala: 'As raízes crescem para dentro porque algo no núcleo as chama. Eu as guio. É um fardo pesado — e a Torre cobra por cada dia que continuo aqui. Compartilhe o peso comigo.',
+    falamissão: 'Dar algo precioso é a única língua que a Torre entende.',
+    falaConcluso: 'O peso foi dividido. As raízes respiram diferente agora. Mais leves. Como se soubessem que alguém se importou.',
+    quest: {
+      tipo: 'sacrificio', descricaoObj: 'Sacrificar 8 de Moral (custo imediato)',
+      custo: { moral: 8 },
+      ecoBonus: 20, recursosBonus: { madeira: 8 },
+      lore: 'As raízes crescem para dentro porque algo no núcleo tem fome. Não é escuridão — é apetite. A Tecelã guia as raízes para que não devorem tudo de uma vez.',
+      recompensaDesc: '+20% loot neste andar · +8 Madeira',
+    },
+  },
+  4: {
+    floor: 4, nome: 'Voz do Cristal', papel: 'Arquivo Vivo', icone: '💎',
+    fala: 'Gravei tudo que foi dito neste lugar. Preciso de tempo para verificar se você é real — ou mais um eco dos que já passaram. Volte quando o silêncio confirmar sua presença.',
+    falamissão: 'O silêncio ainda analisa. Permaneça. O cristal avalia paciência.',
+    falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental.',
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 5 dias após descobrir o Cristal',
+      dias: 5,
+      ecoBonus: 25, recursosBonus: { ferro: 10 },
+      lore: 'O cristal gravou cada palavra dita na Torre. A palavra mais repetida não é "ajuda". É "espera". O cristal ainda espera que alguém entenda por quê.',
+      recompensaDesc: '+25% loot neste andar · +10 Ferro',
+    },
+  },
+  6: {
+    floor: 6, nome: 'Sentinela Sem Nome', papel: 'Guardião Perdido', icone: '🗿',
+    fala: 'Última ordem recebida: não deixar ninguém passar. A autoridade que a deu não existe mais. Mas a ordem existe. Se você pode provar que tem força suficiente para disputar passagem, posso reconhecer sua autoridade em substituição.',
+    falamissão: 'Um combatente legítimo. É o que a ordem exige para reconhecer mudança de comando.',
+    falaConcluso: 'Autoridade reconhecida. Nova ordem registrada: facilitar passagem dos que chegam com propósito. O que é propósito? Ainda estou processando.',
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter um Combatente vivo na cidadela',
+      profissoes: ['combatente'],
+      ecoBonus: 25, recursosBonus: { madeira: 10 },
+      lore: 'Sua última ordem era "não deixes ninguém passar" — mas não especificou em qual direção. A Sentinela cumpre ordens de uma autoridade que a Torre corroeu. Ainda aguarda a contraordem.',
+      recompensaDesc: '+25% loot neste andar · +10 Madeira',
+    },
+  },
+  7: {
+    floor: 7, nome: 'Jardineira Esquecida', papel: 'Curadora do Impossível', icone: '🌿',
+    fala: 'Curo com o que a Torre me dá, mas a Torre não dá comida — dá crescimento. Crescimento sem nutrição. Traga-me algo do mundo exterior. Lembro do que comida real era.',
+    falamissão: 'Comida do mundo exterior. Não do que a Torre produz. Há diferença — mesmo que você não consiga sentir.',
+    falaConcluso: 'Lembro. A diferença entre crescer e ser nutrido. Obrigada por trazer a memória de volta junto com a comida.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 30 comida',
+      recurso: { tipo: 'comida', qtd: 30 },
+      ecoBonus: 25, moralBonus: 8,
+      lore: 'Ela ainda cura. Tudo que toca cresce de volta — diferente. Mais parecido com a Torre do que com o que era antes. Mas ela luta contra isso todo dia. E até agora, está vencendo.',
+      recompensaDesc: '+25% loot neste andar · +8 Moral',
+    },
+  },
+  8: {
+    floor: 8, nome: 'Estudioso do Infinito', papel: 'Arquivista Exilado', icone: '📚',
+    fala: 'Cataloguei cada manuscrito nesta biblioteca. Cada um, exceto um. Escrito em ferro. Não é um idioma que reconheço — mas reconheço os nomes. Se você trouxer ferro puro, posso terminar a tradução.',
+    falamissão: 'Ferro. Para terminar o que o Arquivista lá em cima não quer que eu termine.',
+    falaConcluso: 'Tradução concluída. Era uma lista de nomes. O último nome era o meu. Penúltimo... era o seu.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 15 ferro',
+      recurso: { tipo: 'ferro', qtd: 15 },
+      ecoBonus: 30, recursosBonus: { pedra: 15 },
+      lore: 'O único livro que ele não conseguia ler estava escrito em ferro. Não era um idioma — era uma lista de nomes de todos que chegariam ao ápice. Seu nome estava lá antes de você nascer.',
+      recompensaDesc: '+30% loot neste andar · +15 Pedra',
+    },
+  },
+  9: {
+    floor: 9, nome: 'Ferreiro Espectral', papel: 'Forjador das Correntes', icone: '🔥',
+    fala: 'Forjei as correntes que prendem a entidade no ápice. Elas ainda seguram — mas ficam um pouco menores cada vez que alguém conquista um andar. Precisaria de ferro real para reforçá-las. Se você se importa com isso.',
+    falamissão: 'Ferro real. Do mundo que ainda existe fora daqui.',
+    falaConcluso: 'Reforçadas. Por enquanto. Mas você vai continuar subindo, não vai? E as correntes vão continuar diminuindo. Eu sei. Apenas... saiba o que está desfazendo.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 20 ferro',
+      recurso: { tipo: 'ferro', qtd: 20 },
+      ecoBonus: 30, recursosBonus: { ferro: 15 },
+      lore: 'Ele forjou as correntes que prendem a entidade. Elas ainda seguram. Mas ficam um pouco menores a cada andar conquistado. O Ferreiro sabe. E forja assim mesmo, porque é tudo que sabe fazer.',
+      recompensaDesc: '+30% loot neste andar · +15 Ferro',
+    },
+  },
+  11: {
+    floor: 11, nome: 'Afogado Lúcido', papel: 'Transformado Consciente', icone: '💧',
+    fala: 'Não estou morrendo. Estou sendo preenchido. Há uma diferença — insisto que há. Se você ficar tempo suficiente, verá que continuo sendo eu mesmo. Isso é o que me separa dos outros.',
+    falamissão: 'Permaneça. Observe. Veja que ainda sou eu. Que a consciência sobrevive mesmo quando o corpo muda.',
+    falaConcluso: 'Você ficou. E viu. Guardarei isso — a memória de alguém que olhou e não fugiu. É o que me mantém eu mesmo.',
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 7 dias após descobri-lo',
+      dias: 7,
+      ecoBonus: 30, moralBonus: 8,
+      lore: 'Ele não está morrendo. Está sendo preenchido pela Torre lentamente. E permanece consciente durante todo o processo. Há uma diferença entre transformação e morte. Ele é a prova.',
+      recompensaDesc: '+30% loot neste andar · +8 Moral',
+    },
+  },
+  12: {
+    floor: 12, nome: 'Percussão Profunda', papel: 'Pulso da Torre', icone: '🥁',
+    fala: 'Não sou um ser. Sou o ritmo. O pulso do que você está dentro. Para sincronizar comigo, você precisa de um grupo suficientemente numeroso — a vibração de muitos corpos em um só lugar.',
+    falamissão: 'Mais. A vibração de muitos. Três ao menos. Para que o ritmo reconheça presença humana suficiente.',
+    falaConcluso: 'Sincronizado. O minério deste andar vibra na mesma frequência agora. Será mais fácil extraí-lo. Ou mais assustador. Depende de como você ouve o ritmo.',
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter 3 ou mais NPCs de combate vivos',
+      npcsMinCombate: 3,
+      ecoBonus: 30, recursosBonus: { pedra: 20 },
+      lore: 'A Percussão não é um ser — é o coração da Torre. Ela está viva há mais tempo do que o conceito de tempo existe. O ritmo que você ouve nas paredes é ela respirando.',
+      recompensaDesc: '+30% loot neste andar · +20 Pedra',
+    },
+  },
+  13: {
+    floor: 13, nome: 'Oráculo Invertido', papel: 'Vidente do Passado', icone: '🔮',
+    fala: 'Vejo passados, não futuros. Os futuros daqui já foram devorados pela Torre — não há nada para ver além do horizonte. Mas o passado... O passado é infinito. E tenho algo para te mostrar, se você pagar o custo que a Torre cobra por conhecimento real.',
+    falamissão: 'Moral. O conhecimento que a Torre guarda custa caro. E você vai querer saber.',
+    falaConcluso: 'O que você pagou era seu orgulho de achar que entendia o que estava fazendo. O passado revela: cada passo que você deu foi antecipado. Mas antecipado não significa determinado.',
+    quest: {
+      tipo: 'sacrificio', descricaoObj: 'Sacrificar 15 de Moral (custo imediato)',
+      custo: { moral: 15 },
+      ecoBonus: 30, moralBonus: 15,
+      lore: 'Ele vê passados porque a Torre consome futuros. Tudo o que poderia acontecer aqui já foi devorado. O que resta é o registro do que aconteceu — e o Oráculo lê esse registro como outros leem mapas.',
+      recompensaDesc: '+30% loot neste andar · +15 Moral (retorno)',
+    },
+  },
+  14: {
+    floor: 14, nome: 'Comandante de Mármore', papel: 'General do Vazio', icone: '⚔️',
+    fala: 'Protejo esta posição por ordem da Cidadela de Ardenas. Se você puder apresentar um combatente e um sentinela — os dois pilares de qualquer força militar legítima — reconhecerei sua cidadela como aliada e abrirei passagem.',
+    falamissão: 'Um combatente e um sentinela. Os dois pilares. É protocolo.',
+    falaConcluso: 'Cidadela reconhecida como aliada. Para que conste no registro: Ardenas afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Mas a aliança permanece válida.',
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter um Combatente e um Sentinela vivos',
+      profissoes: ['combatente', 'sentinela'],
+      ecoBonus: 35, recursosBonus: { ferro: 20 },
+      lore: 'A cidadela que ele protegia afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Ele ainda protege uma posição acima de algo que não existe mais. E faz isso perfeitamente.',
+      recompensaDesc: '+35% loot neste andar · +20 Ferro',
+    },
+  },
+  16: {
+    floor: 16, nome: 'Eco Faminto', papel: 'Apetite da Entidade', icone: '🌀',
+    fala: 'Não sou ela. Sou o que ela perdeu quando aprendeu a ser paciente. Seu apetite. Dê-me comida e mostro o caminho pelo abismo sem que ele me use para te consumir no processo.',
+    falamissão: 'Comida. Muita comida. O apetite não é negociável em quantidade.',
+    falaConcluso: 'Satisfeito. Por um momento. O apetite voltará — sempre volta. Mas agora você passou e ele estava distraído. Use isso.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 40 comida',
+      recurso: { tipo: 'comida', qtd: 40 },
+      ecoBonus: 35, recursosBonus: { comida: 25 },
+      lore: 'Não é a entidade. É seu apetite — o único fragmento que ela deixou vagar livremente quando aprendeu paciência. O apetite não conhece intenção. Apenas fome.',
+      recompensaDesc: '+35% loot neste andar · +25 Comida',
+    },
+  },
+  17: {
+    floor: 17, nome: 'Paradoxo Ambulante', papel: 'Memória do Que Poderia Ser', icone: '⏳',
+    fala: 'Existo em três momentos simultâneos. Em um você está morto. Em outro nunca chegou aqui. No terceiro, nós dois nos tornamos a mesma coisa. Aguarde dez dias e descobrimos qual desses momentos é o real.',
+    falamissão: 'O tempo verifica. Dez dias é o mínimo para que os momentos colapsar em um.',
+    falaConcluso: 'O terceiro momento não aconteceu. Mas ficou muito perto. Guarde isso — a proximidade do que quase foi.',
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 10 dias após encontrá-lo',
+      dias: 10,
+      ecoBonus: 35, recursosBonus: { ferro: 20 },
+      lore: 'Ele existe em três tempos simultâneos. Em um, você chegou ao ápice e foi consumido. Em outro, desistiu no décimo andar. No terceiro — o único em que o Paradoxo sorri — o resultado é diferente. Ele não revela qual.',
+      recompensaDesc: '+35% loot neste andar · +20 Ferro',
+    },
+  },
+  18: {
+    floor: 18, nome: 'Último Defensor', papel: 'Construído Para Falhar', icone: '🛡️',
+    fala: 'Fui construído pelos que tentaram parar o que está acima. Falharam. Mas não eram covardes — eram os únicos que tentaram construir algo que durasse além deles. Prove que sua cidadela é do mesmo material.',
+    falamissão: 'Ferro e pedra. Os materiais dos que constroem para durar.',
+    falaConcluso: 'Material verificado. Sua cidadela tem substância. Os que me construíram teriam aprovado. Isso significa algo — mesmo que você não saiba ainda por quê.',
+    quest: {
+      tipo: 'recurso', descricaoObj: 'Trazer 30 ferro e 30 pedra',
+      recurso: { tipo: 'ferro', qtd: 30 },
+      recurso2: { tipo: 'pedra', qtd: 30 },
+      recursosBonus: { ferro: 25 },
+      ecoBonus: 35,
+      lore: 'Os que o construíram falharam em parar a entidade. Mas não foram covardes. Foram os únicos que tentaram construir algo que durasse além deles. O Último Defensor é a prova de que tentaram.',
+      recompensaDesc: '+35% loot neste andar · +25 Ferro',
+    },
+  },
+  19: {
+    floor: 19, nome: 'Susurro do Limiar', papel: 'Espaço Entre', icone: '🌑',
+    fala: 'Não sou a entidade. Sou o espaço entre ela e você. A distância que ela mantém para não assustar a presa antes do momento certo. Se você permanecer em silêncio — sem conflitos, sem guerras — por três dias, compartilho o que sei sobre o último andar.',
+    falamissão: 'Silêncio. Sem guerras. Por três dias. O limiar observa.',
+    falaConcluso: 'Silêncio mantido. O que sei sobre o último andar: ela não vai lutar. Vai conversar. E o que ela propõe... depende do que você trouxer de si mesmo até lá.',
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 3 dias sem entrar em guerra',
+      dias: 3, semGuerra: true,
+      ecoBonus: 35, moralBonus: 15,
+      lore: 'O silêncio que você ouve não é ausência de som. É a entidade respirando devagar para não assustar a presa antes do momento certo. O Susurro é essa respiração. E ele te avisou.',
+      recompensaDesc: '+35% loot neste andar · +15 Moral',
+    },
+  },
+};
+
+// Lore dos bosses — revelado ao conquistar andares 5, 10, 15 e 20.
+// Conecta os habitantes do capítulo ao guardião derrotado.
+export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = {
+  5: {
+    titulo: 'Segredo do Capítulo I — O Que Foi Selado',
+    texto: 'O Arauto carregava a ordem de destruir o selo — não de mantê-lo. Alguém a interceptou. O Eco dos Construtores escavou sabendo que seria selado, enganado por uma promessa de libertação. A Tecelã de Raízes guia o que a Torre consome lentamente. A Voz do Cristal gravou a verdade — e o Guardião do Limiar nunca a ouviu porque nunca perguntou. Ele protegia o segredo sem saber qual era.',
+  },
+  10: {
+    titulo: 'Segredo do Capítulo II — O Que Vivia Aqui',
+    texto: 'O Arquivista Corrompido foi o Estudioso do Infinito depois de décadas tentando traduzir a lista de nomes em ferro. Quando terminou, tentou alertar a civilização. A civilização o fez calar. O Ferreiro Espectral sabia que as correntes estavam diminuindo a cada andar conquistado. O Arquivista sabia disso também. Esse era o segredo que ele guardava em sua memória podre — e que usava para catalogar os que chegavam como você.',
+  },
+  15: {
+    titulo: 'Segredo do Capítulo III — O Que a Torre Faz',
+    texto: 'O Reflexo Profano é feito de todos que a Torre transformou. O Afogado Lúcido foi o primeiro a entender que a Torre não mata — preenche. A Percussão Profunda é seu coração, batendo há mais tempo do que o conceito de tempo existe. O Oráculo perdeu os futuros um a um, devorados. O Comandante de Mármore protege uma cidadela que afundou há milênios. O Reflexo é tudo isso olhando de volta para você com seu próprio rosto.',
+  },
+  20: {
+    titulo: 'Segredo do Capítulo IV — O Que Sempre Esteve Aqui',
+    texto: 'Não havia Torre. Havia uma fome tão antiga que imaginou uma armadilha. A armadilha imaginou andares. Os andares imaginaram guardiões. O Eco Faminto é o apetite que ela abandonou quando aprendeu paciência. O Paradoxo é sua memória de todos os que chegaram e não eram suficientes. O Último Defensor é seu único arrependimento — os que tentaram pará-la merecem ser lembrados. O Susurro é a distância que ela manteve de você. Até agora. Você chegou. A entidade não está surpresa. Ela escolheu você desde o Arauto da Névoa.',
+  },
+};
+
+// Verifica se a quest de um habitante está concluída no GameState atual.
+export function verificarQuestAndar(state: GameState, floor: number): boolean {
+  const hab = HABITANTES[floor];
+  if (!hab) return false;
+  if (state.habitantesEstado[floor] !== 'quest_ativa') return false;
+
+  const q = hab.quest;
+  switch (q.tipo) {
+    case 'recurso': {
+      if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
+      if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;
+      return !!(q.recurso || q.recurso2);
+    }
+    case 'expedicao': {
+      const vivosAtivos = state.npcs.filter(n => n.vivo);
+      if (q.npcsMinCombate) {
+        const combate = vivosAtivos.filter(n =>
+          getProfissao(n) === 'combatente' || getProfissao(n) === 'batedor' || getProfissao(n) === 'sentinela'
+        );
+        if (combate.length < q.npcsMinCombate) return false;
+      }
+      if (q.profissoes) {
+        return q.profissoes.every(p => vivosAtivos.some(n => getProfissao(n) === p));
+      }
+      return true;
+    }
+    case 'temporal': {
+      // Para quests com semGuerra: o contador reseta quando guerra ocorre durante o intervalo.
+      // habitantesQuestResetDia[floor] guarda o último dia em que a guerra invalidou o progresso.
+      const baseDate = q.semGuerra
+        ? Math.max(
+            state.habitantesDiaDescoberta[floor] ?? state.dia,
+            state.habitantesQuestResetDia?.[floor] ?? 0
+          )
+        : (state.habitantesDiaDescoberta[floor] ?? state.dia);
+      return (state.dia - baseDate) >= (q.dias ?? 1);
+    }
+    case 'sacrificio':
+      return true; // custo pago ao aceitar; conclusão sempre disponível
+  }
+}
+
 export interface GameState {
   dia: number;
   moral: number;
@@ -209,6 +525,14 @@ export interface GameState {
   guerra: GuerraAtiva | null;           // guerra em curso (uma por vez), ou null
   guerraPendente: GuerraPendente | null; // invasão declarada por rival — aguarda resposta
   guerrasHistorico: GuerraRegistro[];   // registro local das guerras encerradas
+
+  // ─── Habitantes da Torre ─────────────────────────────────────────────────
+  habitantesEstado: Record<number, HabitanteEstado>;  // floor → estado da quest
+  habitantesDiaDescoberta: Record<number, number>;    // floor → dia em que foi descoberto
+  habitantesQuestResetDia: Record<number, number>;    // floor → dia em que guerra resetou o timer (semGuerra)
+  ecos: number[];                                      // andares com Eco de loot ativo
+  ecosCapitulo: number[];                              // capítulos (tiers) com Eco de boss
+  lores: { floor: number; texto: string; titulo: string }[]; // lore desbloqueado
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -448,6 +772,12 @@ export const createInitialState = (): GameState => ({
   guerra: null,
   guerraPendente: null,
   guerrasHistorico: [],
+  habitantesEstado: {},
+  habitantesDiaDescoberta: {},
+  habitantesQuestResetDia: {},
+  ecos: [],
+  ecosCapitulo: [],
+  lores: [],
 });
 
 // ─── BUILDINGS (leveled) ───────────────────────────────────────────────────────
