@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, calcNpcPower, getEfeitos, calcRecompensaAndar, calcCustoExpedicao } from '../lib/game-data';
+import { FLOORS, BIOMA_META, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao } from '../lib/game-data';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
@@ -33,7 +33,8 @@ export function Tower() {
   const isBoss = floorData?.isBoss;
 
   const ef = getEfeitos(state.edificios);
-  const recompensa = floorData ? calcRecompensaAndar(floorData.floor, floorData.tier) : null;
+  const recompensa = floorData ? calcRecompensaAndar(floorData.floor, floorData.bioma) : null;
+  const biomaInfo = floorData ? BIOMA_META[floorData.bioma] : null;
 
   const eligibles = state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90);
 
@@ -42,7 +43,8 @@ export function Tower() {
 
   const group = state.npcs.filter(n => selectedNpcs.includes(n.id));
   const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
-  const groupPower = basePower * (1 + ef.poderBonus);
+  const biomaMultiplier = floorData ? calcBiomaMultiplier(group, floorData.bioma) : 1;
+  const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
 
   const handleToggle = (id: string) => {
     if (selectedNpcs.includes(id)) setSelectedNpcs(selectedNpcs.filter(i => i !== id));
@@ -137,7 +139,17 @@ export function Tower() {
         <div className="text-5xl font-bold text-white font-cinzel flex items-baseline gap-2 mb-2 drop-shadow-md relative z-10">
           {floorData.floor} <span className="text-xl text-white/70">ANDAR</span>
         </div>
-        <div className="text-sm text-primary tracking-[0.2em] mb-6 font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
+        <div className="text-sm text-primary tracking-[0.2em] font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
+
+        {/* Biome badge */}
+        {biomaInfo && (
+          <div className="mt-1 mb-4 flex items-center gap-1.5 relative z-10">
+            <span className="text-base leading-none">{biomaInfo.icone}</span>
+            <span className="text-[10px] text-white/60 tracking-wider">{biomaInfo.label.toUpperCase()}</span>
+            <span className="text-[9px] text-white/35 mx-1">·</span>
+            <span className="text-[9px] text-white/50 italic">{biomaInfo.dica}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4 mb-4 bg-black/30 p-4 rounded-sm border border-white/5 relative z-10">
           <div>
@@ -205,8 +217,10 @@ export function Tower() {
                 }`}
               >
                 <div className="flex flex-col">
-                  <span className="font-bold font-cinzel text-foreground">ANDAR {f.floor}</span>
-                  <span className="text-[10px] text-secondary tracking-widest">{f.tierName.toUpperCase()}</span>
+                  <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
+                    <span>{BIOMA_META[f.bioma].icone}</span> {f.nome}
+                  </span>
+                  <span className="text-[9px] text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
                 </div>
                 <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
                   {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}

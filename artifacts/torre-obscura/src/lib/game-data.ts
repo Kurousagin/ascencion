@@ -625,21 +625,64 @@ export function proximoNivelCusto(tipo: EdificioTipo, nivelAtual: number) {
 
 // ─── FLOORS ──────────────────────────────────────────────────────────────────
 
-export const FLOORS = Array.from({ length: 20 }).map((_, i) => {
-  const floor = i + 1;
+// ─── SISTEMA DE BIOMAS ────────────────────────────────────────────────────────
+// Cada andar tem um bioma fixo que determina: quais stats importam, qual profissão
+// se destaca e que tipo de recursos o grupo encontra. Isso cria decisões estratégicas
+// sobre QUEM enviar, em vez de só empilhar poder bruto.
+
+export type BiomaTipo = 'floresta' | 'caverna' | 'ruinas' | 'fortaleza' | 'abismo';
+
+export const BIOMA_META: Record<BiomaTipo, {
+  icone: string;
+  label: string;
+  statPrimario: 'forca' | 'agilidade' | 'resistencia' | 'inteligencia';
+  profissaoIdeal: ProfissaoId;
+  dica: string;
+  mortalidadeBonus: number; // ajuste na taxa base de mortalidade do andar
+}> = {
+  floresta:  { icone: '🌲', label: 'Floresta',  statPrimario: 'agilidade',    profissaoIdeal: 'batedor',    dica: 'Batedores ágeis exploram melhor',     mortalidadeBonus: 0 },
+  caverna:   { icone: '⛏', label: 'Caverna',   statPrimario: 'resistencia',  profissaoIdeal: 'sentinela',  dica: 'Sentinelas resistem às profundezas',  mortalidadeBonus: 3 },
+  ruinas:    { icone: '📜', label: 'Ruínas',    statPrimario: 'inteligencia', profissaoIdeal: 'erudito',    dica: 'Eruditos decifram os segredos',       mortalidadeBonus: -2 },
+  fortaleza: { icone: '⚔', label: 'Fortaleza', statPrimario: 'forca',        profissaoIdeal: 'combatente', dica: 'Combatentes dominam a batalha aberta', mortalidadeBonus: 2 },
+  abismo:    { icone: '🌀', label: 'Abismo',    statPrimario: 'forca',        profissaoIdeal: 'combatente', dica: 'Todo poder é pouco aqui',              mortalidadeBonus: 6 },
+};
+
+// Bioma de cada andar (1–20), fixo para permitir estratégia consciente.
+const BIOMA_POR_ANDAR: BiomaTipo[] = [
+  'floresta', 'caverna',   'floresta', 'caverna',   'ruinas',    // 1–5
+  'caverna',  'floresta',  'ruinas',   'fortaleza', 'ruinas',    // 6–10
+  'floresta', 'caverna',   'ruinas',   'fortaleza', 'fortaleza', // 11–15
+  'abismo',   'ruinas',    'fortaleza','abismo',    'abismo',    // 16–20
+];
+
+// Nomes individuais por andar (mais narrativo que "Câmara Sombria 7").
+const FLOOR_NOMES: string[] = [
+  'Mata Cinzenta',      'Grutas Rasas',        'Floresta Sombria',    'Caverna Cristalina',  'Ruína Esquecida',
+  'Abismos de Pedra',   'Selva Tenebrosa',     'Biblioteca Perdida',  'Forja Abandonada',    'Castelo em Ruínas',
+  'Pântano das Almas',  'Minas Profundas',     'Templo Profano',      'Bastião Sombrio',     'Fortaleza Maldita',
+  'Abismo Superior',    'Câmara do Caos',      'Cidadela da Queda',   'Antecâmara do Fim',   'Ápice Obscuro',
+];
+
+// Dificuldade não-linear: cada andar tem seu próprio ritmo, não só floor*8.
+// Bosses (5, 10, 15, 20) têm pico maior; andares "difíceis de bioma" têm +10–20%.
+const BASE_DIFICULDADE: number[] = [
+   8,  15,  20,  28,   42,  // 1–5  (boss 5)
+  36,  44,  54,  64,   90,  // 6–10 (boss 10)
+  75,  88, 100, 118,  155,  // 11–15 (boss 15)
+ 130, 148, 168, 190,  230,  // 16–20 (boss 20)
+];
+
+// Mortalidade base: combinação de progressão + ajuste do bioma.
+export const FLOORS = BIOMA_POR_ANDAR.map((bioma, i) => {
+  const floor  = i + 1;
   const isBoss = floor % 5 === 0;
-  const tier = Math.ceil(floor / 5);
+  const tier   = Math.ceil(floor / 5);
   const tierNames = ['Salões Poeirentos', 'Câmaras Sombrias', 'Espirais Malditas', 'Ápice Obscuro'];
-  const tierName = tierNames[tier - 1];
-  const baseDifficulty = floor * 8;
-  // Multiplicador de chefe escalado por tier: menor no início para não travar o
-  // jogador no andar 5 antes de ter recursos para construir edifícios de suporte.
-  const bossMultiplier = tier === 1 ? 1.4 : tier === 2 ? 1.6 : tier === 3 ? 1.8 : 2.0;
-  const difficulty = isBoss ? Math.floor(baseDifficulty * bossMultiplier) : baseDifficulty;
-  // Mortalidade reduzida levemente para dar margem a tentativas repetidas.
-  const baseMortality = floor * 2;
-  const mortality = isBoss ? floor * 3 : baseMortality;
-  return { floor, tierName, isBoss, difficulty, mortality, tier };
+  const tierName   = tierNames[tier - 1];
+  const difficulty = BASE_DIFICULDADE[i];
+  const biomaBonus = BIOMA_META[bioma].mortalidadeBonus;
+  const mortality  = isBoss ? floor * 3 + biomaBonus : floor * 2 + biomaBonus;
+  return { floor, nome: FLOOR_NOMES[i], tierName, bioma, isBoss, difficulty, mortality, tier };
 });
 
 // ─── EXPEDITION ECONOMY ────────────────────────────────────────────────────────
@@ -651,17 +694,61 @@ export interface RecompensaAndar {
   ferro: number;
 }
 
-// Resources credited to the warehouse on a successful floor climb.
-// Madeira e pedra foram aumentados para garantir recursos suficientes mesmo quando
-// o jogador precisa repetir andares já conquistados (modo exploração/farm).
-// Ferro disponível a partir do andar 3 para destravar construções mais cedo.
-export function calcRecompensaAndar(floor: number, tier: number): RecompensaAndar {
-  return {
-    comida:  floor * 2 + 8,
-    madeira: floor * 4 + tier * 4,
-    pedra:   floor * 3 + tier * 3,
-    ferro:   floor >= 3 ? floor + tier : 0,
-  };
+// Recursos específicos por bioma: cada ambiente produz o que faz sentido ecologicamente.
+// Floresta → comida+madeira; Caverna → pedra+ferro; Ruínas → balanceado; etc.
+// Isso torna a escolha do andar estratégica — você vai ao que precisa, não apenas
+// ao mais difícil disponível.
+export function calcRecompensaAndar(floor: number, bioma: BiomaTipo): RecompensaAndar {
+  switch (bioma) {
+    case 'floresta':
+      return {
+        comida:  floor * 4 + 6,
+        madeira: floor * 6 + 4,
+        pedra:   Math.max(0, floor - 4) * 2,
+        ferro:   floor >= 7 ? floor - 5 : 0,
+      };
+    case 'caverna':
+      return {
+        comida:  floor + 4,
+        madeira: floor * 2 + 3,
+        pedra:   floor * 5 + 5,
+        ferro:   floor * 3 + 3,
+      };
+    case 'ruinas':
+      return {
+        comida:  floor * 2 + 6,
+        madeira: floor * 3 + 5,
+        pedra:   floor * 3 + 4,
+        ferro:   floor * 2 + 3,
+      };
+    case 'fortaleza':
+      return {
+        comida:  floor + 3,
+        madeira: floor * 2 + 2,
+        pedra:   floor * 3 + 5,
+        ferro:   floor * 5 + 6,
+      };
+    case 'abismo':
+      return {
+        comida:  floor * 3 + 8,
+        madeira: floor * 4 + 6,
+        pedra:   floor * 4 + 8,
+        ferro:   floor * 3 + 6,
+      };
+  }
+}
+
+// Multiplicador de poder baseado na composição do grupo vs. bioma do andar.
+// Ter a profissão certa no bioma certo = terreno favorável. Ter a errada = desvantagem.
+// Abismo não tem afinidade — todo poder é igual lá.
+export function calcBiomaMultiplier(group: NPC[], bioma: BiomaTipo): number {
+  if (bioma === 'abismo') return 1.0;
+  const profissaoIdeal = BIOMA_META[bioma].profissaoIdeal;
+  const ideais = group.filter(n => getProfissao(n) === profissaoIdeal).length;
+  const ratio  = ideais / Math.max(1, group.length);
+  if (ratio >= 0.5) return 1.30;  // maioria certa: terreno favorável
+  if (ratio >= 0.2) return 1.00;  // parcialmente: neutro
+  return 0.80;                     // grupo errado: desvantagem de terreno −20%
 }
 
 // Food spent to launch an expedition (scales with group size and floor tier).
@@ -1082,6 +1169,82 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
   } else if (g.diasDecorridos >= g.duracao) {
     logs.push(...resolverGuerra(draft, 'prazo'));
   }
+
+  return logs;
+}
+
+// ─── EXPLORAÇÃO AUTÔNOMA ──────────────────────────────────────────────────────
+// NPCs de combate ociosos e descansados exploram o último andar conquistado
+// automaticamente quando o jogador não está ativo. Loot reduzido (60%) para
+// incentivar a gestão ativa. Mortalidade também reduzida (50% do normal).
+// Retorna entradas de log — o caller (processDay) chama addLog em cada uma.
+export function autoExplorar(draft: GameState): { tipo: LogTipo; mensagem: string }[] {
+  if (draft.andarAtual < 2) return [];
+
+  // Apenas NPCs verdadeiramente ociosos: sem posto de trabalho, sem compromisso externo.
+  const aptos = draft.npcs.filter(n =>
+    n.vivo && !n.emExpedicao && !n.emGuerra && !n.emprestado && !n.reforco
+    && n.posto === null   // não está trabalhando em nenhum edifício
+    && n.fadiga < 50
+    && (getProfissao(n) === 'combatente' || getProfissao(n) === 'batedor' || getProfissao(n) === 'sentinela'),
+  );
+  if (aptos.length < 2) return [];
+
+  // Limita a 4 NPCs no máximo por auto-expedição para reduzir consumo passivo de comida.
+  const grupo = aptos.slice(0, 4);
+
+  const targetFloor = draft.andarAtual - 1;
+  const floorData = FLOORS[targetFloor - 1];
+  if (!floorData) return [];
+
+  const ef = getEfeitos(draft.edificios, draft.npcs);
+  const cap = ef.capacidadeArmazem;
+  const cost = calcCustoExpedicao(grupo.length, floorData.tier);
+  if (draft.recursos.comida < cost) return [];
+
+  draft.recursos.comida -= cost;
+
+  const basePower = grupo.reduce((s, n) => s + calcNpcPower(n), 0);
+  const biomaMultiplier = calcBiomaMultiplier(grupo, floorData.bioma);
+  const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
+  const isVictory = groupPower >= floorData.difficulty;
+
+  const logs: { tipo: LogTipo; mensagem: string }[] = [];
+  const r = calcRecompensaAndar(floorData.floor, floorData.bioma);
+  const batedores = grupo.filter(n => getProfissao(n) === 'batedor').length;
+  const lootMult = 0.60 * (1 + batedores * 0.12);
+
+  if (isVictory) {
+    const comidaG  = Math.round(r.comida  * lootMult);
+    const madeiraG = Math.round(r.madeira * lootMult);
+    const pedraG   = Math.round(r.pedra   * lootMult);
+    const ferroG   = r.ferro ? Math.round(r.ferro * lootMult) : 0;
+    draft.recursos.comida  = Math.min(cap, draft.recursos.comida  + comidaG);
+    draft.recursos.madeira = Math.min(cap, draft.recursos.madeira + madeiraG);
+    draft.recursos.pedra   = Math.min(cap, draft.recursos.pedra   + pedraG);
+    if (ferroG) draft.recursos.ferro = Math.min(cap, draft.recursos.ferro + ferroG);
+    logs.push({
+      tipo: 'info',
+      mensagem: `[Autônomo] ${floorData.nome} (andar ${floorData.floor}): +${comidaG} comida, +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}.`,
+    });
+  } else {
+    const consolaMadeira = Math.round(r.madeira * 0.15);
+    const consolaPedra   = Math.round(r.pedra   * 0.15);
+    draft.recursos.madeira = Math.min(cap, draft.recursos.madeira + consolaMadeira);
+    draft.recursos.pedra   = Math.min(cap, draft.recursos.pedra   + consolaPedra);
+    logs.push({ tipo: 'info', mensagem: `[Autônomo] Andar ${floorData.floor}: grupo voltou de mãos quase vazias — poder insuficiente.` });
+  }
+
+  grupo.forEach(n => {
+    const mortChance = (Math.max(0, floorData.mortality) * 0.5) / 100;
+    if (Math.random() < mortChance) {
+      n.vivo = false; n.posto = null;
+      draft.moral = Math.max(0, draft.moral - 3);
+      logs.push({ tipo: 'morte', mensagem: `${n.nome} não voltou da exploração autônoma — andar ${floorData.floor}.` });
+    } else {
+      n.fadiga = Math.min(100, n.fadiga + getRandomInt(10, 18));
+    }
+  });
 
   return logs;
 }

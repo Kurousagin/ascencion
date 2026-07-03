@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import {
   GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
-  calcCustoExpedicao, calcRecompensaAndar,
+  calcCustoExpedicao, calcRecompensaAndar, calcBiomaMultiplier, autoExplorar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, GuerraPendente, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
@@ -162,8 +162,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // 3. Outros efeitos de edifícios (moral / sanidade)
-    draft.moral += ef.moralDia;
+    // Edifícios contribuem, mas limitados a +2/dia — múltiplos edifícios não devem
+    // cancelar o decaimento natural indefinidamente.
+    draft.moral += Math.min(2, ef.moralDia);
     if (ef.sanidadeDia) vivos.forEach(n => { n.sanidade += ef.sanidadeDia; });
+
+    // 3.5 Decaimento natural da moral — A Torre corrói tudo. Acima de 80 decai mais
+    // rápido (estado de euforia insustentável). A moral exige atenção constante.
+    draft.moral -= draft.moral >= 80 ? 2 : 1;
 
     // 4. Recuperação de fadiga (base + enfermaria + curandeiro) — não vale para
     //    quem está mobilizado na guerra (o front acumula fadiga em avancarGuerra).
@@ -180,7 +186,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // 5. Variação de moral/lealdade por estado geral
-    if (draft.moral > 60) vivos.forEach(n => { n.lealdade += 0.5; });
+    // Bônus de lealdade só em moral alta (>70) e reduzido — recompensa manutenção.
+    if (draft.moral > 70) vivos.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 0.2); });
     if (draft.moral < 40) vivos.forEach(n => { n.lealdade -= 1; });
 
     draft.moral = Math.max(0, Math.min(100, draft.moral));
@@ -208,7 +215,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // 7. Eventos aleatórios (15% por dia)
+    // 7. Eventos aleatórios (15% por dia) — mais negativos, moral mais difícil
     if (Math.random() < 0.15) {
       const vivosCopy = [...vivos];
       const eventos = [
@@ -221,10 +228,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           addLog(draft, 'descoberta', `Achado misterioso: +${qtd} ${isIron ? 'Ferro' : 'Pedra'}.`);
         },
         () => { vivosCopy.forEach(n => { n.fadiga = Math.max(0, n.fadiga - 10); }); addLog(draft, 'evento', 'Descanso coletivo: -10 Fadiga para todos.'); },
-        () => { draft.moral -= 3; addLog(draft, 'evento', 'Tensão interna: -3 Moral.'); },
-        () => { draft.moral += 5; addLog(draft, 'evento', 'Visão favorável: +5 Moral.'); },
+        () => { draft.moral -= 5; addLog(draft, 'evento', 'Tensão interna: -5 Moral.'); },
+        () => { draft.moral -= 10; vivosCopy.forEach(n => { n.sanidade -= 2; }); addLog(draft, 'evento', 'Eco maldito da Torre: -10 Moral, -2 Sanidade.'); },
+        () => { draft.moral += 2; addLog(draft, 'evento', 'Visão favorável: +2 Moral.'); },
       ];
       eventos[getRandomInt(0, eventos.length - 1)]();
+    }
+
+    // 7.5 Exploração autônoma: NPCs de combate ociosos e descansados exploram
+    //     o último andar conquistado sem intervenção do jogador. Taxa 30% para
+    //     não drenar comida/fadiga excessivamente em modo passivo.
+    if (!draft.guerra && !draft.guerraPendente && Math.random() < 0.30) {
+      autoExplorar(draft).forEach(l => addLog(draft, l.tipo, l.mensagem));
     }
 
     // 8. Invocação emergencial (pop ≤ 3)
@@ -448,11 +463,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
     const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
-    const groupPower = basePower * (1 + ef.poderBonus);
+    // O bioma afeta o poder efetivo do grupo: profissão certa = +30%, errada = -20%.
+    const biomaMultiplier = calcBiomaMultiplier(group, floorData.bioma);
+    const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
     const isVictory = groupPower >= floorData.difficulty;
 
     if (isVictory) {
-      const r = calcRecompensaAndar(floorData.floor, floorData.tier);
+      const r = calcRecompensaAndar(floorData.floor, floorData.bioma);
       // Batedores no grupo aumentam o loot (+15% por batedor).
       // Modo farm: loot reduzido a 70% (sem o incentivo de avançar).
       const batedores = group.filter(n => getProfissao(n) === 'batedor').length;
@@ -473,7 +490,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
-      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}`);
+      const biomaStr = biomaMultiplier !== 1.0 ? ` [Bioma ${biomaMultiplier > 1 ? '+30% poder' : '−20% poder'}]` : '';
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}`);
 
       // Resgate: chance de encontrar um sobrevivente (apenas ao avançar, chefes têm mais chance)
       let resgatado: { nome: string; raridade: Raridade } | null = null;
@@ -526,7 +544,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Falha: penalidades reduzidas (era -5/-5, agora -3/-3) e loot parcial
       // de 30% do andar — garante algum progresso mesmo travado.
       group.forEach(n => { n.lealdade -= 3; n.sanidade -= 3; });
-      const r = calcRecompensaAndar(floorData.floor, floorData.tier);
+      const r = calcRecompensaAndar(floorData.floor, floorData.bioma);
       const consolaMadeira = Math.round(r.madeira * 0.30);
       const consolaPedra   = Math.round(r.pedra   * 0.30);
       const consolaFerro   = r.ferro ? Math.round(r.ferro * 0.30) : 0;
