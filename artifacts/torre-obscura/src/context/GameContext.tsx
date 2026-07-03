@@ -6,8 +6,8 @@ import {
   calcCustoExpedicao, calcRecompensaAndar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
   podeEmprestar, debitarArmazem, creditarArmazem,
-  RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
-  GUERRA_DURACAO, GUERRA_MIN_TROPA,
+  RivalCidadela, GuerraPendente, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
+  GUERRA_DURACAO, GUERRA_MIN_TROPA, gerarRivalAgressor, chanceBotWar,
   podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
@@ -47,8 +47,10 @@ interface GameContextType {
   reintegrarMorador: (base: MoradorBase, morreu: boolean) => void; // dono: recebe de volta
   // Aliança: reforço de expedição (fase 3).
   receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
-  // Guerra: declara guerra a uma cidadela-bot, mobilizando a tropa escolhida.
+  // Guerra: declara guerra a uma cidadela-bot (ofensiva) ou responde a uma invasão (defensiva).
   declararGuerra: (rival: RivalCidadela, tropaIds: string[]) => boolean;
+  // Responde à invasão pendente mobilizando a tropa escolhida (sem custo — é defesa).
+  responderGuerra: (tropaIds: string[]) => boolean;
   // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
   // Resultado da última expedição (exibido em modal; nulo quando fechado).
@@ -249,6 +251,74 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     //     baixas, término). Muta o draft e devolve as entradas de log.
     avancarGuerra(draft).forEach(l => addLog(draft, l.tipo, l.mensagem));
 
+    // 9.6 Invasão pendente: decrementa o prazo de resposta.
+    //     Se expirar sem resposta → auto-defesa (todos os aptos marcham) ou
+    //     derrota imediata por saque se ninguém estiver disponível.
+    if (draft.guerraPendente && !draft.guerra) {
+      draft.guerraPendente.prazoResposta--;
+      if (draft.guerraPendente.prazoResposta <= 0) {
+        const rival = draft.guerraPendente.rival;
+        const disponiveis = draft.npcs.filter(n => podeGuerrear(n));
+        if (disponiveis.length === 0) {
+          // Sem defesa: saque imediato, guerra registrada como derrota.
+          const frac = 0.25;
+          const perda = {
+            comida:  Math.floor(draft.recursos.comida  * frac),
+            madeira: Math.floor(draft.recursos.madeira * frac),
+            pedra:   Math.floor(draft.recursos.pedra   * frac),
+            ferro:   Math.floor(draft.recursos.ferro   * frac),
+          };
+          draft.recursos.comida  = Math.max(0, draft.recursos.comida  - perda.comida);
+          draft.recursos.madeira = Math.max(0, draft.recursos.madeira - perda.madeira);
+          draft.recursos.pedra   = Math.max(0, draft.recursos.pedra   - perda.pedra);
+          draft.recursos.ferro   = Math.max(0, draft.recursos.ferro   - perda.ferro);
+          draft.moral = Math.max(0, draft.moral - 20);
+          addLog(draft, 'alerta', `SAQUE DE ${rival.nome.toUpperCase()} — Sem defesa, perdeu ${perda.comida} comida, ${perda.madeira} madeira, ${perda.pedra} pedra, ${perda.ferro} ferro.`);
+          draft.guerrasHistorico.unshift({
+            id: crypto.randomUUID(),
+            rivalNome: rival.nome,
+            resultado: 'derrota',
+            diaInicio: draft.guerraPendente.diaDeclarado,
+            diaFim: draft.dia,
+            duracaoDias: 0,
+            baixasJogador: 0,
+            baixasRival: 0,
+            espolio: { comida: -perda.comida, madeira: -perda.madeira, pedra: -perda.pedra, ferro: -perda.ferro },
+          });
+        } else {
+          // Auto-defesa: todos os disponíveis marcham sem custo de mobilização.
+          disponiveis.forEach(n => { n.emGuerra = true; n.posto = null; n.emExpedicao = false; });
+          draft.guerra = {
+            rival,
+            rivalIntegridade: 1,
+            rivalSuprimento: rival.suprimento,
+            tropaIds: disponiveis.map(n => n.id),
+            duracao: GUERRA_DURACAO,
+            diasDecorridos: 0,
+            diaInicio: draft.dia,
+            momento: 0,
+            suprido: true,
+            baixasJogador: 0,
+            feridosJogador: 0,
+            baixasRival: 0,
+            ultimoRelato: `Auto-defesa: ${disponiveis.length} defensor(es) mobilizados às pressas.`,
+          };
+          addLog(draft, 'evento', `INVASÃO DE ${rival.nome.toUpperCase()} — Defesa automática: ${disponiveis.length} combatente(s) marcharam ao front sem mobilização prévia.`);
+        }
+        draft.guerraPendente = null;
+      }
+    }
+
+    // 9.7 Probabilidade de nova invasão declarada por bot rival.
+    if (!draft.guerra && !draft.guerraPendente) {
+      const chance = chanceBotWar(draft);
+      if (chance > 0 && Math.random() < chance) {
+        const rival = gerarRivalAgressor(draft);
+        draft.guerraPendente = { rival, prazoResposta: 3, diaDeclarado: draft.dia };
+        addLog(draft, 'evento', `INVASÃO IMINENTE: ${rival.nome.toUpperCase()} marchou em direção à sua cidadela! Você tem 3 dias para mobilizar defesa — acesse a aba GUERRA.`);
+      }
+    }
+
     // 10. Fim do dia
     draft.dia++;
     if (draft.npcs.filter(n => n.vivo).length === 0) {
@@ -309,6 +379,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Migração da guerra: defaults para saves anteriores ao sistema de guerra.
     parsed.npcs.forEach(n => { if (n.emGuerra === undefined) n.emGuerra = false; });
     if (parsed.guerra === undefined) parsed.guerra = null;
+    if (parsed.guerraPendente === undefined) parsed.guerraPendente = null;
     if (!parsed.guerrasHistorico) parsed.guerrasHistorico = [];
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
@@ -763,6 +834,36 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  // Responde à invasão pendente: mobiliza a tropa escolhida SEM custo (defesa forçada).
+  const responderGuerra = (tropaIds: string[]): boolean => {
+    if (!state || !state.guerraPendente || state.guerra) return false;
+    if (tropaIds.length < GUERRA_MIN_TROPA) return false;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const rival = s.guerraPendente!.rival;
+    const tropa = s.npcs.filter(n => tropaIds.includes(n.id) && podeGuerrear(n));
+    if (tropa.length < GUERRA_MIN_TROPA) return false;
+    tropa.forEach(n => { n.emGuerra = true; n.posto = null; n.emExpedicao = false; });
+    s.guerra = {
+      rival,
+      rivalIntegridade: 1,
+      rivalSuprimento: rival.suprimento,
+      tropaIds: tropa.map(n => n.id),
+      duracao: GUERRA_DURACAO,
+      diasDecorridos: 0,
+      diaInicio: s.dia,
+      momento: 0,
+      suprido: true,
+      baixasJogador: 0,
+      feridosJogador: 0,
+      baixasRival: 0,
+      ultimoRelato: `${tropa.length} defensor(es) posicionados no front.`,
+    };
+    s.guerraPendente = null;
+    addLog(s, 'evento', `DEFESA ORGANIZADA: ${tropa.length} combatente(s) marcharam para defender a cidadela contra ${rival.nome}.`);
+    saveState(s);
+    return true;
+  };
+
   const treinarNpc = (npcId: string) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -841,6 +942,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       reintegrarMorador,
       receberReforco,
       declararGuerra,
+      responderGuerra,
       treinarNpc,
       lastExpeditionResult: expeditionResult,
       clearExpeditionResult: () => setExpeditionResult(null),

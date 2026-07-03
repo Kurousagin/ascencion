@@ -4,6 +4,7 @@ import { useWar } from '../context/WarContext';
 import {
   Swords, Shield, RefreshCw, Wifi, WifiOff, X, Check, Skull, Users,
   Wheat, Trees, Mountain, Zap, Flame, Clock, ChevronRight, HeartPulse, History,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   NPC, RivalCidadela, calcNpcPower, calcPoderTropa, calcCustoMobilizacao,
@@ -24,14 +25,19 @@ const POSTURA_LABEL: Record<string, string> = {
 };
 
 export function War() {
-  const { state, declararGuerra } = useGame();
+  const { state, declararGuerra, responderGuerra } = useGame();
   const { rivais, online, carregando, refresh } = useWar();
 
   const [alvo, setAlvo] = useState<RivalCidadela | null>(null);
   const [tropaSel, setTropaSel] = useState<Set<string>>(new Set());
   const [erro, setErro] = useState<string | null>(null);
 
+  // Invasão pendente — defesa
+  const [tropaDef, setTropaDef] = useState<Set<string>>(new Set());
+  const [erroDefesa, setErroDefesa] = useState<string | null>(null);
+
   const guerra = state.guerra;
+  const guerraPendente = state.guerraPendente;
   const ef = useMemo(() => getEfeitos(state.edificios, state.npcs), [state.edificios, state.npcs]);
   const poderMilitar = useMemo(() => calcPoderMilitar(state), [state]);
   const elegiveis = useMemo(() => state.npcs.filter(podeGuerrear), [state.npcs]);
@@ -67,6 +73,17 @@ export function War() {
     else setErro('Não foi possível declarar guerra. Verifique tropa e recursos.');
   };
 
+  const toggleDef = (id: string) => setTropaDef(prev => {
+    const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next;
+  });
+
+  const confirmarDefesa = () => {
+    if (tropaDef.size < GUERRA_MIN_TROPA) { setErroDefesa('Selecione ao menos 1 defensor.'); return; }
+    const ok = responderGuerra([...tropaDef]);
+    if (ok) { setTropaDef(new Set()); setErroDefesa(null); }
+    else setErroDefesa('Não foi possível mobilizar a defesa.');
+  };
+
   return (
     <div className="h-full overflow-y-auto px-4 pt-5 pb-8">
       {/* Cabeçalho */}
@@ -83,6 +100,91 @@ export function War() {
 
       {guerra ? (
         <GuerraAtivaPanel />
+      ) : guerraPendente ? (
+        /* ── Invasão pendente ──────────────────────────────────────────── */
+        <div className="space-y-4">
+          {/* Banner de ameaça */}
+          <div className="bg-gradient-to-b from-destructive/20 to-transparent border border-destructive/60 rounded-md p-4 animate-pulse">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle size={16} className="text-destructive" />
+              <span className="text-[9px] text-destructive tracking-[0.25em] font-bold">INVASÃO DECLARADA</span>
+            </div>
+            <div className="font-cinzel text-lg text-foreground">{guerraPendente.rival.nome}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">
+              Postura {POSTURA_LABEL[guerraPendente.rival.postura]} · poder {guerraPendente.rival.poderBase} · andar {guerraPendente.rival.andar}
+            </div>
+          </div>
+
+          {/* Contagem regressiva */}
+          <div className="flex items-center justify-between bg-[#0D1117] border border-destructive/30 rounded-md px-4 py-3">
+            <span className="text-[10px] text-secondary tracking-widest">PRAZO PARA DEFENDER</span>
+            <span className={`font-cinzel text-2xl flex items-center gap-1 ${guerraPendente.prazoResposta <= 1 ? 'text-destructive' : 'text-warning'}`}>
+              <Clock size={16} /> {guerraPendente.prazoResposta} dia{guerraPendente.prazoResposta !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Comparação de forças */}
+          <div className="grid grid-cols-3 items-center gap-2 bg-[#0D1117] border border-card-border rounded-md p-3">
+            <div className="text-center">
+              <div className="text-[9px] text-secondary tracking-widest mb-1">SEU PODER</div>
+              <div className="font-cinzel text-xl text-success">{Math.round(calcPoderMilitar(state))}</div>
+            </div>
+            <div className="text-center text-muted-foreground text-xs font-cinzel">VS</div>
+            <div className="text-center">
+              <div className="text-[9px] text-secondary tracking-widest mb-1">INVASOR</div>
+              <div className="font-cinzel text-xl text-destructive">{guerraPendente.rival.poderBase}</div>
+            </div>
+          </div>
+
+          {/* Seleção de defensores */}
+          <div className="text-[9px] text-secondary tracking-widest mb-1">MOBILIZAR DEFENSORES ({tropaDef.size})</div>
+          {elegiveis.length === 0 ? (
+            <div className="text-[10px] text-destructive italic border border-destructive/30 bg-destructive/5 rounded-md p-3">
+              Nenhum morador disponível! A cidadela será saqueada ao expirar o prazo.
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {elegiveis.map(n => {
+                const sel = tropaDef.has(n.id);
+                const prof = PROFISSOES[getProfissao(n)];
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => toggleDef(n.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-sm border text-left transition-all touch-manipulation ${
+                      sel ? 'bg-success/10 border-success' : 'bg-black/30 border-card-border hover:border-primary/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${sel ? 'bg-success border-success' : 'border-muted-foreground'}`}>
+                        {sel && <Check size={11} className="text-black" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-foreground truncate">{n.nome}</div>
+                        <div className="text-[9px] text-muted-foreground">{prof.nome} · {Math.round(calcNpcPower(n))} pwr</div>
+                      </div>
+                    </div>
+                    <div className="font-cinzel text-sm text-primary flex-shrink-0">{Math.round(calcNpcPower(n))}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="text-[9px] text-muted-foreground italic text-center">
+            Defesa não tem custo de mobilização. Sem resposta: auto-defesa com todos os disponíveis (ou saque imediato).
+          </div>
+
+          {erroDefesa && <div className="text-[11px] text-destructive text-center">{erroDefesa}</div>}
+
+          <button
+            onClick={confirmarDefesa}
+            disabled={tropaDef.size < GUERRA_MIN_TROPA || elegiveis.length === 0}
+            className="w-full py-3 rounded-sm bg-success/10 border border-success text-success font-cinzel tracking-widest hover:bg-success/20 active:scale-[0.98] transition-all touch-manipulation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Shield size={16} /> DEFENDER CIDADELA ({tropaDef.size} combatente{tropaDef.size !== 1 ? 's' : ''})
+          </button>
+        </div>
       ) : (
         <>
           {/* Poder militar */}

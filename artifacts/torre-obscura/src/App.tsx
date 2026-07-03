@@ -14,6 +14,26 @@ import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { AnimatePresence, motion } from 'framer-motion';
 
+function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
+  const { state } = useGame();
+  const gp = state?.guerraPendente;
+  if (!gp) return null;
+  return (
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[11px] animate-pulse">
+      <span className="text-destructive font-bold tracking-wide flex items-center gap-1.5 min-w-0">
+        ⚔ INVASÃO: <span className="font-normal truncate">{gp.rival.nome}</span>
+        <span className="text-destructive/70 font-normal shrink-0">— {gp.prazoResposta} dia{gp.prazoResposta !== 1 ? 's' : ''} para responder</span>
+      </span>
+      <button
+        onClick={onGoToWar}
+        className="shrink-0 px-2 py-1 bg-destructive text-destructive-foreground rounded-sm font-bold tracking-widest touch-manipulation text-[10px]"
+      >
+        DEFENDER
+      </button>
+    </div>
+  );
+}
+
 function MainGameArea() {
   const { state } = useGame();
   const [tab, setTab] = useState('obs');
@@ -28,6 +48,9 @@ function MainGameArea() {
         className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
+        {/* Alerta de invasão pendente */}
+        <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />
+
         {/* Content area — no z-index so it never buries the nav */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">

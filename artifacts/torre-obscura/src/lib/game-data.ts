@@ -206,8 +206,9 @@ export interface GameState {
   log: LogEntry[];
 
   // ─── Guerra entre cidadelas ──────────────────────────────────────────────
-  guerra: GuerraAtiva | null;       // guerra em curso (uma por vez), ou null
-  guerrasHistorico: GuerraRegistro[]; // registro local das guerras encerradas
+  guerra: GuerraAtiva | null;           // guerra em curso (uma por vez), ou null
+  guerraPendente: GuerraPendente | null; // invasão declarada por rival — aguarda resposta
+  guerrasHistorico: GuerraRegistro[];   // registro local das guerras encerradas
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -445,6 +446,7 @@ export const createInitialState = (): GameState => ({
     dia: 1,
   }],
   guerra: null,
+  guerraPendente: null,
   guerrasHistorico: [],
 });
 
@@ -762,6 +764,13 @@ export interface GuerraAtiva {
   ultimoRelato: string;       // resumo da última escaramuça (para a UI)
 }
 
+// Invasão pendente — bot declarou guerra; jogador tem `prazoResposta` dias para mobilizar.
+export interface GuerraPendente {
+  rival: RivalCidadela;
+  prazoResposta: number;  // dias restantes (começa em 3)
+  diaDeclarado: number;
+}
+
 export interface GuerraRegistro {
   id: string;
   rivalNome: string;
@@ -772,6 +781,65 @@ export interface GuerraRegistro {
   baixasJogador: number;
   baixasRival: number;
   espolio: DeltaRecursos;   // recursos ganhos (vitória) ou perdidos (derrota, negativos)
+}
+
+// ─── BOT WAR DECLARATION ─────────────────────────────────────────────────────
+
+const NOMES_RIVAIS_AGRESSORES = [
+  'Fortaleza de Cinzas', 'Bastião Sombrio', 'Torre do Sangue',
+  'Domínio do Vazio', 'Cidadela dos Amaldiçoados', 'Legião da Escuridão',
+  'Baluarte do Fim', 'Covil da Tempestade', 'Sentinela das Ruínas',
+  'Horda do Crepúsculo', 'Castelo de Ferro Negro', 'Muralha dos Condenados',
+];
+
+// Gera um rival agressor escalado ao poder militar atual do jogador.
+export function gerarRivalAgressor(state: GameState): RivalCidadela {
+  const meuPoder = calcPoderMilitar(state);
+  // Poder: 75-125% do jogador, mínimo 8 para sempre ameaçar algo.
+  const mult = 0.75 + Math.random() * 0.5;
+  const poderBase = Math.max(8, Math.round(meuPoder * mult));
+  const posturas: Postura[] = ['agressiva', 'agressiva', 'equilibrada'];
+  const postura = posturas[Math.floor(Math.random() * posturas.length)];
+  const nome = NOMES_RIVAIS_AGRESSORES[Math.floor(Math.random() * NOMES_RIVAIS_AGRESSORES.length)];
+  return {
+    slug: `agressor-${crypto.randomUUID().slice(0, 8)}`,
+    nome,
+    dia: state.dia,
+    andar: state.andarAtual,
+    populacao: Math.max(4, Math.round(state.npcs.filter(n => n.vivo).length * (0.8 + Math.random() * 0.6))),
+    profissoes: { combatente: 3, batedor: 2, erudito: 1, sentinela: 2 },
+    poderBase,
+    suprimento: 25 + Math.round(poderBase * 0.4),
+    recursos: {
+      comida:  40 + Math.round(Math.random() * 80),
+      madeira: 25 + Math.round(Math.random() * 60),
+      pedra:   15 + Math.round(Math.random() * 50),
+      ferro:   8  + Math.round(Math.random() * 30),
+    },
+    postura,
+  };
+}
+
+// Probabilidade diária de um bot declarar guerra ao jogador.
+// Sobe com o andamento do jogo; cooldown pós-guerra para não ser spam.
+export function chanceBotWar(state: GameState): number {
+  if (state.andarAtual < 3) return 0;
+  let chance = state.andarAtual <= 5 ? 0.004
+             : state.andarAtual <= 10 ? 0.007
+             : 0.011;
+  const last = state.guerrasHistorico?.[0];
+  if (last) {
+    const diasDesde = state.dia - last.diaFim;
+    if (diasDesde < 20) {
+      // Cooldown absoluto: zero chance nos primeiros 20 dias após qualquer guerra.
+      return 0;
+    }
+    if (last.resultado === 'derrota' && diasDesde < 40) {
+      // Vingança: chance 2× nos dias 20–39 após uma derrota.
+      chance *= 2.0;
+    }
+  }
+  return chance;
 }
 
 // Balanceamento da guerra.
