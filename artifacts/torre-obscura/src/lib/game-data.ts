@@ -355,3 +355,27 @@ export const FLOORS = Array.from({ length: 20 }).map((_, i) => {
   const mortality = isBoss ? floor * 4 : baseMortality;
   return { floor, tierName, isBoss, difficulty, mortality, tier };
 });
+
+// ─── EXPEDITION ECONOMY ────────────────────────────────────────────────────────
+
+export interface RecompensaAndar {
+  comida: number;
+  madeira: number;
+  pedra: number;
+  ferro: number;
+}
+
+// Resources credited to the warehouse on a successful floor climb.
+export function calcRecompensaAndar(floor: number, tier: number): RecompensaAndar {
+  return {
+    comida:  floor * 2 + 6,
+    madeira: floor * 3 + tier * 3,
+    pedra:   floor * 2 + tier * 2,
+    ferro:   floor >= 4 ? floor + tier : 0,
+  };
+}
+
+// Food spent to launch an expedition (scales with group size and floor tier).
+export function calcCustoExpedicao(qtd: number, tier: number): number {
+  return qtd * (1 + tier);
+}

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import {
   GameState, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
+  calcCustoExpedicao, calcRecompensaAndar,
   EdificioTipo,
 } from '../lib/game-data';
 
@@ -213,6 +214,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       startNewGame();
       return;
     }
+    // Normalize derived fields from buildings (keeps old saves' capacity in sync)
+    parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
     let missed = Math.min(40, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
     if (missed > 0) {
@@ -263,26 +266,36 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
     if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao)) return;
-    const cost = npcIds.length * (3 + floorData.tier);
+    const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
 
-    // Power uses calcNpcPower which applies skill bonuses
-    const groupPower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
+    // Power uses calcNpcPower (skill bonuses) + Quartel bonus
+    const ef = getEfeitos(s.edificios);
+    const cap = ef.capacidadeArmazem;
+    s.recursos.capacidadeArmazem = cap;
+    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
+    const groupPower = basePower * (1 + ef.poderBonus);
     const isVictory = groupPower >= floorData.difficulty;
 
     if (isVictory) {
-      s.recursos.comida  += floorData.floor * 3;
-      s.recursos.madeira += floorData.floor * 2;
-      s.recursos.pedra   += Math.round(floorData.floor * 1.5);
-      if (floorData.floor >= 5) s.recursos.ferro += Math.round(floorData.floor * 0.8);
+      const r = calcRecompensaAndar(floorData.floor, floorData.tier);
+      // Tower loot is banked into the warehouse, clamped to its capacity
+      s.recursos.comida  = Math.min(cap, s.recursos.comida  + r.comida);
+      s.recursos.madeira = Math.min(cap, s.recursos.madeira + r.madeira);
+      s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + r.pedra);
+      if (r.ferro) s.recursos.ferro = Math.min(cap, s.recursos.ferro + r.ferro);
       s.andarAtual++;
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
-      addLog(s, 'vitoria', `ANDAR ${floorData.floor} CONQUISTADO.`);
+      addLog(s, 'vitoria', `ANDAR ${floorData.floor} CONQUISTADO. +${r.madeira} madeira, +${r.pedra} pedra${r.ferro ? `, +${r.ferro} ferro` : ''}, +${r.comida} comida.`);
       if (s.andarAtual > 20) s.vitoria = true;
     } else {
       group.forEach(n => { n.lealdade -= 5; n.sanidade -= 5; });
-      addLog(s, 'alerta', `FALHA NO ANDAR ${floorData.floor}.`);
+      const falta = Math.ceil(floorData.difficulty - groupPower);
+      const fatigados = group.filter(n => n.fadiga >= 50).length;
+      let motivo = `Poder insuficiente (${groupPower.toFixed(0)}/${floorData.difficulty}, faltaram ${falta}).`;
+      if (fatigados > 0) motivo += ` ${fatigados} membro(s) fatigado(s) reduziram o poder.`;
+      addLog(s, 'alerta', `FALHA NO ANDAR ${floorData.floor} — ${motivo}`);
     }
 
     // Mortality per NPC

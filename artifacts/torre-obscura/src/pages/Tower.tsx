@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { FLOORS, calcNpcPower } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check } from 'lucide-react';
+import { FLOORS, calcNpcPower, getEfeitos, calcRecompensaAndar, calcCustoExpedicao } from '../lib/game-data';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
@@ -13,16 +13,17 @@ export function Tower() {
   const floorData = FLOORS[state.andarAtual - 1];
   const isBoss = floorData?.isBoss;
 
+  const ef = getEfeitos(state.edificios);
+  const recompensa = floorData ? calcRecompensaAndar(floorData.floor, floorData.tier) : null;
+
   const eligibles = state.npcs.filter(n => n.vivo && !n.emExpedicao && n.fadiga < 90);
-  
-  const cost = selectedNpcs.length * (3 + (floorData?.tier || 1));
+
+  const cost = calcCustoExpedicao(selectedNpcs.length, floorData?.tier || 1);
   const canAfford = state.recursos.comida >= cost;
 
-  let groupPower = 0;
   const group = state.npcs.filter(n => selectedNpcs.includes(n.id));
-  group.forEach(n => {
-    groupPower += calcNpcPower(n);
-  });
+  const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
+  const groupPower = basePower * (1 + ef.poderBonus);
 
   const handleToggle = (id: string) => {
     if (selectedNpcs.includes(id)) setSelectedNpcs(selectedNpcs.filter(i => i !== id));
@@ -93,7 +94,7 @@ export function Tower() {
         </div>
         <div className="text-sm text-primary tracking-[0.2em] mb-6 font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8 bg-black/30 p-4 rounded-sm border border-white/5 relative z-10">
+        <div className="grid grid-cols-2 gap-4 mb-4 bg-black/30 p-4 rounded-sm border border-white/5 relative z-10">
           <div>
             <div className="text-[10px] text-white/50 mb-1 tracking-widest">DIFICULDADE</div>
             <div className="text-lg font-bold text-white/90 flex items-center gap-2"><Swords size={14} className="text-primary"/> {floorData.difficulty} PWR</div>
@@ -103,6 +104,23 @@ export function Tower() {
             <div className="text-lg font-bold text-warning">{floorData.mortality}% MORT.</div>
           </div>
         </div>
+
+        {recompensa && (
+          <div className="mb-8 bg-black/30 p-4 rounded-sm border border-primary/20 relative z-10">
+            <div className="text-[10px] text-primary/80 mb-2 tracking-widest flex items-center gap-1">
+              <Check size={12} /> RECOMPENSAS AO CONQUISTAR
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm font-bold">
+              <span className="flex items-center gap-1 text-white/90"><Wheat size={14} className="text-warning" /> +{recompensa.comida}</span>
+              <span className="flex items-center gap-1 text-white/90"><Trees size={14} className="text-success" /> +{recompensa.madeira}</span>
+              <span className="flex items-center gap-1 text-white/90"><Mountain size={14} className="text-secondary" /> +{recompensa.pedra}</span>
+              {recompensa.ferro > 0 && (
+                <span className="flex items-center gap-1 text-white/90"><Zap size={14} className="text-primary" /> +{recompensa.ferro}</span>
+              )}
+            </div>
+            <div className="text-[9px] text-white/40 mt-2 tracking-wide">Somado ao armazém (expanda-o na Cidadela).</div>
+          </div>
+        )}
 
         <button 
           onClick={() => setModalOpen(true)}
@@ -139,7 +157,17 @@ export function Tower() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 transition-opacity" />
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 p-5 flex flex-col z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-            <Dialog.Title className="text-xl font-cinzel font-bold text-primary tracking-widest mb-4 border-b border-primary/20 pb-2">FORMAR GRUPO</Dialog.Title>
+            <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+              <Dialog.Title className="text-xl font-cinzel font-bold text-primary tracking-widest">FORMAR GRUPO</Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  aria-label="Fechar"
+                  className="w-9 h-9 flex items-center justify-center rounded-sm border border-card-border text-secondary hover:text-foreground hover:border-primary/50 active:scale-95 transition-all touch-manipulation shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </Dialog.Close>
+            </div>
             
             <div className="flex-1 overflow-y-auto space-y-2 mb-5 custom-scrollbar pr-2">
               {eligibles.length === 0 ? (
