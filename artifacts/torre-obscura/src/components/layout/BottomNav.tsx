@@ -1,4 +1,4 @@
-import { Eye, Building2, Landmark, Users, ScrollText, Handshake } from 'lucide-react';
+import { Eye, Building2, Landmark, Users, ScrollText, Handshake, Swords } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -11,6 +11,7 @@ const tabs = [
   { id: 'cidadela', label: 'CIDADELA', icon: Landmark },
   { id: 'povo',     label: 'POVO',     icon: Users },
   { id: 'alianca',  label: 'ALIANÇA',  icon: Handshake },
+  { id: 'guerra',   label: 'GUERRA',   icon: Swords },
   { id: 'log',      label: 'LOG',      icon: ScrollText },
 ];
 

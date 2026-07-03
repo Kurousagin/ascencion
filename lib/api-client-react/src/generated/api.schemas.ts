@@ -178,3 +178,48 @@ export interface ReforcoResultado {
   limiteReforcos: number;
 }
 
+export interface RivalProfissoes {
+  combatente: number;
+  batedor: number;
+  erudito: number;
+  sentinela: number;
+}
+
+export interface RivalRecursos {
+  comida: number;
+  madeira: number;
+  pedra: number;
+  ferro: number;
+}
+
+export type RivalPostura = typeof RivalPostura[keyof typeof RivalPostura];
+
+
+export const RivalPostura = {
+  agressiva: 'agressiva',
+  defensiva: 'defensiva',
+  equilibrada: 'equilibrada',
+} as const;
+
+export interface Rival {
+  slug: string;
+  nome: string;
+  dia: number;
+  andar: number;
+  populacao: number;
+  profissoes: RivalProfissoes;
+  poderBase: number;
+  suprimento: number;
+  recursos: RivalRecursos;
+  postura: RivalPostura;
+}
+
+export interface RivaisInput {
+  poder: number;
+  excluir?: string[];
+}
+
+export interface RivaisResposta {
+  rivais: Rival[];
+}
+

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import { AllianceProvider } from './context/AllianceContext';
+import { WarProvider } from './context/WarContext';
 import { BottomNav } from './components/layout/BottomNav';
 import { TitleScreen } from './pages/TitleScreen';
 import { Dashboard } from './pages/Dashboard';
@@ -8,6 +9,7 @@ import { Tower } from './pages/Tower';
 import { Citadel } from './pages/Citadel';
 import { People } from './pages/People';
 import { Alliance } from './pages/Alliance';
+import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -21,6 +23,7 @@ function MainGameArea() {
 
   return (
     <AllianceProvider>
+    <WarProvider>
       <div
         className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
@@ -41,6 +44,7 @@ function MainGameArea() {
               {tab === 'cidadela' && <Citadel />}
               {tab === 'povo'     && <People />}
               {tab === 'alianca'  && <Alliance />}
+              {tab === 'guerra'   && <War />}
               {tab === 'log'      && <LogScreen />}
             </motion.div>
           </AnimatePresence>
@@ -51,6 +55,7 @@ function MainGameArea() {
           <BottomNav currentTab={tab} onTabChange={setTab} />
         </div>
       </div>
+    </WarProvider>
     </AllianceProvider>
   );
 }

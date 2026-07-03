@@ -90,6 +90,10 @@ export interface NPC {
   // Presentes apenas em moradores de reforço que ainda estão na minha cidadela.
   reforco?: boolean;            // true = veio como reforço de expedição (uma vez)
   reforcoConcluido?: boolean;   // true = já participou da expedição, aguarda retorno
+  // ─── Guerra entre cidadelas ──────────────────────────────────────────────
+  // true = morador foi mobilizado para o front. Fica indisponível para torre,
+  // trabalho, empréstimo e reforço até a guerra terminar.
+  emGuerra?: boolean;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
@@ -108,7 +112,14 @@ export function moradorBase(npc: NPC): MoradorBase {
 // Um morador pode ser emprestado/enviado como reforço se está vivo, ocioso
 // (sem posto), fora de expedição e não é ele próprio um emprestado/reforço.
 export function podeEmprestar(npc: NPC): boolean {
-  return npc.vivo && !npc.emExpedicao && !npc.emprestado && !npc.reforco && npc.posto === null;
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && !npc.reforco && !npc.emGuerra && npc.posto === null;
+}
+
+// Um morador próprio pode ser mobilizado para a guerra se está vivo, fora de
+// expedição, não é emprestado/reforço de outra cidadela e não está já na guerra.
+// (Diferente do empréstimo, aceita moradores com posto — eles largam o trabalho.)
+export function podeGuerrear(npc: NPC): boolean {
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && !npc.reforco && !npc.emGuerra;
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento';
@@ -189,6 +200,10 @@ export interface GameState {
   npcs: NPC[];
   edificios: Edificio[];
   log: LogEntry[];
+
+  // ─── Guerra entre cidadelas ──────────────────────────────────────────────
+  guerra: GuerraAtiva | null;       // guerra em curso (uma por vez), ou null
+  guerrasHistorico: GuerraRegistro[]; // registro local das guerras encerradas
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -291,6 +306,8 @@ export const createInitialState = (): GameState => ({
     mensagem: 'O ciclo começa. O Observador desperta.',
     dia: 1,
   }],
+  guerra: null,
+  guerrasHistorico: [],
 });
 
 // ─── BUILDINGS (leveled) ───────────────────────────────────────────────────────
@@ -561,4 +578,297 @@ export function creditarArmazem(
     },
     perdeu,
   };
+}
+
+// ─── GUERRA ENTRE CIDADELAS ─────────────────────────────────────────────────────
+// Guerra declarada contra cidadelas-bot (o servidor só fornece o alvo). Toda a
+// simulação roda no cliente, resolvida dia a dia dentro de processDay. Modelo de
+// baixas MISTO: ferimentos/exaustão frequentes, morte permanente RARA. Combatentes
+// mobilizados ficam indisponíveis (emGuerra) para torre/trabalho até o fim.
+
+export type Postura = 'agressiva' | 'defensiva' | 'equilibrada';
+
+export interface RivalCidadela {
+  slug: string;
+  nome: string;
+  dia: number;
+  andar: number;
+  populacao: number;
+  profissoes: { combatente: number; batedor: number; erudito: number; sentinela: number };
+  poderBase: number;        // poder de combate do exército rival
+  suprimento: number;       // reserva de suprimento do rival
+  recursos: DeltaRecursos;  // estoque do rival — vira espólio na vitória
+  postura: Postura;
+}
+
+export interface GuerraAtiva {
+  rival: RivalCidadela;
+  rivalIntegridade: number;   // 1 = intacto, 0 = exército rival quebrado
+  rivalSuprimento: number;    // reserva do rival (decai a cada dia)
+  tropaIds: string[];         // moradores mobilizados
+  duracao: number;            // dias de campanha (padrão GUERRA_DURACAO)
+  diasDecorridos: number;     // contador independente do dia absoluto
+  diaInicio: number;
+  momento: number;            // -100..100 (vantagem acumulada da campanha)
+  suprido: boolean;           // suas linhas de suprimento no último dia resolvido
+  baixasJogador: number;      // seus mortos permanentes
+  feridosJogador: number;     // ferimentos acumulados (fadiga/sanidade)
+  baixasRival: number;        // baixas estimadas do rival
+  ultimoRelato: string;       // resumo da última escaramuça (para a UI)
+}
+
+export interface GuerraRegistro {
+  id: string;
+  rivalNome: string;
+  resultado: 'vitoria' | 'derrota';
+  diaInicio: number;
+  diaFim: number;
+  duracaoDias: number;
+  baixasJogador: number;
+  baixasRival: number;
+  espolio: DeltaRecursos;   // recursos ganhos (vitória) ou perdidos (derrota, negativos)
+}
+
+// Balanceamento da guerra.
+export const GUERRA_DURACAO = 15;
+export const GUERRA_MIN_TROPA = 1;
+
+// Custo de mobilização (pago ao declarar guerra): equipar os combatentes.
+export function calcCustoMobilizacao(qtd: number): DeltaRecursos {
+  return { comida: qtd * 5, madeira: qtd * 2, pedra: 0, ferro: qtd * 3 };
+}
+
+function clampNum(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+// Poder militar estimado da cidadela p/ matchmaking: soma do poder dos moradores
+// aptos (vivos, não emprestados/reforço) ampliado pelo bônus do Quartel.
+export function calcPoderMilitar(state: GameState): number {
+  const ef = getEfeitos(state.edificios, state.npcs);
+  const aptos = state.npcs.filter((n) => n.vivo && !n.emprestado && !n.reforco);
+  const base = aptos.reduce((s, n) => s + calcNpcPower(n), 0);
+  return Math.round(base * (1 + ef.poderBonus));
+}
+
+// Poder de combate de uma tropa específica (aplica bônus do Quartel).
+export function calcPoderTropa(tropa: NPC[], poderBonus: number): number {
+  const base = tropa.filter((n) => n.vivo).reduce((s, n) => s + calcNpcPower(n), 0);
+  return base * (1 + poderBonus);
+}
+
+type LogGuerra = { tipo: LogTipo; mensagem: string };
+
+// Encerra a guerra: apura vencedor, devolve sobreviventes, aplica espólio/pilhagem
+// e registra no histórico. Muta `draft`. Chamada de dentro de avancarGuerra.
+function resolverGuerra(
+  draft: GameState,
+  motivo: 'prazo' | 'colapso' | 'exercito_rival_quebrado',
+): LogGuerra[] {
+  const g = draft.guerra!;
+  const logs: LogGuerra[] = [];
+  const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
+
+  let vitoria: boolean;
+  if (motivo === 'exercito_rival_quebrado') vitoria = true;
+  else if (motivo === 'colapso') vitoria = false;
+  else vitoria = g.momento > 0;
+
+  // Limpa o flag em TODOS os mobilizados — inclusive quem morreu por causa
+  // externa (fome/evento) durante a campanha — para nenhum registro ficar preso.
+  draft.npcs.filter((n) => g.tropaIds.includes(n.id)).forEach((n) => { n.emGuerra = false; });
+
+  // Sobreviventes retornam (liberados do front, exaustos).
+  tropaViva.forEach((n) => {
+    n.posto = null;
+    n.fadiga = Math.min(100, n.fadiga + getRandomInt(8, 16));
+  });
+
+  const ef = getEfeitos(draft.edificios, draft.npcs);
+  let espolio: DeltaRecursos = { comida: 0, madeira: 0, pedra: 0, ferro: 0 };
+
+  if (vitoria) {
+    const frac = clampNum(0.3 + (g.momento / 100) * 0.4, 0.2, 0.75);
+    const saque: DeltaRecursos = {
+      comida: Math.round(g.rival.recursos.comida * frac),
+      madeira: Math.round(g.rival.recursos.madeira * frac),
+      pedra: Math.round(g.rival.recursos.pedra * frac),
+      ferro: Math.round(g.rival.recursos.ferro * frac),
+    };
+    const { recursos, perdeu } = creditarArmazem(draft.recursos, saque);
+    draft.recursos = recursos;
+    espolio = saque;
+    draft.moral = Math.min(100, draft.moral + 12);
+    logs.push({
+      tipo: 'vitoria',
+      mensagem: `VITÓRIA contra ${g.rival.nome}! Saque: ${saque.comida} comida, ${saque.madeira} madeira, ${saque.pedra} pedra, ${saque.ferro} ferro.`,
+    });
+    if (perdeu) {
+      logs.push({ tipo: 'alerta', mensagem: 'Parte do espólio transbordou o Armazém e foi perdida.' });
+    }
+    // Chance pequena de um desertor rival juntar-se à cidadela.
+    const popViva = draft.npcs.filter((n) => n.vivo && !n.emprestado && !n.reforco).length;
+    if (popViva < ef.capPopulacao && Math.random() < 0.3) {
+      const recruta = generateNPC();
+      recruta.lealdade = Math.max(20, recruta.lealdade - 20);
+      draft.npcs.push(recruta);
+      logs.push({
+        tipo: 'descoberta',
+        mensagem: `${recruta.nome} desertou de ${g.rival.nome} e juntou-se à sua cidadela.`,
+      });
+    }
+  } else {
+    // Derrota: pilhagem dos seus recursos + queda de moral.
+    const frac = clampNum(0.12 + (Math.abs(Math.min(g.momento, 0)) / 100) * 0.13, 0.08, 0.25);
+    const perda: DeltaRecursos = {
+      comida: Math.floor(draft.recursos.comida * frac),
+      madeira: Math.floor(draft.recursos.madeira * frac),
+      pedra: Math.floor(draft.recursos.pedra * frac),
+      ferro: Math.floor(draft.recursos.ferro * frac),
+    };
+    draft.recursos.comida = Math.max(0, draft.recursos.comida - perda.comida);
+    draft.recursos.madeira = Math.max(0, draft.recursos.madeira - perda.madeira);
+    draft.recursos.pedra = Math.max(0, draft.recursos.pedra - perda.pedra);
+    draft.recursos.ferro = Math.max(0, draft.recursos.ferro - perda.ferro);
+    espolio = { comida: -perda.comida, madeira: -perda.madeira, pedra: -perda.pedra, ferro: -perda.ferro };
+    draft.moral = Math.max(0, draft.moral - 12);
+    logs.push({
+      tipo: 'alerta',
+      mensagem: `DERROTA para ${g.rival.nome}. Pilhagem: ${perda.comida} comida, ${perda.madeira} madeira, ${perda.pedra} pedra, ${perda.ferro} ferro.`,
+    });
+  }
+
+  if (g.baixasJogador > 0) {
+    logs.push({ tipo: 'morte', mensagem: `A campanha contra ${g.rival.nome} custou ${g.baixasJogador} morador(es).` });
+  }
+
+  draft.guerrasHistorico.unshift({
+    id: crypto.randomUUID(),
+    rivalNome: g.rival.nome,
+    resultado: vitoria ? 'vitoria' : 'derrota',
+    diaInicio: g.diaInicio,
+    diaFim: draft.dia,
+    duracaoDias: g.diasDecorridos,
+    baixasJogador: g.baixasJogador,
+    baixasRival: g.baixasRival,
+    espolio,
+  });
+  if (draft.guerrasHistorico.length > 20) {
+    draft.guerrasHistorico = draft.guerrasHistorico.slice(0, 20);
+  }
+
+  draft.guerra = null;
+  return logs;
+}
+
+// Avança um dia da guerra em curso. Muta `draft` (guerra, moradores, recursos,
+// moral, histórico) e retorna as entradas de log a serem registradas. Deve ser
+// chamada uma vez por dia dentro de processDay.
+export function avancarGuerra(draft: GameState): LogGuerra[] {
+  const g = draft.guerra;
+  if (!g) return [];
+  const logs: LogGuerra[] = [];
+  const ef = getEfeitos(draft.edificios, draft.npcs);
+
+  g.diasDecorridos += 1;
+
+  const tropa = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
+
+  // Sem tropa viva → colapso imediato (derrota).
+  if (tropa.length === 0) {
+    return resolverGuerra(draft, 'colapso');
+  }
+
+  // 1) Suprimento próprio: custo extra de guerra por dia (comida + ferro).
+  const custoComida = Math.ceil(tropa.length * 2.5);
+  const custoFerro = Math.max(1, Math.floor(tropa.length * 0.5));
+  const suprido = draft.recursos.comida >= custoComida && draft.recursos.ferro >= custoFerro;
+  draft.recursos.comida = Math.max(0, draft.recursos.comida - custoComida);
+  draft.recursos.ferro = Math.max(0, draft.recursos.ferro - custoFerro);
+  g.suprido = suprido;
+
+  // 2) Suprimento do rival: decai; sem ele o rival enfraquece.
+  g.rivalSuprimento = Math.max(0, g.rivalSuprimento - Math.round(tropa.length * 1.5));
+  const rivalSuprido = g.rivalSuprimento > 0;
+
+  // 3) Poderes do dia.
+  const supModJog = suprido ? 1 : 0.7;
+  const pJog = calcPoderTropa(tropa, ef.poderBonus) * supModJog;
+
+  const posturaMod = g.rival.postura === 'agressiva' ? 1.1 : g.rival.postura === 'defensiva' ? 0.9 : 1;
+  const supModRival = rivalSuprido ? 1 : 0.7;
+  const pRival = Math.max(1, g.rival.poderBase * g.rivalIntegridade * posturaMod * supModRival);
+
+  // 4) Deslocamento de momento (proporcional à diferença relativa de poder).
+  const maxP = Math.max(pJog, pRival, 1);
+  const shift = clampNum(((pJog - pRival) / maxP) * 22, -22, 22);
+  g.momento = Math.round(clampNum(g.momento + shift, -100, 100));
+
+  const pressao = clampNum((pRival - pJog) / maxP, 0, 1); // quão atrás estou (0..1)
+
+  // 5) Baixas/atrito da tropa (ferimentos frequentes; morte permanente rara).
+  let mortosHoje = 0;
+  let feridosHoje = 0;
+  tropa.forEach((n) => {
+    let fad = getRandomInt(5, 12);
+    if (!suprido) fad += 6;
+    n.fadiga = Math.min(100, n.fadiga + fad);
+    if (!suprido) n.sanidade = Math.max(0, n.sanidade - 4);
+
+    const chanceFerida = clampNum(0.06 + pressao * 0.32 + (suprido ? 0 : 0.05), 0.02, 0.55);
+    if (Math.random() < chanceFerida) {
+      n.fadiga = Math.min(100, n.fadiga + getRandomInt(12, 22));
+      n.sanidade = Math.max(0, n.sanidade - getRandomInt(4, 10));
+      g.feridosJogador += 1;
+      feridosHoje += 1;
+    }
+
+    let chanceMorte = clampNum(0.01 + pressao * 0.05 + (suprido ? 0 : 0.015), 0.004, 0.07);
+    if (n.habilidade === 'guardiao') chanceMorte *= 0.6; // defensivo resiste melhor
+    if (Math.random() < chanceMorte) {
+      n.vivo = false;
+      n.emGuerra = false;
+      n.posto = null;
+      g.baixasJogador += 1;
+      mortosHoje += 1;
+      draft.moral = Math.max(0, draft.moral - 4);
+    }
+  });
+
+  // 6) Dano ao rival (proporcional à dominância do jogador no dia).
+  const dominancia = clampNum(pJog / (pRival + 1), 0.25, 3);
+  const dano = clampNum(dominancia * 0.055, 0.01, 0.18) * (suprido ? 1 : 0.6);
+  g.rivalIntegridade = Math.max(0, g.rivalIntegridade - dano);
+  g.baixasRival = Math.round((1 - g.rivalIntegridade) * Math.max(4, g.rival.populacao));
+
+  // 7) Relato do dia (UI) + log conciso apenas em dias notáveis.
+  const tend = g.momento > 15 ? 'avançamos' : g.momento < -15 ? 'recuamos' : 'impasse';
+  g.ultimoRelato =
+    `Dia ${g.diasDecorridos}/${g.duracao}: ${tend}` +
+    (suprido ? '' : ' — SEM SUPRIMENTO') +
+    (mortosHoje ? ` — ${mortosHoje} caíram` : feridosHoje ? ` — ${feridosHoje} feridos` : '');
+
+  if (mortosHoje > 0) {
+    logs.push({
+      tipo: 'morte',
+      mensagem: `GUERRA vs ${g.rival.nome}: ${mortosHoje} morador(es) tombaram no front (dia ${g.diasDecorridos}/${g.duracao}).`,
+    });
+  } else if (!suprido) {
+    logs.push({
+      tipo: 'alerta',
+      mensagem: `GUERRA vs ${g.rival.nome}: suprimento rompido no dia ${g.diasDecorridos}/${g.duracao}.`,
+    });
+  }
+
+  // 8) Condições de término.
+  const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
+  if (g.rivalIntegridade <= 0) {
+    logs.push(...resolverGuerra(draft, 'exercito_rival_quebrado'));
+  } else if (tropaViva.length === 0) {
+    logs.push(...resolverGuerra(draft, 'colapso'));
+  } else if (g.diasDecorridos >= g.duracao) {
+    logs.push(...resolverGuerra(draft, 'prazo'));
+  }
+
+  return logs;
 }

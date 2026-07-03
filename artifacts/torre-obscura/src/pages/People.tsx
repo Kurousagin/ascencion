@@ -162,6 +162,11 @@ export function People() {
                       <UserPlus size={10}/> REFORÇO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.reforcoConcluido ? ' · aguardando retorno' : ' · em campo'}
                     </span>
                   )}
+                  {npc.emGuerra && (
+                    <span className="text-[9px] bg-destructive/15 border border-destructive text-destructive px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                      <Swords size={10}/> NO FRONT
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -211,7 +216,9 @@ export function People() {
                 <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-1">
                   <Hammer size={10} className="text-primary" /> POSTO DE TRABALHO
                 </div>
-                {npc.emExpedicao ? (
+                {npc.emGuerra ? (
+                  <div className="text-[10px] text-destructive/80 italic">Mobilizado na guerra — indisponível até a campanha terminar.</div>
+                ) : npc.emExpedicao ? (
                   <div className="text-[10px] text-warning/80 italic">Em expedição — não pode trabalhar agora.</div>
                 ) : (
                   <>

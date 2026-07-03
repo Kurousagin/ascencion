@@ -6,6 +6,8 @@ import {
   calcCustoExpedicao, calcRecompensaAndar, calcCustoInvocacao,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
   podeEmprestar, debitarArmazem, creditarArmazem,
+  RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
+  GUERRA_DURACAO, GUERRA_MIN_TROPA,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -31,6 +33,8 @@ interface GameContextType {
   reintegrarMorador: (base: MoradorBase, morreu: boolean) => void; // dono: recebe de volta
   // Aliança: reforço de expedição (fase 3).
   receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
+  // Guerra: declara guerra a uma cidadela-bot, mobilizando a tropa escolhida.
+  declararGuerra: (rival: RivalCidadela, tropaIds: string[]) => boolean;
 }
 
 export interface Recursos {
@@ -139,8 +143,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     draft.moral += ef.moralDia;
     if (ef.sanidadeDia) vivos.forEach(n => { n.sanidade += ef.sanidadeDia; });
 
-    // 4. Recuperação de fadiga (base + enfermaria + curandeiro)
-    vivos.forEach(n => {
+    // 4. Recuperação de fadiga (base + enfermaria + curandeiro) — não vale para
+    //    quem está mobilizado na guerra (o front acumula fadiga em avancarGuerra).
+    vivos.filter(n => !n.emGuerra).forEach(n => {
       let rec = 12 + ef.fadigaRec;
       if (n.habilidade === 'curandeiro') rec += 15;
       n.fadiga = Math.max(0, n.fadiga - rec);
@@ -220,6 +225,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
     if (lost) addLog(draft, 'alerta', 'ARMAZÉM CHEIO - recursos excedentes foram perdidos.');
 
+    // 9.5 Guerra em curso: resolve o dia de campanha (suprimento, escaramuça,
+    //     baixas, término). Muta o draft e devolve as entradas de log.
+    avancarGuerra(draft).forEach(l => addLog(draft, l.tipo, l.mensagem));
+
     // 10. Fim do dia
     draft.dia++;
     if (draft.npcs.filter(n => n.vivo).length === 0) {
@@ -277,6 +286,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
     // Migração de saves antigos: garante o campo posto em todos os NPCs
     parsed.npcs.forEach(n => { if (n.posto === undefined) n.posto = null; });
+    // Migração da guerra: defaults para saves anteriores ao sistema de guerra.
+    parsed.npcs.forEach(n => { if (n.emGuerra === undefined) n.emGuerra = false; });
+    if (parsed.guerra === undefined) parsed.guerra = null;
+    if (!parsed.guerrasHistorico) parsed.guerrasHistorico = [];
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
@@ -328,7 +341,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!floorData) return;
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
-    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao)) return;
+    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra)) return;
     const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
@@ -624,11 +637,47 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // ─── Guerra entre cidadelas ─────────────────────────────────────────────────
+  // Declara guerra a uma cidadela-bot: valida a tropa, cobra o custo de mobilização
+  // e marca os moradores como emGuerra (indisponíveis até o fim). Retorna false sem
+  // alterar nada se já houver guerra, a tropa for inválida ou faltarem recursos.
+  const declararGuerra = (rival: RivalCidadela, tropaIds: string[]): boolean => {
+    if (!state || state.guerra) return false;
+    if (tropaIds.length < GUERRA_MIN_TROPA) return false;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const tropa = s.npcs.filter(n => tropaIds.includes(n.id));
+    if (tropa.length !== tropaIds.length) return false;
+    if (!tropa.every(podeGuerrear)) return false;
+    const custo = calcCustoMobilizacao(tropa.length);
+    const debitado = debitarArmazem(s.recursos, custo);
+    if (!debitado) return false; // recursos insuficientes: nada muda
+    s.recursos = debitado;
+    tropa.forEach(n => { n.emGuerra = true; n.posto = null; n.emExpedicao = false; });
+    s.guerra = {
+      rival,
+      rivalIntegridade: 1,
+      rivalSuprimento: rival.suprimento,
+      tropaIds: [...tropaIds],
+      duracao: GUERRA_DURACAO,
+      diasDecorridos: 0,
+      diaInicio: s.dia,
+      momento: 0,
+      suprido: true,
+      baixasJogador: 0,
+      feridosJogador: 0,
+      baixasRival: 0,
+      ultimoRelato: 'Tropas mobilizadas. A campanha começa.',
+    };
+    addLog(s, 'evento', `GUERRA DECLARADA contra ${rival.nome.toUpperCase()} — ${tropa.length} combatente(s) marcham ao front (custo: ${custo.comida} comida, ${custo.madeira} madeira, ${custo.ferro} ferro).`);
+    saveState(s);
+    return true;
+  };
+
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
     const npc = s.npcs.find(n => n.id === npcId);
-    if (!npc || !npc.vivo || npc.emExpedicao) return;
+    if (!npc || !npc.vivo || npc.emExpedicao || npc.emGuerra) return;
     if (tipo === null) { npc.posto = null; saveState(s); return; }
     if (!aceitaTrabalho(tipo)) return; // não é um edifício de trabalho
     const ed = s.edificios.find(e => e.tipo === tipo);
@@ -661,6 +710,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       removerEmprestado,
       reintegrarMorador,
       receberReforco,
+      declararGuerra,
     }}>
       {children}
     </GameContext.Provider>

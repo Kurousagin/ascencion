@@ -333,3 +333,38 @@ export const ReceberItemResponse = zod.object({
 })
 
 
+/**
+ * Retorna uma seleção rotativa de cidadelas-bot cujo poder de exército está próximo do poder militar informado, para uma guerra justa. Sorteia entre as mais próximas para variar a cada atualização. Aceita uma lista de slugs a excluir (ex.: rival da guerra em curso).
+ * @summary Listar cidadelas-bot rivais próximas à força informada
+ */
+export const ListarRivaisBody = zod.object({
+  "poder": zod.number(),
+  "excluir": zod.array(zod.string()).optional()
+})
+
+export const ListarRivaisResponse = zod.object({
+  "rivais": zod.array(zod.object({
+  "slug": zod.string(),
+  "nome": zod.string(),
+  "dia": zod.number(),
+  "andar": zod.number(),
+  "populacao": zod.number(),
+  "profissoes": zod.object({
+  "combatente": zod.number(),
+  "batedor": zod.number(),
+  "erudito": zod.number(),
+  "sentinela": zod.number()
+}),
+  "poderBase": zod.number(),
+  "suprimento": zod.number(),
+  "recursos": zod.object({
+  "comida": zod.number(),
+  "madeira": zod.number(),
+  "pedra": zod.number(),
+  "ferro": zod.number()
+}),
+  "postura": zod.enum(['agressiva', 'defensiva', 'equilibrada'])
+}))
+})
+
+

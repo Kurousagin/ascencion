@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: alianca
     description: Aliança assíncrona entre jogadoras (identidade, pareamento e trocas)
+  - name: guerra
+    description: Guerra entre cidadelas — descoberta de rivais (cidadelas-bot)
 paths:
   /healthz:
     get:
@@ -298,6 +300,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErroResposta"
+  /guerra/rivais:
+    post:
+      operationId: listarRivais
+      tags: [guerra]
+      summary: Listar cidadelas-bot rivais próximas à força informada
+      description: >
+        Retorna uma seleção rotativa de cidadelas-bot cujo poder de exército está
+        próximo do poder militar informado, para uma guerra justa. Sorteia entre
+        as mais próximas para variar a cada atualização. Aceita uma lista de slugs
+        a excluir (ex.: rival da guerra em curso).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RivaisInput"
+      responses:
+        "200":
+          description: Rivais avistados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RivaisResposta"
 components:
   schemas:
     HealthStatus:
@@ -694,3 +719,90 @@ components:
         - id
         - reforcosAtivos
         - limiteReforcos
+    RivalProfissoes:
+      type: object
+      properties:
+        combatente:
+          type: integer
+        batedor:
+          type: integer
+        erudito:
+          type: integer
+        sentinela:
+          type: integer
+      required:
+        - combatente
+        - batedor
+        - erudito
+        - sentinela
+    RivalRecursos:
+      type: object
+      properties:
+        comida:
+          type: integer
+        madeira:
+          type: integer
+        pedra:
+          type: integer
+        ferro:
+          type: integer
+      required:
+        - comida
+        - madeira
+        - pedra
+        - ferro
+    Rival:
+      type: object
+      properties:
+        slug:
+          type: string
+        nome:
+          type: string
+        dia:
+          type: integer
+        andar:
+          type: integer
+        populacao:
+          type: integer
+        profissoes:
+          $ref: "#/components/schemas/RivalProfissoes"
+        poderBase:
+          type: integer
+        suprimento:
+          type: integer
+        recursos:
+          $ref: "#/components/schemas/RivalRecursos"
+        postura:
+          type: string
+          enum: [agressiva, defensiva, equilibrada]
+      required:
+        - slug
+        - nome
+        - dia
+        - andar
+        - populacao
+        - profissoes
+        - poderBase
+        - suprimento
+        - recursos
+        - postura
+    RivaisInput:
+      type: object
+      properties:
+        poder:
+          type: number
+        excluir:
+          type: array
+          items:
+            type: string
+      required:
+        - poder
+    RivaisResposta:
+      type: object
+      properties:
+        rivais:
+          type: array
+          items:
+            $ref: "#/components/schemas/Rival"
+      required:
+        - rivais

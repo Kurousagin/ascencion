@@ -26,7 +26,7 @@ export function Tower() {
   const ef = getEfeitos(state.edificios);
   const recompensa = floorData ? calcRecompensaAndar(floorData.floor, floorData.tier) : null;
 
-  const eligibles = state.npcs.filter(n => n.vivo && !n.emExpedicao && n.fadiga < 90);
+  const eligibles = state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90);
 
   const cost = calcCustoExpedicao(selectedNpcs.length, floorData?.tier || 1);
   const canAfford = state.recursos.comida >= cost;

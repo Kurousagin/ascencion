@@ -39,7 +39,9 @@ import type {
   Recebimento,
   RecebimentoInput,
   ReforcoInput,
-  ReforcoResultado
+  ReforcoResultado,
+  RivaisInput,
+  RivaisResposta
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -864,5 +866,76 @@ export const useReceberItem = <TError = ErrorType<ErroResposta>,
         TContext
       > => {
       return useMutation(getReceberItemMutationOptions(options));
+    }
+
+export const getListarRivaisUrl = () => {
+
+
+
+
+  return `/api/guerra/rivais`
+}
+
+/**
+ * Retorna uma seleção rotativa de cidadelas-bot cujo poder de exército está próximo do poder militar informado, para uma guerra justa. Sorteia entre as mais próximas para variar a cada atualização. Aceita uma lista de slugs a excluir (ex.: rival da guerra em curso).
+ * @summary Listar cidadelas-bot rivais próximas à força informada
+ */
+export const listarRivais = async (rivaisInput: RivaisInput, options?: RequestInit): Promise<RivaisResposta> => {
+
+  return customFetch<RivaisResposta>(getListarRivaisUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(rivaisInput)
+  }
+);}
+
+
+
+
+export const getListarRivaisMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listarRivais>>, TError,{data: BodyType<RivaisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof listarRivais>>, TError,{data: BodyType<RivaisInput>}, TContext> => {
+
+const mutationKey = ['listarRivais'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof listarRivais>>, {data: BodyType<RivaisInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  listarRivais(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ListarRivaisMutationResult = NonNullable<Awaited<ReturnType<typeof listarRivais>>>
+    export type ListarRivaisMutationBody = BodyType<RivaisInput>
+    export type ListarRivaisMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Listar cidadelas-bot rivais próximas à força informada
+ */
+export const useListarRivais = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listarRivais>>, TError,{data: BodyType<RivaisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof listarRivais>>,
+        TError,
+        {data: BodyType<RivaisInput>},
+        TContext
+      > => {
+      return useMutation(getListarRivaisMutationOptions(options));
     }
 

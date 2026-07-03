@@ -3,3 +3,4 @@
 - [Resident loan (empréstimo) multiplayer](resident-loan-multiplayer.md) — full async loan flow via exchanges table; idempotency via status transition; auto-return scan in AllianceContext.
 - [Multiple alliances model](multi-alianca.md) — max 3 allies, limits are GLOBAL not per-ally; pairing must be atomic (FOR UPDATE + 23505→409); dissolve removes both directions, in-flight loans survive.
 - [Expedition reinforcement (reforço) multiplayer](reforco-expedicao.md) — tipo 'reforco' reuses devolver; reforcoConcluido flag set in sendExpedition triggers auto-return; removerEmprestado handles both emprestado/reforco.
+- [Guerra entre cidadelas](guerra-cidadelas.md) — war is client-local (GameState.guerra, resolved in processDay/avancarGuerra); server only serves bot pool; clear emGuerra on ALL committed troops at resolution.
