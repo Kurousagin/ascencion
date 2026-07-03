@@ -1,0 +1,80 @@
+Crie um **jogo de simulação e gerenciamento em texto**, portrait (vertical, 1080x1920), otimizado para **iPhone/iOS**, com estética **terminal cyberpunk**. Sem física, sem plataforma — é um jogo de menus, botões e valores que evoluem com o tempo.
+​
+### Conceito
+O jogador é o **Observador**: monitora um grupo de humanos presos na base de uma torre mística de andares. Ele **não controla os NPCs diretamente** — apenas sugere ações, envia expedições e constrói a base. O tempo passa sozinho (idle), inclusive com o app fechado. Mortes são **permanentes**.
+​
+### Estética / Tema visual
+- Fundo: `#0A0E14` (quase preto azulado). Cards/painéis: `#0F1923` com borda `#1E3048`.
+- Cor de destaque (ciano): `#00E5CC`. Sucesso/verde: `#00FF88`. Perigo/vermelho: `#FF4466`. Alerta/amarelo: `#FFCC00`. Laranja: `#FF8844`.
+- Texto principal: `#E0E8F0`; secundário: `#6B8299`; apagado: `#3D5266`.
+- Fonte **monoespaçada** (estilo FiraCode / terminal). Títulos em MAIÚSCULAS com espaçamento entre letras.
+- Detalhe visual opcional: efeito de "scanlines" (linhas horizontais sutis) sobre a tela.
+​
+### Simplificações em relação ao original
+- Torre com **20 andares** (em vez de 100), agrupados em **4 tiers de 5 andares**. Andar 5, 10, 15, 20 = **BOSS**.
+- Comece com **6 NPCs** (em vez de 15). População máxima limitada por edifícios.
+- **4 recursos** apenas: Comida, Madeira, Pedra, Ferro (remova Conhecimento e Moral como recursos separados; Moral vira um único número global 0–100).
+- **4 atributos** por NPC: Força, Agilidade, Inteligência, Resistência (0–15).
+- Sem gravidez/nascimento/envelhecimento nesta versão. Novos NPCs só chegam por **invocação emergencial**.
+​
+### Estrutura de dados (variáveis globais)
+- `dia` (número), `moral` (0–100), `velocidade` (1, 2 ou 5).
+- Estrutura `recursos`: `comida`, `madeira`, `pedra`, `ferro` (todos com teto de capacidade = `capacidadeArmazem`, começa em 60).
+- `andarAtual` (próximo andar a conquistar, começa em 1).
+- Array `npcs`: cada item é uma estrutura com:
+  `nome`, `forca`, `agilidade`, `inteligencia`, `resistencia`,
+  `sanidade` (0–100), `lealdade` (0–100), `fadiga` (0–100),
+  `vivo` (booleano), `obscuro` (booleano — origem suspeita), `emExpedicao` (booleano).
+- Array `edificios`: lista de edifícios construídos (Fogueira, Fazenda, Enfermaria, Quartel, Templo, Armazém).
+​
+### Cenas (telas) — navegação por barra inferior fixa
+1. **Título**: nome do jogo, botões "Novo Jogo" e "Continuar" (usa storage local do GDevelop).
+2. **Observatório (Dashboard)**: dia atual, moral geral, contagem de população, alertas recentes, e controles de velocidade do tempo (1x / 2x / 5x). Botão grande "AVANÇAR DIA".
+3. **Torre**: mostra o próximo andar (número, tipo, dificuldade, mortalidade %), lista de andares já conquistados, e botão "ENVIAR EXPEDIÇÃO" que abre a seleção de NPCs.
+4. **Cidadela**: lista os 4 recursos com barra `valor/capacidade` (verde→amarelo→laranja→vermelho quando cheio). Lista de edifícios construídos e botões para construir novos (gasta recursos).
+5. **Habitantes**: lista de NPCs vivos com nome, atributos, e barras de sanidade/lealdade/fadiga. Toque abre detalhes. Marca visual de **risco** para NPCs de origem obscura (lealdade baixa).
+6. **Registros**: log rolável dos últimos eventos (texto colorido por tipo: morte em vermelho, descoberta em ciano, etc.).
+​
+### Mecânica de tempo (idle)
+- Um timer avança 1 "dia" a cada **X segundos reais**, onde X depende da `velocidade` (ex.: 12s em 1x, 6s em 2x, 2.4s em 5x). O botão "AVANÇAR DIA" força um dia imediatamente.
+- **Progresso offline**: ao abrir o jogo, compare o timestamp salvo com o atual e processe os dias acumulados (máximo 30 por sessão).
+- A cada dia processado, execute na ordem: consumo de comida → produção de edifícios → recuperação de fadiga → variação de moral/sanidade/lealdade → eventos aleatórios → checar invocação emergencial → aplicar overflow de armazém.
+​
+### Regras diárias (simplificadas)
+- **Consumo**: cada NPC vivo consome 1.5 de comida/dia. Se faltar comida: −5 sanidade e −3 lealdade em todos.
+- **Produção** (por edifício): Fazenda +5 comida/dia; Enfermaria recupera +5 fadiga/dia por NPC; Templo +2 moral e +0.5 sanidade/dia; Fogueira +1 moral/dia.
+- **Fadiga**: recupera 15/dia base (mais com Enfermaria). Faixas: 0–49 normal; 50–69 cansado (−15% poder de combate); 70–89 exausto (−35%, perde sanidade e lealdade, bloqueia treino); 90–100 incapacitado (−60%, não pode ir em expedição).
+- **Overflow**: qualquer recurso acima da capacidade do armazém é **perdido** e gera evento "ARMAZÉM CHEIO".
+- **Invocação emergencial**: se população ≤ 3, a Torre invoca 1–2 novos NPCs (12% de chance de serem de **origem obscura** — atributos altos mas lealdade baixa e risco de traição).
+​
+### Mecânica de expedição (núcleo do jogo)
+1. Jogador seleciona um grupo de NPCs vivos, não exaustos, não em expedição.
+2. Calcula **poder do grupo** = soma de `(forca*0.3 + agilidade*0.25 + resistencia*0.25 + inteligencia*0.2)` de cada membro, aplicando penalidade de fadiga.
+3. Compara com a **dificuldade do andar** (escala: dificuldade base cresce por andar; boss = ×1.8).
+4. **Custo pago antes**, sem reembolso: `comida = nº_npcs * (3 + tier)`.
+5. Resultado:
+   - Se poder ≥ dificuldade → **vitória**: ganha recursos do andar, `andarAtual` sobe, +3 lealdade no grupo.
+   - Cada NPC do grupo tem chance de morrer = mortalidade do andar (reduzida por poder excedente). Morte = permanente.
+   - Todos os sobreviventes ganham fadiga (+20 a +35).
+6. **Cascata de morte permanente**: quando um NPC morre → moral geral −5, e todos os NPCs vivos perdem −3 sanidade (luto).
+​
+### Mecânica de lealdade e traição
+- Lealdade sobe com vitórias e moral alta; cai com fome, exaustão e derrotas.
+- NPCs com lealdade < 30 têm chance diária de **traição**: roubar comida (−5 a −20) OU sabotar (−8 moral). NPCs de origem obscura têm risco maior. Gera evento vermelho no log.
+​
+### Mecânica de construção
+- Custos exemplo: Fogueira (5 madeira); Fazenda (15 madeira, 5 pedra); Enfermaria (15 madeira, 10 pedra); Quartel (25 madeira, 20 pedra, 10 ferro); Templo (30 pedra, 20 madeira); upgrade de Armazém (aumenta capacidade: 60 → 120 → 250).
+- Cada edifício só pode ser construído uma vez. Botão fica desabilitado se faltar recurso.
+​
+### Condição de vitória / derrota
+- **Vitória**: conquistar o andar 20 (boss final).
+- **Derrota**: todos os NPCs morrerem (população = 0 e sem invocação possível).
+​
+### UI / UX iOS
+- Botões grandes (mín. 48px de altura), tocáveis com o polegar.
+- Barra de navegação inferior fixa com 5 ícones/labels: Obs / Torre / Cidadela / Povo / Log.
+- Salvar automaticamente após cada ação e a cada dia processado (storage local).
+- Feedback visual: ao ganhar/perder recursos, animar o número; ao morrer um NPC, flash vermelho e som curto.
+- Textos curtos e diretos, sempre em português.
+​
+Gere as 6 cenas, as variáveis globais, os eventos do loop diário, o sistema de expedição com cálculo de poder vs dificuldade, e o salvamento local. Priorize que o jogo **rode e seja jogável de ponta a ponta** (novo jogo → avançar dias → expedição → conquistar torre) antes de adicionar polimento.

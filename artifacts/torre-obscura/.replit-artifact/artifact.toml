@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Torre Obscura"
+version = "1.0.0"
+id = "artifacts/torre-obscura"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25923
+
+[services.development]
+run = "pnpm --filter @workspace/torre-obscura run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/torre-obscura", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/torre-obscura/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25923"
+BASE_PATH = "/"

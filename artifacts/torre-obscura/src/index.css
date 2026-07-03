@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-orange: hsl(var(--orange));
+
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* TORRE OBSCURA PALETTE */
+  --background: 216 33% 6%;      /* #0A0E14 */
+  --foreground: 210 33% 91%;     /* #E0E8F0 */
+  
+  --card: 210 40% 10%;           /* #0F1923 */
+  --card-foreground: 210 33% 91%; 
+  --card-border: 214 41% 20%;    /* #1E3048 */
+  
+  --border: 214 41% 20%;
+  
+  --primary: 173 100% 45%;       /* #00E5CC */
+  --primary-foreground: 216 33% 6%;
+  
+  --secondary: 210 18% 51%;      /* #6B8299 */
+  --secondary-foreground: 216 33% 6%;
+  
+  --muted: 214 41% 20%;
+  --muted-foreground: 210 25% 32%; /* #3D5266 */
+  
+  --accent: 173 100% 45%;
+  --accent-foreground: 216 33% 6%;
+  
+  --destructive: 349 100% 63%;   /* #FF4466 */
+  --destructive-foreground: 0 0% 100%;
+  
+  --success: 152 100% 50%;       /* #00FF88 */
+  --warning: 48 100% 50%;        /* #FFCC00 */
+  --orange: 22 100% 63%;         /* #FF8844 */
+
+  --input: 214 41% 20%;
+  --ring: 173 100% 45%;
+  
+  --popover: 210 40% 10%;
+  --popover-foreground: 210 33% 91%;
+  --popover-border: 214 41% 20%;
+
+  --radius: 0.125rem; /* very small radius for cyberpunk */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0,0,0,0.2) 50%,
+    rgba(0,0,0,0.2)
+  );
+  background-size: 100% 4px;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.flash-green {
+  animation: flashGreen 0.3s ease-out;
+}
+.flash-red {
+  animation: flashRed 0.3s ease-out;
+}
+
+@keyframes flashGreen {
+  0% { color: hsl(var(--success)); text-shadow: 0 0 8px hsl(var(--success)); }
+  100% { color: inherit; text-shadow: none; }
+}
+
+@keyframes flashRed {
+  0% { color: hsl(var(--destructive)); text-shadow: 0 0 8px hsl(var(--destructive)); }
+  100% { color: inherit; text-shadow: none; }
+}
