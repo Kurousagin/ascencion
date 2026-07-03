@@ -22,10 +22,12 @@ export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
         shadow-[0_-4px_20px_rgba(0,0,0,0.6)]
         flex
         px-1
-        /* account for iOS home indicator / dynamic island bottom */
-        pb-safe
       "
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{
+        /* max() ensures at least 20px even when env() returns 0 (e.g. inside iframe preview).
+           On iPhone with home indicator this resolves to ~34px. */
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 20px)',
+      }}
     >
       {tabs.map(t => {
         const Icon = t.icon;
@@ -37,7 +39,7 @@ export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
             /* min 48px touch target for iOS HIG */
             className="
               flex-1 flex flex-col items-center justify-center
-              min-h-[56px] pt-2 pb-1
+              min-h-[56px] pt-3 pb-2
               relative
               transition-transform active:scale-95
               touch-manipulation
