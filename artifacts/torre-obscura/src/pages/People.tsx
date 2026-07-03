@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId } from '../lib/game-data';
+import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS } from '../lib/game-data';
 
 export function People() {
-  const { state, assignPosto } = useGame();
+  const { state, assignPosto, treinarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const vivos = state.npcs.filter(n => n.vivo).length;
@@ -257,6 +257,80 @@ export function People() {
                   </>
                 )}
               </div>
+
+              {/* Treinamento (Combatentes no Quartel, após andar 5) */}
+              {(() => {
+                if (getProfissao(npc) !== 'combatente') return null;
+                const quartelEd = state.edificios.find(e => e.tipo === 'Quartel');
+                const quartelNivel = quartelEd?.nivel ?? 0;
+                const treinamentos = npc.treinamentos ?? 0;
+                const custo = calcCustoTreinamento(treinamentos);
+                const podeT = podeTreinarNpc(npc, quartelNivel, state.andarAtual);
+                // Aliado combatente presente → bônus +1 extra
+                const aliado = state.npcs.find(
+                  n => n.emprestado && n.vivo && !n.emExpedicao && getProfissao(n) === 'combatente'
+                );
+
+                // Motivo de bloqueio (para exibir dica)
+                let bloqueio: string | null = null;
+                if (state.andarAtual < 6) bloqueio = 'Disponível após vencer o chefe do andar 5.';
+                else if (quartelNivel < 1) bloqueio = 'Requer Quartel construído.';
+                else if (treinamentos >= MAX_TREINAMENTOS) bloqueio = 'Limite de sessões atingido.';
+                else if (npc.emGuerra) bloqueio = 'Mobilizado na guerra — retorna ao fim da campanha.';
+                else if (npc.emExpedicao) bloqueio = 'Em expedição — aguarde o retorno.';
+                else if (npc.fadiga >= 60) bloqueio = 'Fadiga alta demais para treinar (< 60).';
+                else if (npc.emprestado || npc.reforco) bloqueio = 'Só moradores próprios podem treinar.';
+
+                // Se nem o pré-requisito de andar/quartel está ativo, não exibe a seção
+                if (state.andarAtual < 6 && quartelNivel < 1) return null;
+                // Exibe a seção mesmo bloqueada para comunicar o caminho
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                    <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
+                      <Dumbbell size={10} className="text-primary" /> TREINAMENTO — QUARTEL
+                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">
+                        {treinamentos}/{MAX_TREINAMENTOS} SESSÕES
+                      </span>
+                    </div>
+
+                    {bloqueio ? (
+                      <div className="text-[10px] text-muted-foreground italic">{bloqueio}</div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[10px] text-secondary flex items-center gap-3">
+                            <span className="flex items-center gap-1">
+                              <span className="text-success">🪵</span> {custo.madeira} madeira
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="text-primary">⚡</span> {custo.ferro} ferro
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-primary/80 font-bold">
+                            +{aliado ? 2 : 1} FOR
+                          </span>
+                        </div>
+                        {aliado && (
+                          <div className="text-[9px] text-blue-300 bg-blue-500/10 border border-blue-400/30 px-2 py-1 rounded-sm mb-2 flex items-center gap-1">
+                            <UserPlus size={9} /> {aliado.nome} (aliado) instrui o grupo — +2 FOR nesta sessão
+                          </div>
+                        )}
+                        <button
+                          onClick={() => treinarNpc(npc.id)}
+                          disabled={!podeT || state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro}
+                          className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
+                        >
+                          <Dumbbell size={12} /> TREINAR
+                          {(state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro) && (
+                            <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                          )}
+                        </button>
+                        <div className="text-[9px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

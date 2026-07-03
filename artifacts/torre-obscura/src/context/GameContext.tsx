@@ -8,6 +8,7 @@ import {
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA,
+  podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -35,6 +36,8 @@ interface GameContextType {
   receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
   // Guerra: declara guerra a uma cidadela-bot, mobilizando a tropa escolhida.
   declararGuerra: (rival: RivalCidadela, tropaIds: string[]) => boolean;
+  // Treinamento: aumenta FOR permanentemente no Quartel (requer andar >= 6).
+  treinarNpc: (npcId: string) => void;
 }
 
 export interface Recursos {
@@ -701,6 +704,41 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  const treinarNpc = (npcId: string) => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const npc = s.npcs.find(n => n.id === npcId);
+    if (!npc) return;
+
+    const quartelEd = s.edificios.find(e => e.tipo === 'Quartel');
+    const quartelNivel = quartelEd?.nivel ?? 0;
+
+    if (!podeTreinarNpc(npc, quartelNivel, s.andarAtual)) return;
+
+    const treinamentos = npc.treinamentos ?? 0;
+    const custo = calcCustoTreinamento(treinamentos);
+    if (s.recursos.madeira < custo.madeira || s.recursos.ferro < custo.ferro) return;
+
+    // Verifica bônus de aliado: NPC emprestado, vivo, profissão combatente, na cidadela.
+    const aliado = s.npcs.find(
+      n => n.emprestado && n.vivo && !n.emExpedicao && getProfissao(n) === 'combatente'
+    );
+    const ganho = aliado ? 2 : 1;
+
+    s.recursos.madeira -= custo.madeira;
+    s.recursos.ferro   -= custo.ferro;
+    npc.forca += ganho;
+    npc.fadiga = Math.min(100, npc.fadiga + 25);
+    npc.treinamentos = treinamentos + 1;
+    npc.raridade = recalcRaridade(npc);
+
+    const aliadoStr = aliado ? ` (treinamento conjunto com ${aliado.nome} +1 bônus)` : '';
+    addLog(s, 'info',
+      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} FOR permanente${aliadoStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+    );
+    saveState(s);
+  };
+
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -739,6 +777,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       reintegrarMorador,
       receberReforco,
       declararGuerra,
+      treinarNpc,
     }}>
       {children}
     </GameContext.Provider>

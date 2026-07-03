@@ -79,6 +79,10 @@ export interface NPC {
   raridade: Raridade;
   habilidade: HabilidadeId;
   posto: EdificioTipo | null; // edifício onde trabalha (null = ocioso)
+  // ─── Treinamento (Quartel, desbloqueado após andar 5) ────────────────────────
+  // Sessões de treino permanentes completadas. Cada sessão eleva forca em +1
+  // (ou +2 com aliado combatente presente). Máximo: MAX_TREINAMENTOS.
+  treinamentos?: number;
   // ─── Empréstimo (fase 2 do multiplayer) ──────────────────────────────────
   // Presentes apenas em moradores emprestados que estão TRABALHANDO na minha
   // cidadela (eu sou a receptora). Um morador próprio nunca tem estes campos.
@@ -229,6 +233,42 @@ function calcRaridade(npc: Omit<NPC, 'raridade' | 'habilidade'>): Raridade {
   if (total >= 34) return 'Raro';
   if (total >= 24) return 'Incomum';
   return 'Comum';
+}
+
+// Recalcula a raridade de um NPC existente após mudança de atributos.
+export function recalcRaridade(npc: NPC): Raridade {
+  return calcRaridade(npc);
+}
+
+// ─── TREINAMENTO DE COMBATENTES ───────────────────────────────────────────────
+// Desbloqueado após derrotar o primeiro chefe (andar 5). Exige Quartel construído.
+// Cada sessão aumenta a Força permanentemente. O custo sobe por sessão concluída.
+// Com um aliado emprestado do tipo Combatente na cidadela, o ganho é +2 (em vez de +1).
+
+export const MAX_TREINAMENTOS = 5;
+
+export function calcCustoTreinamento(treinamentos: number): { madeira: number; ferro: number } {
+  return {
+    madeira: 10 + treinamentos * 8,
+    ferro:   5  + treinamentos * 4,
+  };
+}
+
+// Retorna true se o NPC pode ser treinado agora.
+export function podeTreinarNpc(
+  npc: NPC,
+  quartelNivel: number,  // 0 = não construído
+  andarAtual: number,
+): boolean {
+  if (andarAtual < 6) return false;           // exige chefe do andar 5 vencido
+  if (quartelNivel < 1) return false;         // exige Quartel construído
+  if (!npc.vivo) return false;
+  if (npc.emExpedicao || npc.emGuerra) return false;
+  if (npc.emprestado || npc.reforco) return false; // só moradores próprios
+  if (npc.fadiga >= 60) return false;         // muito cansado para treinar
+  if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
+  if (getProfissao(npc) !== 'combatente') return false;
+  return true;
 }
 
 export const generateNPC = (isObscuro = false): NPC => {
