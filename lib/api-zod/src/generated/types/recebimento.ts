@@ -5,10 +5,17 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { NPCPayload } from './nPCPayload';
 import type { Recursos } from './recursos';
 
 export interface Recebimento {
   id: number;
+  tipo: string;
   remetenteNome: string;
-  recursos: Recursos;
+  recursos?: Recursos | null;
+  morador?: NPCPayload | null;
+  /** @nullable */
+  diasEmprestimo?: number | null;
+  /** @nullable */
+  morreu?: boolean | null;
 }

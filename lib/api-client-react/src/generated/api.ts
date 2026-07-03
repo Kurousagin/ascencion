@@ -22,6 +22,8 @@ import type {
 import type {
   Aliada,
   CaixaResposta,
+  EmprestimoInput,
+  EmprestimoResultado,
   EnvioInput,
   EnvioResultado,
   ErroResposta,
@@ -30,7 +32,9 @@ import type {
   Perfil,
   PerfilInput,
   Recebimento,
-  RecebimentoInput
+  RecebimentoInput,
+  RetornoInput,
+  RetornoResultado
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -424,6 +428,148 @@ export const useEnviarRecursos = <TError = ErrorType<ErroResposta>,
         TContext
       > => {
       return useMutation(getEnviarRecursosMutationOptions(options));
+    }
+
+export const getEmprestarMoradorUrl = () => {
+
+
+
+
+  return `/api/alianca/emprestar`
+}
+
+/**
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "morador" na caixa de entrada da aliada. Máximo de 2 empréstimos ativos simultâneos.
+ * @summary Emprestar um morador para a aliada
+ */
+export const emprestarMorador = async (emprestimoInput: EmprestimoInput, options?: RequestInit): Promise<EmprestimoResultado> => {
+
+  return customFetch<EmprestimoResultado>(getEmprestarMoradorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(emprestimoInput)
+  }
+);}
+
+
+
+
+export const getEmprestarMoradorMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emprestarMorador>>, TError,{data: BodyType<EmprestimoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof emprestarMorador>>, TError,{data: BodyType<EmprestimoInput>}, TContext> => {
+
+const mutationKey = ['emprestarMorador'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof emprestarMorador>>, {data: BodyType<EmprestimoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  emprestarMorador(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EmprestarMoradorMutationResult = NonNullable<Awaited<ReturnType<typeof emprestarMorador>>>
+    export type EmprestarMoradorMutationBody = BodyType<EmprestimoInput>
+    export type EmprestarMoradorMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Emprestar um morador para a aliada
+ */
+export const useEmprestarMorador = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emprestarMorador>>, TError,{data: BodyType<EmprestimoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof emprestarMorador>>,
+        TError,
+        {data: BodyType<EmprestimoInput>},
+        TContext
+      > => {
+      return useMutation(getEmprestarMoradorMutationOptions(options));
+    }
+
+export const getRetornarMoradorUrl = () => {
+
+
+
+
+  return `/api/alianca/retornar`
+}
+
+/**
+ * Chamado pela receptora quando o prazo do empréstimo vence ou o morador morre. Cria uma troca do tipo "retorno_morador" na caixa da dono original.
+ * @summary Devolver um morador emprestado à sua dono
+ */
+export const retornarMorador = async (retornoInput: RetornoInput, options?: RequestInit): Promise<RetornoResultado> => {
+
+  return customFetch<RetornoResultado>(getRetornarMoradorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(retornoInput)
+  }
+);}
+
+
+
+
+export const getRetornarMoradorMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext> => {
+
+const mutationKey = ['retornarMorador'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retornarMorador>>, {data: BodyType<RetornoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  retornarMorador(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetornarMoradorMutationResult = NonNullable<Awaited<ReturnType<typeof retornarMorador>>>
+    export type RetornarMoradorMutationBody = BodyType<RetornoInput>
+    export type RetornarMoradorMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Devolver um morador emprestado à sua dono
+ */
+export const useRetornarMorador = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retornarMorador>>,
+        TError,
+        {data: BodyType<RetornoInput>},
+        TContext
+      > => {
+      return useMutation(getRetornarMoradorMutationOptions(options));
     }
 
 export const getListarCaixaUrl = (deviceId: string,) => {

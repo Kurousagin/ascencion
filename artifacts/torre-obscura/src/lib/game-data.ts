@@ -79,6 +79,11 @@ export interface NPC {
   raridade: Raridade;
   habilidade: HabilidadeId;
   posto: EdificioTipo | null; // edifício onde trabalha (null = ocioso)
+  // Empréstimo: preenchido somente na receptora (undefined no lado da dono).
+  // emprestadoDe armazena o NOME DE EXIBIÇÃO da dono (remetenteNome), não um deviceId.
+  // Usado apenas como flag (truthy = NPC está emprestado) e para exibição na UI.
+  emprestadoDe?: string; // nome da cidadela dono (para exibição)
+  retornaEm?: number;   // dia de jogo (da receptora) em que o empréstimo vence
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento';

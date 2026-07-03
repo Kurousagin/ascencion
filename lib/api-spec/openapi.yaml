@@ -137,6 +137,67 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErroResposta"
+  /alianca/emprestar:
+    post:
+      operationId: emprestarMorador
+      tags: [alianca]
+      summary: Emprestar um morador para a aliada
+      description: >
+        Remove o morador da cidadela da remetente (tratado pelo cliente) e
+        cria uma troca do tipo "morador" na caixa de entrada da aliada.
+        Máximo de 2 empréstimos ativos simultâneos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmprestimoInput"
+      responses:
+        "200":
+          description: Empréstimo registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmprestimoResultado"
+        "400":
+          description: Limite de empréstimos ou requisição inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /alianca/retornar:
+    post:
+      operationId: retornarMorador
+      tags: [alianca]
+      summary: Devolver um morador emprestado à sua dono
+      description: >
+        Chamado pela receptora quando o prazo do empréstimo vence ou o morador
+        morre. Cria uma troca do tipo "retorno_morador" na caixa da dono original.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RetornoInput"
+      responses:
+        "200":
+          description: Retorno registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetornoResultado"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
   /alianca/{deviceId}/caixa:
     get:
       operationId: listarCaixa
@@ -337,6 +398,56 @@ components:
         - recebidoPelaAliada
         - taxaTorre
         - restanteHoje
+    # Conteúdo opaco de um NPC serializado — o servidor não inspeciona seus campos.
+    NPCPayload:
+      type: object
+      description: NPC serializado do game-data (opaco ao servidor)
+      additionalProperties: {}
+    EmprestimoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        npc:
+          $ref: "#/components/schemas/NPCPayload"
+        diasEmprestimo:
+          type: integer
+          minimum: 1
+          maximum: 30
+      required:
+        - deviceId
+        - npc
+        - diasEmprestimo
+    EmprestimoResultado:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        diasEmprestimo:
+          type: integer
+      required:
+        - ok
+        - diasEmprestimo
+    RetornoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        npc:
+          $ref: "#/components/schemas/NPCPayload"
+        morreu:
+          type: boolean
+      required:
+        - deviceId
+        - npc
+        - morreu
+    RetornoResultado:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
     Exchange:
       type: object
       properties:
@@ -346,8 +457,20 @@ components:
           type: string
         remetenteNome:
           type: string
+        # Presente apenas para tipo="recursos"
         recursos:
-          $ref: "#/components/schemas/Recursos"
+          oneOf:
+            - $ref: "#/components/schemas/Recursos"
+            - type: "null"
+        # Presente para tipo="morador" e "retorno_morador"
+        morador:
+          oneOf:
+            - $ref: "#/components/schemas/NPCPayload"
+            - type: "null"
+        diasEmprestimo:
+          type: ["integer", "null"]
+        morreu:
+          type: ["boolean", "null"]
         status:
           type: string
         criadoEm:
@@ -357,7 +480,6 @@ components:
         - id
         - tipo
         - remetenteNome
-        - recursos
         - status
         - criadoEm
     CaixaResposta:
@@ -379,11 +501,25 @@ components:
       properties:
         id:
           type: integer
+        tipo:
+          type: string
         remetenteNome:
           type: string
+        # Preenchido para tipo="recursos"
         recursos:
-          $ref: "#/components/schemas/Recursos"
+          oneOf:
+            - $ref: "#/components/schemas/Recursos"
+            - type: "null"
+        # Preenchido para tipo="morador" e "retorno_morador"
+        morador:
+          oneOf:
+            - $ref: "#/components/schemas/NPCPayload"
+            - type: "null"
+        diasEmprestimo:
+          type: ["integer", "null"]
+        morreu:
+          type: ["boolean", "null"]
       required:
         - id
+        - tipo
         - remetenteNome
-        - recursos

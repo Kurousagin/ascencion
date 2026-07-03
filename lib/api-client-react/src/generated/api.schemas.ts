@@ -76,11 +76,46 @@ export interface EnvioResultado {
   restanteHoje: number;
 }
 
+/**
+ * NPC serializado do game-data (opaco ao servidor)
+ */
+export interface NPCPayload {[key: string]: unknown}
+
+export interface EmprestimoInput {
+  deviceId: string;
+  npc: NPCPayload;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  diasEmprestimo: number;
+}
+
+export interface EmprestimoResultado {
+  ok: boolean;
+  diasEmprestimo: number;
+}
+
+export interface RetornoInput {
+  deviceId: string;
+  npc: NPCPayload;
+  morreu: boolean;
+}
+
+export interface RetornoResultado {
+  ok: boolean;
+}
+
 export interface Exchange {
   id: number;
   tipo: string;
   remetenteNome: string;
-  recursos: Recursos;
+  recursos?: Recursos | null;
+  morador?: NPCPayload | null;
+  /** @nullable */
+  diasEmprestimo?: number | null;
+  /** @nullable */
+  morreu?: boolean | null;
   status: string;
   criadoEm: string;
 }
@@ -94,7 +129,13 @@ export interface RecebimentoInput {
 
 export interface Recebimento {
   id: number;
+  tipo: string;
   remetenteNome: string;
-  recursos: Recursos;
+  recursos?: Recursos | null;
+  morador?: NPCPayload | null;
+  /** @nullable */
+  diasEmprestimo?: number | null;
+  /** @nullable */
+  morreu?: boolean | null;
 }
 

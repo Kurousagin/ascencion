@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import {
-  GameState, createInitialState, LogEntry, generateNPC, getRandomInt,
+  GameState, NPC, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcCustoInvocacao,
-  getProfissao, aceitaTrabalho, EdificioTipo,
+  getProfissao, PROFISSOES, aceitaTrabalho, EdificioTipo,
   debitarArmazem, creditarArmazem,
 } from '../lib/game-data';
 
@@ -23,6 +23,12 @@ interface GameContextType {
   debitarRecursos: (r: Recursos) => boolean;
   estornarRecursos: (r: Recursos) => void;
   creditarRecursos: (r: Recursos, remetente: string) => void;
+  // Aliança: empréstimo de moradores.
+  emprestarMorador: (npcId: string) => NPC | null;
+  estornarMoradorEmprestado: (npc: NPC) => void;
+  receberMoradorEmprestado: (npc: NPC, emprestadoDe: string, diasEmprestimo: number) => void;
+  removerMoradorEmprestado: (npcId: string) => void;
+  creditarMoradorRetornado: (npc: NPC, morreu: boolean, remetente: string) => void;
 }
 
 export interface Recursos {
@@ -445,6 +451,114 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // ─── Empréstimo de moradores ─────────────────────────────────────────────────
+
+  // Remove o NPC da cidadela da remetente e retorna-o (para enviar ao servidor).
+  // Usa flushSync para garantir remoção atômica antes de chamar a rede.
+  const emprestarMorador = (npcId: string): NPC | null => {
+    let removido: NPC | null = null;
+    flushSync(() => {
+      setState(prev => {
+        if (!prev) return prev;
+        const npc = prev.npcs.find(
+          n => n.id === npcId && n.vivo && !n.emExpedicao && !n.emprestadoDe,
+        );
+        if (!npc) return prev;
+        removido = JSON.parse(JSON.stringify(npc)) as NPC;
+        const s = JSON.parse(JSON.stringify(prev)) as GameState;
+        s.npcs = s.npcs.filter(n => n.id !== npcId);
+        const prof = PROFISSOES[getProfissao(removido!)].nome;
+        addLog(s, 'info', `EMPRÉSTIMO ENVIADO: ${removido!.nome.toUpperCase()} (${prof}) partiu para ajudar a aliada.`);
+        s.lastTimestamp = Date.now();
+        localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+        return s;
+      });
+    });
+    return removido;
+  };
+
+  // Desfaz um empréstimo que falhou no envio de rede — reinsere o NPC.
+  const estornarMoradorEmprestado = (npc: NPC) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      s.npcs.push({ ...npc, posto: null });
+      addLog(s, 'alerta', `ENVIO FALHOU — ${npc.nome.toUpperCase()} retornou à cidadela.`);
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
+  // Adiciona um NPC emprestado à cidadela da receptora com metadados de prazo.
+  const receberMoradorEmprestado = (npc: NPC, emprestadoDe: string, diasEmprestimo: number) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const ef = getEfeitos(s.edificios, s.npcs);
+      const popViva = s.npcs.filter(n => n.vivo).length;
+      if (popViva >= ef.capPopulacao) {
+        addLog(s, 'alerta', `LOTADO: ${npc.nome.toUpperCase()} não pôde chegar — cidadela no limite.`);
+        s.lastTimestamp = Date.now();
+        localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+        return s;
+      }
+      const npcEmprestado: NPC = {
+        ...npc,
+        emprestadoDe,
+        retornaEm: s.dia + diasEmprestimo,
+        posto: null,
+        emExpedicao: false,
+      };
+      s.npcs.push(npcEmprestado);
+      const prof = PROFISSOES[getProfissao(npc)].nome;
+      addLog(s, 'descoberta', `EMPRÉSTIMO RECEBIDO: ${npc.nome.toUpperCase()} (${prof}) chegou para ajudar por ${diasEmprestimo} dias.`);
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
+  // Remove NPC emprestado da cidadela receptora (prazo vencido ou morte).
+  // Não usa flushSync — o chamador (AllianceContext) já tem o NPC do state.
+  const removerMoradorEmprestado = (npcId: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const npc = prev.npcs.find(n => n.id === npcId && n.emprestadoDe);
+      if (!npc) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      s.npcs = s.npcs.filter(n => n.id !== npcId);
+      addLog(s, 'info', `RETORNO: ${npc.nome.toUpperCase()} ${npc.vivo ? 'retornou à dono' : 'não sobreviveu ao empréstimo'}.`);
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
+  // Credita NPC retornado de empréstimo à cidadela original.
+  const creditarMoradorRetornado = (npc: NPC, morreu: boolean, remetente: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      if (morreu) {
+        addLog(s, 'morte', `MORADOR CAIU: ${npc.nome.toUpperCase()} não voltou — pereceu na cidadela de ${remetente.toUpperCase()}.`);
+      } else {
+        const npcRetornado: NPC = {
+          ...npc,
+          emprestadoDe: undefined,
+          retornaEm: undefined,
+          posto: null,
+          emExpedicao: false,
+        };
+        s.npcs.push(npcRetornado);
+        addLog(s, 'descoberta', `MORADOR RETORNOU: ${npc.nome.toUpperCase()} voltou de ${remetente.toUpperCase()}.`);
+      }
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -476,6 +590,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       debitarRecursos,
       estornarRecursos,
       creditarRecursos,
+      emprestarMorador,
+      estornarMoradorEmprestado,
+      receberMoradorEmprestado,
+      removerMoradorEmprestado,
+      creditarMoradorRetornado,
     }}>
       {children}
     </GameContext.Provider>
