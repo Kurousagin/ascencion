@@ -255,19 +255,18 @@ export function calcCustoTreinamento(treinamentos: number): { madeira: number; f
 }
 
 // Seleciona o melhor instrutor disponível para o treinamento.
-// Critérios: vivo, presente na cidadela (não em expedição/guerra), não é o próprio
-// treinando. Ordenado por Força decrescente — o mais forte treina os outros.
+// O stat de comparação depende da profissão do treinando (FOR/AGI/RES).
 // Retorna null se não houver ninguém apto.
-export function calcInstrutor(treineeId: string, npcs: NPC[]): NPC | null {
+export function calcInstrutor(
+  treineeId: string,
+  npcs: NPC[],
+  stat: 'forca' | 'agilidade' | 'resistencia' = 'forca',
+): NPC | null {
   const candidatos = npcs.filter(
-    n =>
-      n.vivo &&
-      !n.emExpedicao &&
-      !n.emGuerra &&
-      n.id !== treineeId,
+    n => n.vivo && !n.emExpedicao && !n.emGuerra && n.id !== treineeId,
   );
   if (candidatos.length === 0) return null;
-  return candidatos.reduce((best, n) => (n.forca > best.forca ? n : best));
+  return candidatos.reduce((best, n) => (n[stat] > best[stat] ? n : best));
 }
 
 // Retorna true se o NPC pode ser treinado agora.
@@ -283,8 +282,19 @@ export function podeTreinarNpc(
   if (npc.emprestado || npc.reforco) return false; // só moradores próprios
   if (npc.fadiga >= 60) return false;         // muito cansado para treinar
   if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
-  if (getProfissao(npc) !== 'combatente') return false;
+  // Combatente, Batedor e Sentinela são profissões de combate — treinam no Quartel.
+  // Erudito é civil e não se beneficia do treinamento físico.
+  const prof = getProfissao(npc);
+  if (prof !== 'combatente' && prof !== 'batedor' && prof !== 'sentinela') return false;
   return true;
+}
+
+// Stat primário de combate para cada profissão treinável.
+export function statTreinamento(npc: NPC): 'forca' | 'agilidade' | 'resistencia' {
+  const prof = getProfissao(npc);
+  if (prof === 'batedor')   return 'agilidade';
+  if (prof === 'sentinela') return 'resistencia';
+  return 'forca';
 }
 
 export const generateNPC = (isObscuro = false): NPC => {

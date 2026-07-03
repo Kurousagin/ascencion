@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import {
-  GameState, NPC, createInitialState, LogEntry, generateNPC, getRandomInt,
+  GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
@@ -9,8 +9,20 @@ import {
   RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA,
   podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
+  statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
 } from '../lib/game-data';
+
+export interface ExpeditionResult {
+  vitoria: boolean;
+  isFarming: boolean;
+  floor: number;
+  poder: number;
+  dificuldade: number;
+  loot: { comida: number; madeira: number; pedra: number; ferro: number };
+  mortos: Array<{ nome: string }>;
+  resgatado: { nome: string; raridade: Raridade } | null;
+}
 
 interface GameContextType {
   state: GameState;
@@ -37,8 +49,11 @@ interface GameContextType {
   receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
   // Guerra: declara guerra a uma cidadela-bot, mobilizando a tropa escolhida.
   declararGuerra: (rival: RivalCidadela, tropaIds: string[]) => boolean;
-  // Treinamento: aumenta FOR permanentemente no Quartel (requer andar >= 6).
+  // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
+  // Resultado da última expedição (exibido em modal; nulo quando fechado).
+  lastExpeditionResult: ExpeditionResult | null;
+  clearExpeditionResult: () => void;
 }
 
 export interface Recursos {
@@ -74,6 +89,7 @@ export const useGame = () => {
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<GameState | null>(null);
   const [hasSave, setHasSave] = useState(false);
+  const [expeditionResult, setExpeditionResult] = useState<ExpeditionResult | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -389,6 +405,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}`);
 
       // Resgate: chance de encontrar um sobrevivente (apenas ao avançar, chefes têm mais chance)
+      let resgatado: { nome: string; raridade: Raridade } | null = null;
       if (!isFarming) {
         const popViva = s.npcs.filter(n => n.vivo).length;
         if (popViva < ef.capPopulacao) {
@@ -396,10 +413,44 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (Math.random() < chanceResgate) {
             const novo = generateNPC(Math.random() < 0.1);
             s.npcs.push(novo);
+            resgatado = { nome: novo.nome, raridade: novo.raridade };
             addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
           }
         }
       }
+
+      // Monta resultado para o card pós-expedição (vitória)
+      const resultVitoria: ExpeditionResult = {
+        vitoria: true, isFarming, floor: floorData.floor,
+        poder: groupPower, dificuldade: floorData.difficulty,
+        loot: { comida: comidaG, madeira: madeiraG, pedra: pedraG, ferro: ferroG },
+        mortos: [], resgatado,
+      };
+
+      // Mortality per NPC (vitória)
+      group.forEach(n => {
+        let mort = floorData.mortality;
+        if (groupPower > floorData.difficulty) {
+          const red = Math.min(((groupPower - floorData.difficulty) / floorData.difficulty) * 50, 80);
+          mort = mort * (1 - red / 100);
+        }
+        if (Math.random() * 100 < mort) {
+          n.vivo = false; n.emExpedicao = false; n.posto = null;
+          s.moral -= 5;
+          s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
+          addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
+          resultVitoria.mortos.push({ nome: n.nome });
+        } else {
+          let fatigueGain = getRandomInt(20, 35);
+          if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
+          if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
+          n.fadiga = Math.min(100, n.fadiga + fatigueGain);
+          n.emExpedicao = false;
+        }
+      });
+      group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+      saveState(s);
+      setExpeditionResult(resultVitoria);
     } else {
       // Falha: penalidades reduzidas (era -5/-5, agora -3/-3) e loot parcial
       // de 30% do andar — garante algum progresso mesmo travado.
@@ -422,36 +473,35 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         ? `EXPLORAÇÃO ANDAR ${floorData.floor} — falha`
         : `FALHA NO ANDAR ${floorData.floor}`;
       addLog(s, 'alerta', `${falhaLabel} — ${motivo} ${consStr}`);
+
+      // Monta resultado para o card pós-expedição (falha)
+      const resultFalha: ExpeditionResult = {
+        vitoria: false, isFarming, floor: floorData.floor,
+        poder: groupPower, dificuldade: floorData.difficulty,
+        loot: { comida: consolaComida, madeira: consolaMadeira, pedra: consolaPedra, ferro: consolaFerro },
+        mortos: [], resgatado: null,
+      };
+
+      // Mortality per NPC (falha)
+      group.forEach(n => {
+        if (Math.random() * 100 < floorData.mortality) {
+          n.vivo = false; n.emExpedicao = false; n.posto = null;
+          s.moral -= 5;
+          s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
+          addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
+          resultFalha.mortos.push({ nome: n.nome });
+        } else {
+          let fatigueGain = getRandomInt(20, 35);
+          if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
+          if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
+          n.fadiga = Math.min(100, n.fadiga + fatigueGain);
+          n.emExpedicao = false;
+        }
+      });
+      group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+      saveState(s);
+      setExpeditionResult(resultFalha);
     }
-
-    // Mortality per NPC
-    group.forEach(n => {
-      let mort = floorData.mortality;
-      if (isVictory && groupPower > floorData.difficulty) {
-        const red = Math.min(((groupPower - floorData.difficulty) / floorData.difficulty) * 50, 80);
-        mort = mort * (1 - red / 100);
-      }
-      if (Math.random() * 100 < mort) {
-        n.vivo = false;
-        n.emExpedicao = false;
-        n.posto = null;
-        s.moral -= 5;
-        s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
-        addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
-      } else {
-        // Veterano (-25%) e Batedor (-20%) sofrem menos fadiga
-        let fatigueGain = getRandomInt(20, 35);
-        if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
-        if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
-        n.fadiga = Math.min(100, n.fadiga + fatigueGain);
-        n.emExpedicao = false;
-      }
-    });
-
-    // Reforço: marca sobreviventes como concluídos para retorno automático (fase 3).
-    group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
-
-    saveState(s);
   };
 
   const invocarGacha = (): NPC[] => {
@@ -730,21 +780,25 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // O instrutor é o NPC com maior Força disponível na cidadela (excluindo o treinando).
     // Se o instrutor for mais forte que o aprendiz → +2 FOR; caso contrário → +1.
-    const instrutor = calcInstrutor(npcId, s.npcs);
-    const ganho = (instrutor && instrutor.forca > npc.forca) ? 2 : 1;
+    // Stat treinado depende da profissão: Combatente→FOR, Batedor→AGI, Sentinela→RES
+    const statKey = statTreinamento(npc);
+    const instrutor = calcInstrutor(npcId, s.npcs, statKey);
+    const instrutorStat = instrutor ? instrutor[statKey] : 0;
+    const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
 
     s.recursos.madeira -= custo.madeira;
     s.recursos.ferro   -= custo.ferro;
-    npc.forca += ganho;
+    npc[statKey] += ganho;
     npc.fadiga = Math.min(100, npc.fadiga + 25);
     npc.treinamentos = treinamentos + 1;
     npc.raridade = recalcRaridade(npc);
 
+    const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : 'FOR';
     const instrutorStr = instrutor
-      ? ` instruído por ${instrutor.nome} (F:${instrutor.forca})`
+      ? ` instruído por ${instrutor.nome} (${statLabel}:${instrutor[statKey]})`
       : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} FOR permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     saveState(s);
   };
@@ -788,6 +842,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       receberReforco,
       declararGuerra,
       treinarNpc,
+      lastExpeditionResult: expeditionResult,
+      clearExpeditionResult: () => setExpeditionResult(null),
     }}>
       {children}
     </GameContext.Provider>

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame, ExpeditionResult } from '../context/GameContext';
 import { FLOORS, calcNpcPower, getEfeitos, calcRecompensaAndar, calcCustoExpedicao } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw } from 'lucide-react';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
 export function Tower() {
-  const { state, sendExpedition } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
@@ -95,6 +95,7 @@ export function Tower() {
   const conquistados = FLOORS.slice(0, state.andarAtual - 1).reverse();
 
   return (
+    <>
     <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
       <header className="pb-3 border-b border-primary/30 relative">
         <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">TORRE OBSCURA</h2>
@@ -316,5 +317,120 @@ export function Tower() {
       </Dialog.Root>
 
     </div>
+
+    {/* ── Modal de resultado pós-expedição ─────────────────────────────── */}
+    <Dialog.Root open={!!lastExpeditionResult} onOpenChange={open => { if (!open) clearExpeditionResult(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 p-5 flex flex-col z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.8)] gap-4">
+          {lastExpeditionResult && <ExpeditionResultCard result={lastExpeditionResult} onClose={clearExpeditionResult} />}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+    </>
+  );
+}
+
+// ── Componente de card de resultado ──────────────────────────────────────────
+
+function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; onClose: () => void }) {
+  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado } = result;
+  const pct = Math.min(100, Math.round((poder / dificuldade) * 100));
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <div className={`text-xs font-cinzel tracking-[0.25em] mb-0.5 ${vitoria ? 'text-success' : 'text-destructive'}`}>
+            {isFarming ? 'EXPLORAÇÃO' : 'EXPEDIÇÃO'} — ANDAR {floor}
+          </div>
+          <Dialog.Title className={`text-2xl font-cinzel font-bold tracking-widest ${vitoria ? 'text-success' : 'text-destructive'}`}>
+            {vitoria ? '✓ VITÓRIA' : '✗ DERROTA'}
+          </Dialog.Title>
+        </div>
+        <Dialog.Close asChild>
+          <button className="w-9 h-9 flex items-center justify-center border border-card-border text-secondary hover:text-foreground rounded-sm touch-manipulation" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </Dialog.Close>
+      </div>
+
+      {/* Poder vs dificuldade */}
+      <div className="bg-black/30 rounded-sm p-3 border border-white/5">
+        <div className="flex justify-between text-[10px] text-secondary mb-1.5 tracking-widest">
+          <span className="flex items-center gap-1"><Swords size={10} /> PODER</span>
+          <span>{poder.toFixed(0)} / {dificuldade}</span>
+        </div>
+        <div className="w-full h-2 bg-background rounded-sm overflow-hidden border border-white/5">
+          <div
+            className={`h-full transition-all ${vitoria ? 'bg-success' : 'bg-destructive'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Loot */}
+      <div>
+        <div className="text-[10px] text-secondary tracking-widest mb-2 flex items-center gap-1">
+          <Check size={10} /> {vitoria ? 'RECURSOS OBTIDOS' : 'RECURSOS RECUPERADOS (30%)'}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {loot.comida  > 0 && <LootChip icon={Wheat}    color="text-warning"   label={`+${loot.comida} comida`} />}
+          {loot.madeira > 0 && <LootChip icon={Trees}    color="text-success"   label={`+${loot.madeira} madeira`} />}
+          {loot.pedra   > 0 && <LootChip icon={Mountain} color="text-secondary" label={`+${loot.pedra} pedra`} />}
+          {loot.ferro   > 0 && <LootChip icon={Zap}      color="text-primary"   label={`+${loot.ferro} ferro`} />}
+          {!loot.comida && !loot.madeira && !loot.pedra && !loot.ferro && (
+            <span className="text-[10px] text-muted-foreground italic">Nenhum recurso obtido.</span>
+          )}
+        </div>
+      </div>
+
+      {/* Mortos */}
+      {mortos.length > 0 && (
+        <div className="bg-destructive/5 border border-destructive/20 rounded-sm p-3">
+          <div className="text-[10px] text-destructive tracking-widest mb-2 flex items-center gap-1 font-bold">
+            <Skull size={10} /> BAIXAS
+          </div>
+          <div className="flex flex-col gap-1">
+            {mortos.map((m, i) => (
+              <div key={i} className="text-[11px] text-destructive/80 flex items-center gap-2">
+                <Skull size={9} className="shrink-0 opacity-60" /> {m.nome}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resgatado */}
+      {resgatado && (
+        <div className="bg-primary/5 border border-primary/30 rounded-sm p-3">
+          <div className="text-[10px] text-primary tracking-widest mb-2 flex items-center gap-1 font-bold">
+            <UserPlus size={10} /> SOBREVIVENTE ENCONTRADO
+          </div>
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-primary shrink-0" />
+            <span className="text-sm font-bold text-foreground">{resgatado.nome}</span>
+            <span className="text-[10px] text-primary/70 ml-1">{resgatado.raridade}</span>
+          </div>
+          <div className="text-[9px] text-secondary mt-1">Adicionado aos habitantes da cidadela.</div>
+        </div>
+      )}
+
+      <button
+        onClick={onClose}
+        className="w-full h-12 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation mt-1"
+      >
+        CONTINUAR
+      </button>
+    </>
+  );
+}
+
+function LootChip({ icon: Icon, color, label }: { icon: React.ComponentType<{ size?: number; className?: string }>; color: string; label: string }) {
+  return (
+    <span className={`flex items-center gap-1.5 px-2 py-1 rounded-sm bg-black/30 border border-white/5 text-[11px] font-bold ${color}`}>
+      <Icon size={11} /> {label}
+    </span>
   );
 }

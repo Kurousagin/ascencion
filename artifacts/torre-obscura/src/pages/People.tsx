@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, calcInstrutor } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc } = useGame();
@@ -260,15 +260,20 @@ export function People() {
 
               {/* Treinamento (Combatentes no Quartel, após andar 5) */}
               {(() => {
-                if (getProfissao(npc) !== 'combatente') return null;
+                // Combatente, Batedor e Sentinela são profissões de combate — treinam no Quartel.
+                const profissao = getProfissao(npc);
+                if (profissao !== 'combatente' && profissao !== 'batedor' && profissao !== 'sentinela') return null;
                 const quartelEd = state.edificios.find(e => e.tipo === 'Quartel');
                 const quartelNivel = quartelEd?.nivel ?? 0;
                 const treinamentos = npc.treinamentos ?? 0;
                 const custo = calcCustoTreinamento(treinamentos);
                 const podeT = podeTreinarNpc(npc, quartelNivel, state.andarAtual);
                 // Instrutor = NPC com maior Força disponível (excluindo o próprio treinando)
-                const instrutor = calcInstrutor(npc.id, state.npcs);
-                const ganho = (instrutor && instrutor.forca > npc.forca) ? 2 : 1;
+                const statKey = statTreinamento(npc);
+                const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : 'FOR';
+                const instrutor = calcInstrutor(npc.id, state.npcs, statKey);
+                const instrutorStat = instrutor ? instrutor[statKey] : 0;
+                const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
 
                 // Motivo de bloqueio (para exibir dica)
                 let bloqueio: string | null = null;
@@ -306,7 +311,7 @@ export function People() {
                             </span>
                           </div>
                           <span className="text-[9px] text-primary/80 font-bold">
-                            +{ganho} FOR
+                            +{ganho} {statLabel}
                           </span>
                         </div>
                         {instrutor ? (
@@ -317,15 +322,15 @@ export function People() {
                           }`}>
                             <Swords size={9} />
                             Instrutor: <span className="font-bold ml-1">{instrutor.nome}</span>
-                            <span className="ml-1 opacity-70">(F:{instrutor.forca})</span>
+                            <span className="ml-1 opacity-70">({statLabel}:{instrutorStat})</span>
                             {ganho === 2
-                              ? <span className="ml-auto font-bold text-success">+2 FOR ↑</span>
-                              : <span className="ml-auto opacity-60">+1 FOR</span>
+                              ? <span className="ml-auto font-bold text-success">+2 {statLabel} ↑</span>
+                              : <span className="ml-auto opacity-60">+1 {statLabel}</span>
                             }
                           </div>
                         ) : (
                           <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
-                            Sem instrutor disponível — treinamento solo (+1 FOR)
+                            Sem instrutor disponível — treinamento solo (+1 {statLabel})
                           </div>
                         )}
                         <button
