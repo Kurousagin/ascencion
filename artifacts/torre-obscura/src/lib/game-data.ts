@@ -188,6 +188,8 @@ export function calcNpcPower(npc: NPC): number {
 
 // ─── INITIAL STATE ────────────────────────────────────────────────────────────
 
+export const CAPACIDADE_BASE = 80;
+
 export const createInitialState = (): GameState => ({
   dia: 1,
   moral: 70,
@@ -197,11 +199,11 @@ export const createInitialState = (): GameState => ({
   gameOver: false,
   vitoria: false,
   recursos: {
-    comida: 30,
-    madeira: 20,
-    pedra: 10,
+    comida: 40,
+    madeira: 30,
+    pedra: 20,
     ferro: 5,
-    capacidadeArmazem: 60,
+    capacidadeArmazem: CAPACIDADE_BASE,
   },
   npcs: Array.from({ length: 6 }).map(() => generateNPC()),
   edificios: [],
@@ -213,18 +215,131 @@ export const createInitialState = (): GameState => ({
   }],
 });
 
-// ─── BUILDINGS ────────────────────────────────────────────────────────────────
+// ─── BUILDINGS (leveled) ───────────────────────────────────────────────────────
+// Every building can be upgraded up to nivel 3. Each level REPLACES the previous
+// level's effect (values are absolute, not cumulative). getEfeitos() aggregates
+// the currently-built levels into the daily bonuses used by the game loop.
 
-export const EDIFICIOS_CUSTOS: Record<string, { madeira?: number; pedra?: number; ferro?: number }> = {
-  Fogueira:    { madeira: 5 },
-  Fazenda:     { madeira: 15, pedra: 5 },
-  Enfermaria:  { madeira: 15, pedra: 10 },
-  Quartel:     { madeira: 25, pedra: 20, ferro: 10 },
-  Templo:      { pedra: 30, madeira: 20 },
-  Armazem_1:   { madeira: 20, pedra: 10 },
-  Armazem_2:   { madeira: 40, pedra: 25 },
-  Armazem_3:   { madeira: 60, pedra: 40, ferro: 15 },
+export interface EfeitoEdificio {
+  comidaDia?: number;      // food produced per day
+  moralDia?: number;       // morale gained per day
+  sanidadeDia?: number;    // sanity restored per living NPC per day
+  fadigaRec?: number;      // extra fatigue recovered per NPC per day
+  poderBonus?: number;     // fraction added to expedition group power (0.10 = +10%)
+  capacidadeArmazem?: number; // absolute storage capacity
+}
+
+export interface NivelEdificio {
+  custo: { madeira?: number; pedra?: number; ferro?: number };
+  resumo: string;          // human-readable effect for this level
+  efeito: EfeitoEdificio;
+}
+
+export interface BuildingDef {
+  tipo: EdificioTipo;
+  nome: string;
+  descricao: string;
+  maxNivel: number;
+  niveis: NivelEdificio[];
+}
+
+export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
+  Fogueira: {
+    tipo: 'Fogueira',
+    nome: 'Fogueira',
+    descricao: 'Aquece a alma e eleva o moral do grupo.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 5 },              resumo: '+1 moral/dia',  efeito: { moralDia: 1 } },
+      { custo: { madeira: 15, pedra: 10 },  resumo: '+2 moral/dia',  efeito: { moralDia: 2 } },
+      { custo: { madeira: 30, pedra: 20 },  resumo: '+4 moral/dia',  efeito: { moralDia: 4 } },
+    ],
+  },
+  Fazenda: {
+    tipo: 'Fazenda',
+    nome: 'Fazenda',
+    descricao: 'Produz comida diária para sustentar a população.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 15, pedra: 5 },            resumo: '+10 comida/dia', efeito: { comidaDia: 10 } },
+      { custo: { madeira: 35, pedra: 20 },           resumo: '+22 comida/dia', efeito: { comidaDia: 22 } },
+      { custo: { madeira: 60, pedra: 40, ferro: 10 }, resumo: '+40 comida/dia', efeito: { comidaDia: 40 } },
+    ],
+  },
+  Enfermaria: {
+    tipo: 'Enfermaria',
+    nome: 'Enfermaria',
+    descricao: 'Acelera a recuperação de fadiga de todos.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 15, pedra: 10 },            resumo: '+8 fadiga rec./dia',  efeito: { fadigaRec: 8 } },
+      { custo: { madeira: 35, pedra: 25 },            resumo: '+18 fadiga rec./dia', efeito: { fadigaRec: 18 } },
+      { custo: { madeira: 60, pedra: 45, ferro: 12 }, resumo: '+30 fadiga rec./dia', efeito: { fadigaRec: 30 } },
+    ],
+  },
+  Templo: {
+    tipo: 'Templo',
+    nome: 'Templo',
+    descricao: 'Restaura a sanidade e fortalece o moral.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { pedra: 30, madeira: 20 },            resumo: '+2 moral, +0.5 sanidade/dia', efeito: { moralDia: 2, sanidadeDia: 0.5 } },
+      { custo: { pedra: 55, madeira: 40, ferro: 10 }, resumo: '+4 moral, +1.5 sanidade/dia', efeito: { moralDia: 4, sanidadeDia: 1.5 } },
+      { custo: { pedra: 80, madeira: 60, ferro: 25 }, resumo: '+6 moral, +3 sanidade/dia',   efeito: { moralDia: 6, sanidadeDia: 3 } },
+    ],
+  },
+  Quartel: {
+    tipo: 'Quartel',
+    nome: 'Quartel',
+    descricao: 'Treina o grupo, aumentando o poder nas expedições.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 25, pedra: 20, ferro: 10 }, resumo: '+10% poder de expedição', efeito: { poderBonus: 0.10 } },
+      { custo: { madeira: 45, pedra: 40, ferro: 25 }, resumo: '+22% poder de expedição', efeito: { poderBonus: 0.22 } },
+      { custo: { madeira: 70, pedra: 60, ferro: 45 }, resumo: '+38% poder de expedição', efeito: { poderBonus: 0.38 } },
+    ],
+  },
+  Armazem: {
+    tipo: 'Armazem',
+    nome: 'Armazém',
+    descricao: 'Expande a capacidade de estocagem de recursos.',
+    maxNivel: 3,
+    niveis: [
+      { custo: { madeira: 20, pedra: 10 },            resumo: 'Capacidade 150', efeito: { capacidadeArmazem: 150 } },
+      { custo: { madeira: 40, pedra: 25 },            resumo: 'Capacidade 300', efeito: { capacidadeArmazem: 300 } },
+      { custo: { madeira: 60, pedra: 40, ferro: 15 }, resumo: 'Capacidade 600', efeito: { capacidadeArmazem: 600 } },
+    ],
+  },
 };
+
+// Aggregate all built levels into the daily effect bundle.
+export function getEfeitos(edificios: Edificio[]): Required<EfeitoEdificio> {
+  const ef: Required<EfeitoEdificio> = {
+    comidaDia: 0, moralDia: 0, sanidadeDia: 0, fadigaRec: 0, poderBonus: 0,
+    capacidadeArmazem: CAPACIDADE_BASE,
+  };
+  for (const e of edificios) {
+    const def = BUILDINGS[e.tipo];
+    if (!def || e.nivel < 1) continue;
+    const lvl = def.niveis[e.nivel - 1];
+    if (!lvl) continue;
+    const x = lvl.efeito;
+    if (x.comidaDia)   ef.comidaDia += x.comidaDia;
+    if (x.moralDia)    ef.moralDia += x.moralDia;
+    if (x.sanidadeDia) ef.sanidadeDia += x.sanidadeDia;
+    if (x.fadigaRec)   ef.fadigaRec += x.fadigaRec;
+    if (x.poderBonus)  ef.poderBonus += x.poderBonus;
+    if (x.capacidadeArmazem) ef.capacidadeArmazem = Math.max(ef.capacidadeArmazem, x.capacidadeArmazem);
+  }
+  return ef;
+}
+
+// Cost to reach the next level, or null if already maxed.
+export function proximoNivelCusto(tipo: EdificioTipo, nivelAtual: number) {
+  const def = BUILDINGS[tipo];
+  if (!def || nivelAtual >= def.maxNivel) return null;
+  return def.niveis[nivelAtual].custo;
+}
 
 // ─── FLOORS ──────────────────────────────────────────────────────────────────
 

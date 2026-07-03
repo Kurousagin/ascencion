@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import {
   GameState, createInitialState, LogEntry, generateNPC, getRandomInt,
-  EDIFICIOS_CUSTOS, FLOORS, calcNpcPower,
+  BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
+  EdificioTipo,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -11,9 +12,14 @@ interface GameContextType {
   continueGame: () => void;
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
-  buildEdificio: (tipo: string, nextLevel?: number) => void;
+  buildEdificio: (tipo: EdificioTipo) => void;
   sendExpedition: (npcIds: string[]) => void;
 }
+
+// Time: at 1x, one real-world day equals five in-game days.
+// (24h / 5 game days = 4.8h of real time per game day at 1x; 2x and 5x accelerate.)
+const MS_PER_GAME_DAY_BASE = 86_400_000 / 5;
+const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
 
 const GameContext = createContext<GameContextType | null>(null);
 
@@ -50,8 +56,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const vivos = draft.npcs.filter(n => n.vivo);
     if (vivos.length === 0) { draft.gameOver = true; return draft; }
 
-    // 1. Consumo de comida
-    const comidaNecessaria = vivos.length * 1.5;
+    // Aggregate building effects (levels included) once per day
+    const ef = getEfeitos(draft.edificios);
+    draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
+
+    // 1. Produção de comida (edifícios) — creditada ANTES do consumo
+    draft.recursos.comida += ef.comidaDia;
+
+    // 2. Consumo de comida
+    const comidaNecessaria = vivos.length * 1.2;
     if (draft.recursos.comida >= comidaNecessaria) {
       draft.recursos.comida -= comidaNecessaria;
     } else {
@@ -60,19 +73,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       addLog(draft, 'alerta', 'FOME: Suprimentos insuficientes. Moral e sanidade caindo.');
     }
 
-    // 2. Produção de edifícios
-    const hasFazenda   = draft.edificios.some(e => e.tipo === 'Fazenda');
-    const hasEnfermaria = draft.edificios.some(e => e.tipo === 'Enfermaria');
-    const hasTemplo    = draft.edificios.some(e => e.tipo === 'Templo');
-    const hasFogueira  = draft.edificios.some(e => e.tipo === 'Fogueira');
+    // 3. Outros efeitos de edifícios (moral / sanidade)
+    draft.moral += ef.moralDia;
+    if (ef.sanidadeDia) vivos.forEach(n => { n.sanidade += ef.sanidadeDia; });
 
-    if (hasFazenda) draft.recursos.comida += 5;
-    if (hasTemplo)  { draft.moral += 2; vivos.forEach(n => { n.sanidade += 0.5; }); }
-    if (hasFogueira) draft.moral += 1;
-
-    // 3. Recuperação de fadiga (base + enfermaria + curandeiro)
+    // 4. Recuperação de fadiga (base + enfermaria + curandeiro)
     vivos.forEach(n => {
-      let rec = 15 + (hasEnfermaria ? 5 : 0);
+      let rec = 12 + ef.fadigaRec;
       if (n.habilidade === 'curandeiro') rec += 15;
       n.fadiga = Math.max(0, n.fadiga - rec);
     });
@@ -184,7 +191,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
-    const ms = state.velocidade === 1 ? 12000 : state.velocidade === 2 ? 6000 : 2400;
+    const ms = getMsPerDay(state.velocidade);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       if (!gameEndedRef.current) advanceDay();
@@ -206,8 +213,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       startNewGame();
       return;
     }
-    const msPerDay = parsed.velocidade === 1 ? 12000 : parsed.velocidade === 2 ? 6000 : 2400;
-    let missed = Math.min(30, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
+    const msPerDay = getMsPerDay(parsed.velocidade);
+    let missed = Math.min(40, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
     if (missed > 0) {
       for (let i = 0; i < missed; i++) {
         parsed = processDay(parsed);
@@ -223,27 +230,28 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState({ ...state, velocidade: speed });
   };
 
-  const buildEdificio = (tipo: string, nextLevel?: number) => {
+  const buildEdificio = (tipo: EdificioTipo) => {
     if (!state) return;
+    const def = BUILDINGS[tipo];
+    if (!def) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
-    if (tipo !== 'Armazem' && s.edificios.some(e => e.tipo === tipo)) return;
-    const costKey = tipo === 'Armazem' ? `${tipo}_${nextLevel}` : tipo;
-    const cost = EDIFICIOS_CUSTOS[costKey];
-    if (!cost) return;
+    const existente = s.edificios.find(e => e.tipo === tipo);
+    const nivelAtual = existente?.nivel ?? 0;
+    if (nivelAtual >= def.maxNivel) return;
+    const proximo = nivelAtual + 1;
+    const cost = def.niveis[proximo - 1].custo;
     if ((cost.madeira ?? 0) > s.recursos.madeira) return;
     if ((cost.pedra   ?? 0) > s.recursos.pedra)   return;
-    if ((cost.ferro   ?? 0) > s.recursos.ferro)    return;
+    if ((cost.ferro   ?? 0) > s.recursos.ferro)   return;
     if (cost.madeira) s.recursos.madeira -= cost.madeira;
     if (cost.pedra)   s.recursos.pedra   -= cost.pedra;
     if (cost.ferro)   s.recursos.ferro   -= cost.ferro;
-    if (tipo === 'Armazem') {
-      const e = s.edificios.find(e => e.tipo === 'Armazem');
-      if (e) e.nivel = nextLevel!; else s.edificios.push({ tipo: 'Armazem', nivel: nextLevel! });
-      s.recursos.capacidadeArmazem = nextLevel === 2 ? 120 : nextLevel === 3 ? 250 : 60;
-    } else {
-      s.edificios.push({ tipo: tipo as any, nivel: 1 });
-    }
-    addLog(s, 'info', `${tipo.toUpperCase()} construído.`);
+    if (existente) existente.nivel = proximo;
+    else s.edificios.push({ tipo, nivel: proximo });
+    // Keep storage capacity in sync immediately after building
+    s.recursos.capacidadeArmazem = getEfeitos(s.edificios).capacidadeArmazem;
+    const acao = nivelAtual === 0 ? 'construído' : `melhorado (Nvl ${proximo})`;
+    addLog(s, 'info', `${def.nome.toUpperCase()} ${acao}.`);
     saveState(s);
   };
 
