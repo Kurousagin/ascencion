@@ -8,11 +8,44 @@ import { useGame, Recursos } from './GameContext';
 import { getProfissao, GameState, NPC, MoradorBase, moradorBase } from '../lib/game-data';
 import { getDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
 
+// ─── Histórico de empréstimos (persistido em localStorage) ────────────────────
+
+export interface EmprestimoRegistro {
+  id: string;
+  npcId: string;
+  npcNome: string;
+  profissao: string;       // ProfissaoId serializado como string
+  raridade: string;
+  tipo: 'emprestimo' | 'reforco';
+  estado: 'em_curso' | 'retornou' | 'caiu';
+  diaEnvio: number;
+  prazoDias: number;       // 0 para reforços
+  aliadaNome: string;
+  diaRetorno?: number;
+}
+
+const HISTORICO_KEY = 'torre_obscura_emprestimos_historico';
+const MAX_HISTORICO = 50;
+
+function carregarHistorico(): EmprestimoRegistro[] {
+  try {
+    const raw = localStorage.getItem(HISTORICO_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function salvarHistoricoStorage(h: EmprestimoRegistro[]): void {
+  try { localStorage.setItem(HISTORICO_KEY, JSON.stringify(h)); } catch { /* quota */ }
+}
+
+// ─── Tipo do contexto ─────────────────────────────────────────────────────────
+
 interface AllianceContextType {
   perfil: Perfil | null;
   aliada: Aliada | null;
   caixa: Exchange[];
   online: boolean;
+  historico: EmprestimoRegistro[];
   parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
   enviar: (r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
   emprestar: (npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
@@ -43,10 +76,9 @@ function resumoDoEstado(state: GameState): ResumoCidadela {
 }
 
 function msgErro(e: unknown): string {
-  const status = (e as { status?: number })?.status;
   const data = (e as { data?: { error?: string } })?.data;
   if (data?.error) return data.error;
-  if (status === 404) return 'Não encontrado.';
+  if ((e as { status?: number })?.status === 404) return 'Não encontrado.';
   return 'Falha de conexão com a torre. Tente novamente.';
 }
 
@@ -59,14 +91,45 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     removerParaEmprestimo, restaurarMorador, receberEmprestado, removerEmprestado, reintegrarMorador,
     receberReforco,
   } = useGame();
+
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [aliada, setAliada] = useState<Aliada | null>(null);
   const [caixa, setCaixa] = useState<Exchange[]>([]);
   const [online, setOnline] = useState(false);
+  const [historico, setHistorico] = useState<EmprestimoRegistro[]>(carregarHistorico);
 
   const deviceId = useRef(getDeviceId());
   const stateRef = useRef<GameState | null>(state);
+  const aliadaRef = useRef<Aliada | null>(aliada);
   useEffect(() => { stateRef.current = state; }, [state]);
+  useEffect(() => { aliadaRef.current = aliada; }, [aliada]);
+
+  // ─── Helpers de histórico ───────────────────────────────────────────────────
+
+  const adicionarRegistro = useCallback((reg: EmprestimoRegistro) => {
+    setHistorico(prev => {
+      const novo = [reg, ...prev].slice(0, MAX_HISTORICO);
+      salvarHistoricoStorage(novo);
+      return novo;
+    });
+  }, []);
+
+  const atualizarRegistro = useCallback(
+    (npcId: string, estado: 'retornou' | 'caiu', diaRetorno: number) => {
+      setHistorico(prev => {
+        const novo = prev.map(r =>
+          r.npcId === npcId && r.estado === 'em_curso'
+            ? { ...r, estado, diaRetorno }
+            : r,
+        );
+        salvarHistoricoStorage(novo);
+        return novo;
+      });
+    },
+    [],
+  );
+
+  // ─── Rede ───────────────────────────────────────────────────────────────────
 
   const sincronizarPerfil = useCallback(async () => {
     const s = stateRef.current;
@@ -94,9 +157,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     try {
       const c = await listarCaixa(deviceId.current);
       setCaixa(c);
-    } catch {
-      /* mantém caixa anterior em caso de falha momentânea */
-    }
+    } catch { /* mantém estado anterior */ }
   }, []);
 
   const refresh = useCallback(() => {
@@ -104,8 +165,6 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     void puxarAliadaECaixa();
   }, [sincronizarPerfil, puxarAliadaECaixa]);
 
-  // Registro inicial + timers. Atualiza também ao voltar o foco da aba (abas em
-  // segundo plano têm setInterval estrangulado pelos navegadores).
   useEffect(() => {
     refresh();
     const t1 = setInterval(() => { void sincronizarPerfil(); }, SYNC_MS);
@@ -144,13 +203,9 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
 
   // ─── Emprestar morador ─────────────────────────────────────────────────────
   const emprestar = useCallback(async (npcId: string, prazoDias: number) => {
-    // Remove o morador do estado ANTES de chamar a rede (some da cidadela na hora).
-    // O rollback (restaurarMorador) só acontece se o POST falhar — nunca depois de
-    // um insert bem-sucedido no servidor, para evitar duplicação cross-player.
     const removido = removerParaEmprestimo(npcId);
     if (!removido) return { ok: false, erro: 'Morador indisponível para empréstimo.' };
 
-    // Fase 1: mutação no servidor. Se falhar, o estado local é revertido.
     try {
       await emprestarMorador({
         deviceId: deviceId.current,
@@ -162,16 +217,23 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       return { ok: false, erro: msgErro(e) };
     }
 
-    // Fase 2: atualização da caixa/aliada. Falha aqui NÃO reverte o empréstimo
-    // (o servidor já registrou). O polling periódico vai corrigir o estado.
-    try {
-      await puxarAliadaECaixa();
-    } catch {
-      /* falha silenciosa — o empréstimo foi registrado; o poll vai atualizar */
-    }
+    // Registrar no histórico após sucesso confirmado
+    adicionarRegistro({
+      id: crypto.randomUUID(),
+      npcId: removido.id,
+      npcNome: removido.nome,
+      profissao: getProfissao(removido),
+      raridade: removido.raridade,
+      tipo: 'emprestimo',
+      estado: 'em_curso',
+      diaEnvio: stateRef.current?.dia ?? 0,
+      prazoDias,
+      aliadaNome: aliadaRef.current?.nome ?? '—',
+    });
 
+    try { await puxarAliadaECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa, adicionarRegistro]);
 
   // ─── Enviar reforço (fase 3) ──────────────────────────────────────────────
   const reforcar = useCallback(async (npcId: string) => {
@@ -185,28 +247,41 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       return { ok: false, erro: msgErro(e) };
     }
 
-    try {
-      await puxarAliadaECaixa();
-    } catch {
-      /* falha silenciosa — o reforço foi registrado; o poll vai atualizar */
-    }
+    adicionarRegistro({
+      id: crypto.randomUUID(),
+      npcId: removido.id,
+      npcNome: removido.nome,
+      profissao: getProfissao(removido),
+      raridade: removido.raridade,
+      tipo: 'reforco',
+      estado: 'em_curso',
+      diaEnvio: stateRef.current?.dia ?? 0,
+      prazoDias: 0,
+      aliadaNome: aliadaRef.current?.nome ?? '—',
+    });
 
+    try { await puxarAliadaECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa, adicionarRegistro]);
 
-  // ─── Receber item da caixa (recursos, morador, reforço ou retorno) ─────────
+  // ─── Receber item ──────────────────────────────────────────────────────────
   const receber = useCallback(async (exchangeId: number) => {
     try {
       const item = await receberItem({ deviceId: deviceId.current, exchangeId });
       if (item.tipo === 'emprestimo' && item.morador) {
-        // Recebe o morador emprestado; item.id é o empréstimo de origem (p/ devolução).
         receberEmprestado(item.morador as MoradorBase, item.prazoDias ?? 1, item.remetenteNome, item.id);
       } else if (item.tipo === 'reforco' && item.morador) {
-        // Reforço: entra como membro temporário de expedição.
         receberReforco(item.morador as MoradorBase, item.remetenteNome, item.id);
       } else if (item.tipo === 'retorno' && item.morador) {
-        // Morador próprio voltando (ou aviso de morte).
         reintegrarMorador(item.morador as MoradorBase, !!item.morreu);
+        // Atualiza o histórico do dono com o resultado do retorno
+        if (item.morador.id) {
+          atualizarRegistro(
+            item.morador.id,
+            item.morreu ? 'caiu' : 'retornou',
+            stateRef.current?.dia ?? 0,
+          );
+        }
       } else if (item.recursos) {
         creditarRecursos(item.recursos, item.remetenteNome);
       }
@@ -215,12 +290,9 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [creditarRecursos, receberEmprestado, receberReforco, reintegrarMorador]);
+  }, [creditarRecursos, receberEmprestado, receberReforco, reintegrarMorador, atualizarRegistro]);
 
-  // ─── Devolução automática dos emprestados ────────────────────────────────────
-  // A receptora devolve o morador quando o prazo (nos SEUS dias) vence, ou
-  // imediatamente se ele morreu numa expedição. A devolução trafega pela caixa de
-  // entrada do dono; o status da troca no servidor impede duplicação.
+  // ─── Devolução automática dos emprestados ─────────────────────────────────
   const devolvendoRef = useRef<Set<string>>(new Set());
   const devolver = useCallback(async (npc: NPC) => {
     if (npc.origemExchangeId == null) return;
@@ -233,10 +305,9 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
         morador: moradorBase(npc),
         morreu: !npc.vivo,
       });
-      // Sucesso (inclusive devolução já registrada): sai do estado local.
       removerEmprestado(npc.id);
     } catch {
-      /* rede indisponível: tenta de novo no próximo avanço de dia/poll */
+      /* tenta de novo no próximo avanço */
     } finally {
       devolvendoRef.current.delete(npc.id);
     }
@@ -246,9 +317,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     if (!state) return;
     const vencidos = state.npcs.filter(
       n =>
-        // Emprestado: prazo vencido ou morreu
         (n.emprestado && (!n.vivo || (n.emprestadoAte != null && state.dia >= n.emprestadoAte))) ||
-        // Reforço: expedição concluída ou morreu
         (n.reforco && (!n.vivo || n.reforcoConcluido)),
     );
     vencidos.forEach(n => { void devolver(n); });
@@ -262,13 +331,14 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     try {
       const p = await registrarPerfil({ deviceId: deviceId.current, nome: limpo });
       setPerfil(p);
-    } catch {
-      /* será reenviado na próxima sincronização */
-    }
+    } catch { /* reenviado na próxima sync */ }
   }, []);
 
   return (
-    <AllianceContext.Provider value={{ perfil, aliada, caixa, online, parear, enviar, emprestar, reforcar, receber, renomear, refresh }}>
+    <AllianceContext.Provider value={{
+      perfil, aliada, caixa, online, historico,
+      parear, enviar, emprestar, reforcar, receber, renomear, refresh,
+    }}>
       {children}
     </AllianceContext.Provider>
   );

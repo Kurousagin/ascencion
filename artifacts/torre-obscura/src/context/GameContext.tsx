@@ -101,10 +101,38 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const comidaNecessaria = vivos.length * 1.2;
     if (draft.recursos.comida >= comidaNecessaria) {
       draft.recursos.comida -= comidaNecessaria;
+      draft.diasSemComida = 0; // alimentados — zera o contador
     } else {
       draft.recursos.comida = 0;
+      draft.diasSemComida = (draft.diasSemComida ?? 0) + 1;
+
+      // Penalidade base (todo dia de fome)
       vivos.forEach(n => { n.sanidade -= 5; n.lealdade -= 3; });
-      addLog(draft, 'alerta', 'FOME: Suprimentos insuficientes. Moral e sanidade caindo.');
+
+      if (draft.diasSemComida >= 2) {
+        // A partir do 2º dia consecutivo: chance crescente de morte por inanição.
+        // Fórmula: 5% por dia extra (dia 2 = 5%, dia 3 = 10%, dia 4 = 15%, …, max 50%).
+        const chanceBase = Math.min(0.50, (draft.diasSemComida - 1) * 0.05);
+        let mortes = 0;
+        vivos.forEach(n => {
+          if (Math.random() < chanceBase) {
+            n.vivo = false;
+            n.posto = null;
+            n.emExpedicao = false;
+            mortes++;
+          }
+        });
+        const diasStr = `${draft.diasSemComida}º dia`;
+        if (mortes > 0) {
+          addLog(draft, 'morte',
+            `INANIÇÃO (${diasStr} sem comida): ${mortes} morador(es) pereceu de fome.`);
+        } else {
+          addLog(draft, 'alerta',
+            `FOME CRÍTICA (${diasStr}): chance de morte ${Math.round(chanceBase * 100)}% por dia. Providencie comida!`);
+        }
+      } else {
+        addLog(draft, 'alerta', 'FOME: Suprimentos insuficientes. Moral e sanidade caindo.');
+      }
     }
 
     // 3. Outros efeitos de edifícios (moral / sanidade)

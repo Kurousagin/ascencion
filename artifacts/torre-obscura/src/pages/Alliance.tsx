@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { useAlliance } from '../context/AllianceContext';
+import { useAlliance, type EmprestimoRegistro } from '../context/AllianceContext';
 import { PROFISSOES, ProfissaoId, getProfissao, podeEmprestar } from '../lib/game-data';
 import {
   Handshake, Copy, Check, Send, Inbox, Users, Wheat, Trees, Mountain, Zap,
   Wifi, WifiOff, Pencil, CalendarDays, Building2, UserPlus, Clock, Skull, Undo2, Shield,
+  History, ArrowRightLeft,
 } from 'lucide-react';
 
 const PRAZOS_DIAS = [5, 10, 20];
@@ -21,7 +22,7 @@ const OPCOES_DIAS = [3, 7, 14] as const;
 
 export function Alliance() {
   const { state, debitarRecursos, estornarRecursos } = useGame();
-  const { perfil, aliada, caixa, online, parear, enviar, emprestar, reforcar, receber, refresh } = useAlliance();
+  const { perfil, aliada, caixa, online, historico, parear, enviar, emprestar, reforcar, receber, refresh } = useAlliance();
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -494,6 +495,69 @@ export function Alliance() {
           </div>
         )}
       </section>
+
+      {/* Histórico de empréstimos */}
+      {historico.length > 0 && (
+        <section>
+          <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+            <History size={13} /> MORADORES ENVIADOS
+          </h3>
+          <div className="space-y-2">
+            {historico.map(reg => {
+              const emCurso = reg.estado === 'em_curso';
+              const retornou = reg.estado === 'retornou';
+              const caiu = reg.estado === 'caiu';
+              const prof = PROFISSOES[reg.profissao as ProfissaoId]?.nome ?? reg.profissao;
+              return (
+                <div
+                  key={reg.id}
+                  className={`bg-gradient-to-r from-[#1C2333] to-[#161B22] border rounded-sm p-3 flex items-start gap-3 ${
+                    emCurso ? 'border-primary/30' : caiu ? 'border-destructive/20' : 'border-success/20'
+                  }`}
+                >
+                  {/* Ícone de estado */}
+                  <div className={`mt-0.5 shrink-0 ${emCurso ? 'text-primary' : caiu ? 'text-destructive' : 'text-success'}`}>
+                    {reg.tipo === 'reforco'
+                      ? <Shield size={14} />
+                      : emCurso ? <ArrowRightLeft size={14} />
+                      : caiu ? <Skull size={14} />
+                      : <Check size={14} />}
+                  </div>
+
+                  {/* Dados do morador */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-foreground text-sm truncate">{reg.npcNome}</span>
+                        <span className="text-[9px] text-primary/70 uppercase shrink-0">{prof}</span>
+                        {reg.tipo === 'reforco' && (
+                          <span className="text-[9px] bg-blue-500/10 border border-blue-400/30 text-blue-400 px-1 py-0.5 rounded-sm uppercase shrink-0">reforço</span>
+                        )}
+                      </div>
+                      <span className={`text-[9px] font-bold uppercase tracking-wide shrink-0 ${
+                        emCurso ? 'text-primary' : caiu ? 'text-destructive' : 'text-success'
+                      }`}>
+                        {emCurso ? 'EM CURSO' : caiu ? 'CAIU' : 'VOLTOU'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-secondary flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays size={9} className="text-primary/60" />
+                        Dia {reg.diaEnvio}
+                        {reg.diaRetorno != null && ` → ${reg.diaRetorno}`}
+                        {emCurso && reg.prazoDias > 0 && ` (prazo: ${reg.prazoDias} dias)`}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users size={9} className="text-primary/60" /> {reg.aliadaNome}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

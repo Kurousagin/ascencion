@@ -171,6 +171,7 @@ export interface LogEntry {
 export interface GameState {
   dia: number;
   moral: number;
+  diasSemComida: number; // contador de dias consecutivos sem comida suficiente
   velocidade: 1 | 2 | 5;
   andarAtual: number;
   lastTimestamp: number;
@@ -269,6 +270,7 @@ export const CAPACIDADE_BASE = 80;
 export const createInitialState = (): GameState => ({
   dia: 1,
   moral: 70,
+  diasSemComida: 0,
   velocidade: 1,
   andarAtual: 1,
   lastTimestamp: Date.now(),
