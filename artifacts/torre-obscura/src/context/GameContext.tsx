@@ -27,8 +27,10 @@ interface GameContextType {
   removerParaEmprestimo: (npcId: string) => NPC | null;   // dono: remove p/ emprestar
   restaurarMorador: (npc: NPC) => void;                    // dono: estorna se a rede falhar
   receberEmprestado: (base: MoradorBase, prazoDias: number, donoNome: string, origemExchangeId: number) => void;
-  removerEmprestado: (npcId: string) => void;              // receptora: sai após devolução
+  removerEmprestado: (npcId: string) => void;              // receptora: sai após devolução (empréstimo ou reforço)
   reintegrarMorador: (base: MoradorBase, morreu: boolean) => void; // dono: recebe de volta
+  // Aliança: reforço de expedição (fase 3).
+  receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
 }
 
 export interface Recursos {
@@ -373,6 +375,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // Reforço: marca sobreviventes como concluídos para retorno automático (fase 3).
+    group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
     saveState(s);
   };
 
@@ -520,17 +525,45 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  // Receptora: remove o morador emprestado após a devolução ter sido registrada
+  // Receptora: remove o morador emprestado/reforço após a devolução ser registrada
   // na rede. Idempotente (ignora se já saiu).
   const removerEmprestado = (npcId: string) => {
     setState(prev => {
       if (!prev) return prev;
       const alvo = prev.npcs.find(n => n.id === npcId);
-      if (!alvo || !alvo.emprestado) return prev;
+      if (!alvo || (!alvo.emprestado && !alvo.reforco)) return prev;
       const s = JSON.parse(JSON.stringify(prev)) as GameState;
       s.npcs = s.npcs.filter(n => n.id !== npcId);
-      const causa = alvo.vivo ? 'retornou ao dono' : 'foi devolvido (perdido em expedição)';
+      const causa = alvo.vivo
+        ? alvo.reforco ? 'retornou após a expedição' : 'retornou ao dono'
+        : 'foi devolvido (perdido em expedição)';
       addLog(s, 'info', `${alvo.nome.toUpperCase()} ${causa}.`);
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
+  // Receptora: adiciona o morador de reforço à cidadela, marcado como reforço e
+  // sem prazo por dias (o retorno acontece após a próxima expedição que disputar).
+  const receberReforco = (
+    base: MoradorBase, donoNome: string, origemExchangeId: number,
+  ) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      if (s.npcs.some(n => n.id === base.id)) return prev; // já recebido
+      const morador: NPC = {
+        ...base,
+        emExpedicao: false,
+        posto: null,
+        reforco: true,
+        reforcoConcluido: false,
+        donoNome,
+        origemExchangeId,
+      };
+      s.npcs.push(morador);
+      addLog(s, 'descoberta', `${base.nome.toUpperCase()} chegou como REFORÇO de ${donoNome.toUpperCase()} — participa de uma expedição e retorna.`);
       s.lastTimestamp = Date.now();
       localStorage.setItem('torre_obscura_save', JSON.stringify(s));
       return s;
@@ -599,6 +632,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       receberEmprestado,
       removerEmprestado,
       reintegrarMorador,
+      receberReforco,
     }}>
       {children}
     </GameContext.Provider>

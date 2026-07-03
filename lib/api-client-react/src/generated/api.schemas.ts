@@ -151,3 +151,14 @@ export interface DevolucaoResultado {
   duplicado: boolean;
 }
 
+export interface ReforcoInput {
+  deviceId: string;
+  morador: Morador;
+}
+
+export interface ReforcoResultado {
+  id: number;
+  reforcosAtivos: number;
+  limiteReforcos: number;
+}
+

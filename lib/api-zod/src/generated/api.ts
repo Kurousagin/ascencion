@@ -200,6 +200,38 @@ export const DevolverMoradorResponse = zod.object({
 
 
 /**
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "reforco" na caixa de entrada da aliada. O morador participa de exatamente uma expedição e depois retorna ao dono. Máximo de 2 reforços ativos simultâneos.
+ * @summary Enviar um morador como reforço para a próxima expedição da aliada
+ */
+export const ReforcarMoradorBody = zod.object({
+  "deviceId": zod.string(),
+  "morador": zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+})
+})
+
+export const ReforcarMoradorResponse = zod.object({
+  "id": zod.number(),
+  "reforcosAtivos": zod.number(),
+  "limiteReforcos": zod.number()
+})
+
+
+/**
  * @summary Listar itens pendentes na caixa de entrada
  */
 export const ListarCaixaParams = zod.object({

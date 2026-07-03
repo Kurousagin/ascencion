@@ -199,6 +199,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErroResposta"
+  /alianca/reforcar:
+    post:
+      operationId: reforcarMorador
+      tags: [alianca]
+      summary: Enviar um morador como reforço para a próxima expedição da aliada
+      description: >
+        Remove o morador da cidadela da remetente (tratado pelo cliente) e cria
+        uma troca do tipo "reforco" na caixa de entrada da aliada. O morador
+        participa de exatamente uma expedição e depois retorna ao dono.
+        Máximo de 2 reforços ativos simultâneos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReforcoInput"
+      responses:
+        "200":
+          description: Reforço registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReforcoResultado"
+        "400":
+          description: Requisição inválida ou limite de reforços excedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
   /alianca/{deviceId}/caixa:
     get:
       operationId: listarCaixa
@@ -578,3 +613,26 @@ components:
       required:
         - ok
         - duplicado
+    ReforcoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        morador:
+          $ref: "#/components/schemas/Morador"
+      required:
+        - deviceId
+        - morador
+    ReforcoResultado:
+      type: object
+      properties:
+        id:
+          type: integer
+        reforcosAtivos:
+          type: integer
+        limiteReforcos:
+          type: integer
+      required:
+        - id
+        - reforcosAtivos
+        - limiteReforcos

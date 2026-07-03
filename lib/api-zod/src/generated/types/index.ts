@@ -24,5 +24,7 @@ export * from './perfilInput';
 export * from './recebimento';
 export * from './recebimentoInput';
 export * from './recursos';
+export * from './reforcoInput';
+export * from './reforcoResultado';
 export * from './resumoCidadela';
 export * from './resumoProfissoes';

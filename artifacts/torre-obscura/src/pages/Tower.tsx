@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { FLOORS, calcNpcPower, getEfeitos, calcRecompensaAndar, calcCustoExpedicao } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap } from 'lucide-react';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
@@ -9,6 +9,16 @@ export function Tower() {
   const { state, sendExpedition } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
+
+  // Auto-select reinforcements when opening the modal so they join by default.
+  useEffect(() => {
+    if (modalOpen) {
+      const reforcoIds = state.npcs.filter(n => n.vivo && !n.emExpedicao && n.fadiga < 90 && n.reforco && !n.reforcoConcluido).map(n => n.id);
+      if (reforcoIds.length > 0) {
+        setSelectedNpcs(prev => Array.from(new Set([...prev, ...reforcoIds])));
+      }
+    }
+  }, [modalOpen]);
 
   const floorData = FLOORS[state.andarAtual - 1];
   const isBoss = floorData?.isBoss;
@@ -206,6 +216,11 @@ export function Tower() {
                             <span className="text-[9px] px-1.5 py-[1px] bg-secondary/20 text-secondary border border-secondary/30 rounded-sm tracking-wider uppercase">
                               {n.habilidade}
                             </span>
+                            {n.reforco && (
+                              <span className="text-[9px] px-1.5 py-[1px] bg-blue-500/20 text-blue-300 border border-blue-400/40 rounded-sm tracking-wider uppercase flex items-center gap-1">
+                                <Shield size={9} /> REFORÇO{n.donoNome ? ` · ${n.donoNome}` : ''}
+                              </span>
+                            )}
                           </div>
 
                           <div className="w-full bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5">

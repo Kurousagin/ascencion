@@ -34,7 +34,9 @@ import type {
   Perfil,
   PerfilInput,
   Recebimento,
-  RecebimentoInput
+  RecebimentoInput,
+  ReforcoInput,
+  ReforcoResultado
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -570,6 +572,77 @@ export const useDevolverMorador = <TError = ErrorType<ErroResposta>,
         TContext
       > => {
       return useMutation(getDevolverMoradorMutationOptions(options));
+    }
+
+export const getReforcarMoradorUrl = () => {
+
+
+
+
+  return `/api/alianca/reforcar`
+}
+
+/**
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "reforco" na caixa de entrada da aliada. O morador participa de exatamente uma expedição e depois retorna ao dono. Máximo de 2 reforços ativos simultâneos.
+ * @summary Enviar um morador como reforço para a próxima expedição da aliada
+ */
+export const reforcarMorador = async (reforcoInput: ReforcoInput, options?: RequestInit): Promise<ReforcoResultado> => {
+
+  return customFetch<ReforcoResultado>(getReforcarMoradorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reforcoInput)
+  }
+);}
+
+
+
+
+export const getReforcarMoradorMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reforcarMorador>>, TError,{data: BodyType<ReforcoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reforcarMorador>>, TError,{data: BodyType<ReforcoInput>}, TContext> => {
+
+const mutationKey = ['reforcarMorador'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reforcarMorador>>, {data: BodyType<ReforcoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reforcarMorador(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReforcarMoradorMutationResult = NonNullable<Awaited<ReturnType<typeof reforcarMorador>>>
+    export type ReforcarMoradorMutationBody = BodyType<ReforcoInput>
+    export type ReforcarMoradorMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Enviar um morador como reforço para a próxima expedição da aliada
+ */
+export const useReforcarMorador = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reforcarMorador>>, TError,{data: BodyType<ReforcoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reforcarMorador>>,
+        TError,
+        {data: BodyType<ReforcoInput>},
+        TContext
+      > => {
+      return useMutation(getReforcarMoradorMutationOptions(options));
     }
 
 export const getListarCaixaUrl = (deviceId: string,) => {

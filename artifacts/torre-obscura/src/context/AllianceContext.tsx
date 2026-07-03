@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 import {
   registrarPerfil, obterAliada, parearAlianca, enviarRecursos, listarCaixa, receberItem,
-  emprestarMorador, devolverMorador,
+  emprestarMorador, reforcarMorador, devolverMorador,
   type Perfil, type Aliada, type Exchange, type ResumoCidadela,
 } from '@workspace/api-client-react';
 import { useGame, Recursos } from './GameContext';
@@ -16,6 +16,7 @@ interface AllianceContextType {
   parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
   enviar: (r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
   emprestar: (npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
+  reforcar: (npcId: string) => Promise<{ ok: boolean; erro?: string }>;
   receber: (exchangeId: number) => Promise<{ ok: boolean; erro?: string }>;
   renomear: (nome: string) => Promise<void>;
   refresh: () => void;
@@ -56,6 +57,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const {
     state, creditarRecursos,
     removerParaEmprestimo, restaurarMorador, receberEmprestado, removerEmprestado, reintegrarMorador,
+    receberReforco,
   } = useGame();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [aliada, setAliada] = useState<Aliada | null>(null);
@@ -171,13 +173,37 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     return { ok: true };
   }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa]);
 
-  // ─── Receber item da caixa (recursos, morador ou retorno) ─────────────────
+  // ─── Enviar reforço (fase 3) ──────────────────────────────────────────────
+  const reforcar = useCallback(async (npcId: string) => {
+    const removido = removerParaEmprestimo(npcId);
+    if (!removido) return { ok: false, erro: 'Morador indisponível para reforço.' };
+
+    try {
+      await reforcarMorador({ deviceId: deviceId.current, morador: moradorBase(removido) });
+    } catch (e) {
+      restaurarMorador(removido);
+      return { ok: false, erro: msgErro(e) };
+    }
+
+    try {
+      await puxarAliadaECaixa();
+    } catch {
+      /* falha silenciosa — o reforço foi registrado; o poll vai atualizar */
+    }
+
+    return { ok: true };
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa]);
+
+  // ─── Receber item da caixa (recursos, morador, reforço ou retorno) ─────────
   const receber = useCallback(async (exchangeId: number) => {
     try {
       const item = await receberItem({ deviceId: deviceId.current, exchangeId });
       if (item.tipo === 'emprestimo' && item.morador) {
         // Recebe o morador emprestado; item.id é o empréstimo de origem (p/ devolução).
         receberEmprestado(item.morador as MoradorBase, item.prazoDias ?? 1, item.remetenteNome, item.id);
+      } else if (item.tipo === 'reforco' && item.morador) {
+        // Reforço: entra como membro temporário de expedição.
+        receberReforco(item.morador as MoradorBase, item.remetenteNome, item.id);
       } else if (item.tipo === 'retorno' && item.morador) {
         // Morador próprio voltando (ou aviso de morte).
         reintegrarMorador(item.morador as MoradorBase, !!item.morreu);
@@ -189,7 +215,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [creditarRecursos, receberEmprestado, reintegrarMorador]);
+  }, [creditarRecursos, receberEmprestado, receberReforco, reintegrarMorador]);
 
   // ─── Devolução automática dos emprestados ────────────────────────────────────
   // A receptora devolve o morador quando o prazo (nos SEUS dias) vence, ou
@@ -219,7 +245,11 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!state) return;
     const vencidos = state.npcs.filter(
-      n => n.emprestado && (!n.vivo || (n.emprestadoAte != null && state.dia >= n.emprestadoAte)),
+      n =>
+        // Emprestado: prazo vencido ou morreu
+        (n.emprestado && (!n.vivo || (n.emprestadoAte != null && state.dia >= n.emprestadoAte))) ||
+        // Reforço: expedição concluída ou morreu
+        (n.reforco && (!n.vivo || n.reforcoConcluido)),
     );
     vencidos.forEach(n => { void devolver(n); });
   }, [state?.dia, state?.npcs, devolver]);
@@ -238,7 +268,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AllianceContext.Provider value={{ perfil, aliada, caixa, online, parear, enviar, emprestar, receber, renomear, refresh }}>
+    <AllianceContext.Provider value={{ perfil, aliada, caixa, online, parear, enviar, emprestar, reforcar, receber, renomear, refresh }}>
       {children}
     </AllianceContext.Provider>
   );

@@ -157,6 +157,11 @@ export function People() {
                       <UserPlus size={10}/> EMPRESTADO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.emprestadoAte != null ? ` · volta dia ${npc.emprestadoAte}` : ''}
                     </span>
                   )}
+                  {npc.reforco && (
+                    <span className="text-[9px] bg-blue-500/15 border border-blue-400 text-blue-300 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                      <UserPlus size={10}/> REFORÇO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.reforcoConcluido ? ' · aguardando retorno' : ' · em campo'}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

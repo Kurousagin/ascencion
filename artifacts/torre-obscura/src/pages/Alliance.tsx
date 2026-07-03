@@ -4,7 +4,7 @@ import { useAlliance } from '../context/AllianceContext';
 import { PROFISSOES, ProfissaoId, getProfissao, podeEmprestar } from '../lib/game-data';
 import {
   Handshake, Copy, Check, Send, Inbox, Users, Wheat, Trees, Mountain, Zap,
-  Wifi, WifiOff, Pencil, CalendarDays, Building2, UserPlus, Clock, Skull, Undo2,
+  Wifi, WifiOff, Pencil, CalendarDays, Building2, UserPlus, Clock, Skull, Undo2, Shield,
 } from 'lucide-react';
 
 const PRAZOS_DIAS = [5, 10, 20];
@@ -21,7 +21,7 @@ const OPCOES_DIAS = [3, 7, 14] as const;
 
 export function Alliance() {
   const { state, debitarRecursos, estornarRecursos } = useGame();
-  const { perfil, aliada, caixa, online, parear, enviar, emprestar, receber, refresh } = useAlliance();
+  const { perfil, aliada, caixa, online, parear, enviar, emprestar, reforcar, receber, refresh } = useAlliance();
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -40,6 +40,10 @@ export function Alliance() {
   const [emprestimoNpcId, setEmprestimoNpcId] = useState('');
   const [emprestimoPrazo, setEmprestimoPrazo] = useState<number>(PRAZOS_DIAS[1]);
   const [emprestando, setEmprestando] = useState(false);
+
+  // ── Estado do reforço de expedição ──
+  const [reforcoNpcId, setReforcoNpcId] = useState('');
+  const [reforcando, setReforcando] = useState(false);
 
   // ── Mensagens de feedback ──
   const [msg, setMsg] = useState<{ tipo: 'erro' | 'ok'; texto: string } | null>(null);
@@ -118,6 +122,20 @@ export function Alliance() {
       setMsg({ tipo: 'ok', texto: 'Morador emprestado à aliada.' });
     } else {
       setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao emprestar.' });
+    }
+  };
+
+  const handleReforcar = async () => {
+    if (!reforcoNpcId) return;
+    setReforcando(true);
+    setMsg(null);
+    const r = await reforcar(reforcoNpcId);
+    setReforcando(false);
+    if (r.ok) {
+      setReforcoNpcId('');
+      setMsg({ tipo: 'ok', texto: 'Reforço enviado! Ele entra na próxima expedição da aliada.' });
+    } else {
+      setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao enviar reforço.' });
     }
   };
 
@@ -271,6 +289,51 @@ export function Alliance() {
 
           <section>
             <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+              <Shield size={13} /> ENVIAR REFORÇO
+            </h3>
+            <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
+              <p className="text-[10px] text-secondary/80 leading-relaxed">
+                Envie um morador para reforçar a próxima expedição da aliada. Ele some da sua
+                cidadela, entra no grupo dela somando poder (e efeitos de profissão), e retorna
+                ao fim da expedição com o estado atualizado. Se cair, é perdido.
+              </p>
+
+              {elegiveis.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground italic py-2">
+                  Nenhum morador elegível. Reforço requer morador vivo e ocioso.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-secondary tracking-wide">Morador de reforço</label>
+                    <select
+                      value={reforcoNpcId}
+                      onChange={e => setReforcoNpcId(e.target.value)}
+                      className="w-full bg-background/60 border border-primary/20 rounded-sm py-2.5 px-2 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                    >
+                      <option value="">Selecione um morador...</option>
+                      {elegiveis.map(n => (
+                        <option key={n.id} value={n.id}>
+                          {n.nome} — {PROFISSOES[getProfissao(n)].nome} ({n.raridade})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleReforcar}
+                    disabled={reforcando || !reforcoNpcId}
+                    className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-blue-400 text-blue-300 hover:bg-blue-400/20 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Shield size={14} /> {reforcando ? 'ENVIANDO...' : 'ENVIAR REFORÇO'}
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
               <UserPlus size={13} /> EMPRESTAR MORADOR
             </h3>
             <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
@@ -351,12 +414,14 @@ export function Alliance() {
           <div className="space-y-3">
             {caixa.map(item => {
               const isEmprestimo = item.tipo === 'emprestimo' && item.morador;
+              const isReforco = item.tipo === 'reforco' && item.morador;
               const isRetorno = item.tipo === 'retorno' && item.morador;
               const recursos = item.recursos;
               return (
                 <div key={item.id} className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-3">
                   <div className="text-[11px] text-secondary mb-2">
                     {isEmprestimo && <span className="text-primary font-bold">Empréstimo · </span>}
+                    {isReforco && <span className="text-blue-300 font-bold">Reforço · </span>}
                     {isRetorno && <span className={`font-bold ${item.morreu ? 'text-destructive' : 'text-success'}`}>Retorno · </span>}
                     De <span className="text-foreground font-bold">{item.remetenteNome}</span>
                   </div>
@@ -376,6 +441,21 @@ export function Alliance() {
                     </div>
                   )}
 
+                  {isReforco && item.morador && (
+                    <div className="mb-3 text-[11px] bg-blue-500/10 border border-blue-400/30 rounded-sm p-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield size={12} className="text-blue-300" />
+                        <span className="text-foreground font-bold">{item.morador.nome}</span>
+                        <span className="text-blue-300 text-[10px]">
+                          {PROFISSOES[getProfissao(item.morador)].nome}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-secondary">
+                        Participa de uma expedição e retorna automaticamente ao dono.
+                      </div>
+                    </div>
+                  )}
+
                   {isRetorno && item.morador && (
                     <div className={`mb-3 text-[11px] bg-background/50 border rounded-sm p-2.5 ${item.morreu ? 'border-destructive/30' : 'border-success/30'}`}>
                       <div className="flex items-center gap-2">
@@ -388,7 +468,7 @@ export function Alliance() {
                     </div>
                   )}
 
-                  {!isEmprestimo && !isRetorno && (
+                  {!isEmprestimo && !isReforco && !isRetorno && (
                     <div className="flex gap-2 flex-wrap mb-3 text-[10px] font-bold">
                       {recursos && RES_META.filter(m => recursos[m.key] > 0).map(({ key, icon: Icon }) => (
                         <span key={key} className="px-1.5 py-0.5 rounded-sm flex items-center gap-1 bg-background text-success border border-success/30">
@@ -406,7 +486,7 @@ export function Alliance() {
                   >
                     <Check size={14} /> {recebendoId === item.id
                       ? 'RECEBENDO...'
-                      : isEmprestimo ? 'ACOLHER MORADOR' : isRetorno ? 'CONFIRMAR' : 'RECEBER'}
+                      : isEmprestimo ? 'ACOLHER MORADOR' : isReforco ? 'ACOLHER REFORÇO' : isRetorno ? 'CONFIRMAR' : 'RECEBER'}
                   </button>
                 </div>
               );

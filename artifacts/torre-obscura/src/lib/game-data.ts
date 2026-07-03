@@ -82,25 +82,33 @@ export interface NPC {
   // ─── Empréstimo (fase 2 do multiplayer) ──────────────────────────────────
   // Presentes apenas em moradores emprestados que estão TRABALHANDO na minha
   // cidadela (eu sou a receptora). Um morador próprio nunca tem estes campos.
-  emprestado?: boolean;         // true = veio emprestado da aliada
+  emprestado?: boolean;         // true = veio emprestado da aliada (prazo por dias)
   emprestadoAte?: number;       // dia (meu) em que deve retornar ao dono
   donoNome?: string;            // nome da cidadela dona, para exibição
   origemExchangeId?: number;    // id da troca de ida (fonte de verdade p/ devolução)
+  // ─── Reforço (fase 3 do multiplayer) ─────────────────────────────────────
+  // Presentes apenas em moradores de reforço que ainda estão na minha cidadela.
+  reforco?: boolean;            // true = veio como reforço de expedição (uma vez)
+  reforcoConcluido?: boolean;   // true = já participou da expedição, aguarda retorno
 }
 
-// Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo).
-export type MoradorBase = Omit<NPC, 'emprestado' | 'emprestadoAte' | 'donoNome' | 'origemExchangeId'>;
+// Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
+export type MoradorBase = Omit<NPC, 'emprestado' | 'emprestadoAte' | 'donoNome' | 'origemExchangeId' | 'reforco' | 'reforcoConcluido'>;
 
-// Remove marcadores locais de empréstimo antes de trafegar o morador pela rede.
+// Remove marcadores locais antes de trafegar o morador pela rede.
 export function moradorBase(npc: NPC): MoradorBase {
-  const { emprestado: _e, emprestadoAte: _a, donoNome: _d, origemExchangeId: _o, ...base } = npc;
+  const {
+    emprestado: _e, emprestadoAte: _a, donoNome: _d, origemExchangeId: _o,
+    reforco: _r, reforcoConcluido: _rc,
+    ...base
+  } = npc;
   return base;
 }
 
-// Um morador pode ser emprestado se está vivo, ocioso (sem posto), fora de
-// expedição e não é ele próprio um emprestado da aliada.
+// Um morador pode ser emprestado/enviado como reforço se está vivo, ocioso
+// (sem posto), fora de expedição e não é ele próprio um emprestado/reforço.
 export function podeEmprestar(npc: NPC): boolean {
-  return npc.vivo && !npc.emExpedicao && !npc.emprestado && npc.posto === null;
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && !npc.reforco && npc.posto === null;
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento';

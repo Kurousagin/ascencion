@@ -24,6 +24,8 @@ import {
   ReceberItemResponse,
   EmprestarMoradorBody,
   EmprestarMoradorResponse,
+  ReforcarMoradorBody,
+  ReforcarMoradorResponse,
   DevolverMoradorBody,
   DevolverMoradorResponse,
 } from "@workspace/api-zod";
@@ -39,6 +41,10 @@ const TAXA_TORRE = 0.15;
 const PRAZO_MIN_DIAS = 3;
 const PRAZO_MAX_DIAS = 60;
 const LIMITE_EMPRESTIMOS = 2;
+
+// Reforço de expedição: teto de reforços simultâneos ainda não devolvidos
+// (aguardando recebimento ou já em uso na aliada).
+const LIMITE_REFORCOS = 2;
 
 // Código de aliança: 6 caracteres, sem caracteres ambíguos (0/O, 1/I, etc.).
 const ALFABETO_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -496,6 +502,76 @@ router.post("/alianca/emprestar", async (req, res): Promise<void> => {
   res.json(data);
 });
 
+// ─── POST /alianca/reforcar — enviar um morador de reforço à aliada ─────────────
+// Espelha /alianca/emprestar, mas sem prazo em dias: o reforço participa de UMA
+// expedição da aliada e depois retorna. A troca é criada com tipo "reforco".
+router.post("/alianca/reforcar", async (req, res): Promise<void> => {
+  const parsed = ReforcarMoradorBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { deviceId, morador } = parsed.data;
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
+    .limit(1);
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
+    return;
+  }
+  const [link] = await db
+    .select()
+    .from(alliancesTable)
+    .where(eq(alliancesTable.playerId, player.id))
+    .limit(1);
+  if (!link) {
+    res.status(404).json({ error: "Você ainda não tem uma aliada." });
+    return;
+  }
+
+  // Teto de reforços simultâneos: contam os itens de ida ainda não devolvidos
+  // (aguardando recebimento ou já em uso na aliada).
+  const ativos = await db
+    .select({ id: exchangesTable.id })
+    .from(exchangesTable)
+    .where(
+      and(
+        eq(exchangesTable.fromPlayerId, player.id),
+        eq(exchangesTable.tipo, "reforco"),
+        inArray(exchangesTable.status, ["pendente", "recebido"]),
+      ),
+    );
+  if (ativos.length >= LIMITE_REFORCOS) {
+    res.status(400).json({
+      error: `Você já tem ${ativos.length} reforço(s) em campo (limite ${LIMITE_REFORCOS}).`,
+    });
+    return;
+  }
+
+  const [criado] = await db
+    .insert(exchangesTable)
+    .values({
+      tipo: "reforco",
+      fromPlayerId: player.id,
+      toPlayerId: link.allyId,
+      remetenteNome: player.nome,
+      morador: morador as MoradorPayload,
+    })
+    .returning();
+
+  req.log.info({ from: player.id, to: link.allyId }, "Reforço enviado");
+
+  const data = ReforcarMoradorResponse.parse({
+    id: criado.id,
+    reforcosAtivos: ativos.length + 1,
+    limiteReforcos: LIMITE_REFORCOS,
+  });
+  res.json(data);
+});
+
 // ─── POST /alianca/devolver — devolver morador emprestado ao dono ───────────────
 router.post("/alianca/devolver", async (req, res): Promise<void> => {
   const parsed = DevolverMoradorBody.safeParse(req.body);
@@ -526,7 +602,7 @@ router.post("/alianca/devolver", async (req, res): Promise<void> => {
         and(
           eq(exchangesTable.id, origemExchangeId),
           eq(exchangesTable.toPlayerId, player.id),
-          eq(exchangesTable.tipo, "emprestimo"),
+          inArray(exchangesTable.tipo, ["emprestimo", "reforco"]),
           eq(exchangesTable.status, "recebido"),
         ),
       )
