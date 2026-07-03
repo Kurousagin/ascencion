@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { EDIFICIOS_CUSTOS } from '../lib/game-data';
+import { Wheat, Trees, Mountain, Zap } from 'lucide-react';
 
 export function Citadel() {
   const { state, buildEdificio } = useGame();
@@ -7,22 +8,29 @@ export function Citadel() {
   const getProgressColor = (current: number, max: number) => {
     const p = current / max;
     if (p > 0.9) return 'bg-destructive';
-    if (p > 0.7) return 'bg-orange';
-    if (p > 0.5) return 'bg-warning';
+    if (p > 0.7) return 'bg-warning';
+    if (p > 0.5) return 'bg-[#4A9EFF]'; // blue
     return 'bg-success';
   };
 
-  const ResourceBar = ({ label, current, max }: { label: string, current: number, max: number }) => (
-    <div className="space-y-1 mb-3">
-      <div className="flex justify-between text-xs font-bold">
-        <span>{label}</span>
-        <span className="text-secondary">{Math.floor(current)} / {max}</span>
+  const ResourceCard = ({ label, current, max, icon: Icon }: { label: string, current: number, max: number, icon: any }) => (
+    <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 p-3 rounded-sm relative overflow-hidden flex flex-col justify-between h-[90px] shadow-md">
+      <Icon className="absolute -right-2 -bottom-2 w-12 h-12 text-primary/10" />
+      <div className="flex justify-between items-start z-10">
+        <span className="text-[10px] text-secondary tracking-widest uppercase">{label}</span>
+        <Icon size={14} className="text-primary/70" />
       </div>
-      <div className="w-full bg-background h-2 border border-card-border p-px">
-        <div 
-          className={`h-full transition-all ${getProgressColor(current, max)}`}
-          style={{ width: `${Math.min(100, (current / max) * 100)}%` }}
-        />
+      <div className="z-10">
+        <div className="flex items-baseline gap-1 mb-1.5">
+          <span className="text-xl font-bold font-cinzel text-foreground">{Math.floor(current)}</span>
+          <span className="text-[10px] text-muted-foreground font-cinzel">/{max}</span>
+        </div>
+        <div className="w-full bg-background h-1.5 rounded-sm overflow-hidden border border-white/5">
+          <div 
+            className={`h-full transition-all ${getProgressColor(current, max)}`}
+            style={{ width: `${Math.min(100, (current / max) * 100)}%` }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -31,31 +39,25 @@ export function Citadel() {
     const exists = state.edificios.find(e => e.tipo === tipo);
     const nivelAtual = exists?.nivel || 0;
     
-    // special logic for Armazem
     const isArmazem = tipo === 'Armazem';
     if (isArmazem && nivelAtual >= 3) {
-      return null; // hide if maxed
+      return null;
     }
+    
     if (!isArmazem && exists) {
       return (
-        <div className="bg-card/50 border border-card-border p-3 opacity-60">
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="font-bold text-muted-foreground">{name.toUpperCase()}</div>
-              <div className="text-[10px] text-muted-foreground mt-1">{desc}</div>
-            </div>
-            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5">ATIVO</span>
-          </div>
+        <div className="bg-[#0D1117] border border-card-border p-4 opacity-70 rounded-sm relative overflow-hidden h-full">
+          <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[9px] text-primary font-bold tracking-widest px-2 py-1 rounded-bl-sm">ATIVO</div>
+          <div className="font-bold text-muted-foreground font-cinzel text-lg">{name.toUpperCase()}</div>
+          <div className="text-[10px] text-muted-foreground mt-1 tracking-wide">{desc}</div>
         </div>
       );
     }
 
     const nextLevel = isArmazem ? nivelAtual + 1 : 1;
-    // Armazém always uses numbered key (Armazem_1, Armazem_2…); others use tipo directly
     const costKey = isArmazem ? `${tipo}_${nextLevel}` : tipo;
     const custo = EDIFICIOS_CUSTOS[costKey];
 
-    // Safety: if cost entry missing, don't render
     if (!custo) return null;
 
     const canAfford =
@@ -64,56 +66,85 @@ export function Citadel() {
       (state.recursos.ferro >= (custo.ferro || 0));
 
     return (
-      <div className="bg-card border border-card-border p-3 space-y-3">
-        <div>
-          <div className="font-bold text-foreground">
-            {name.toUpperCase()} {isArmazem && `Nvl ${nextLevel}`}
+      <div className={`bg-gradient-to-b from-[#1C2333] to-[#161B22] border ${canAfford ? 'border-primary/50 shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border-card-border'} p-4 flex flex-col justify-between rounded-sm h-full`}>
+        <div className="mb-4">
+          <div className="font-bold text-foreground font-cinzel text-lg">
+            {name.toUpperCase()} {isArmazem && <span className="text-primary text-sm tracking-widest ml-1">NVL {nextLevel}</span>}
           </div>
-          <div className="text-[10px] text-secondary mt-1 leading-tight">{desc}</div>
+          <div className="text-[10px] text-secondary mt-1.5 leading-relaxed tracking-wide">{desc}</div>
         </div>
         
-        <div className="flex gap-2 text-[10px] font-bold">
-          {custo.madeira && <span className={state.recursos.madeira < custo.madeira ? 'text-destructive' : 'text-secondary'}>{custo.madeira} MAD</span>}
-          {custo.pedra && <span className={state.recursos.pedra < custo.pedra ? 'text-destructive' : 'text-secondary'}>{custo.pedra} PED</span>}
-          {custo.ferro && <span className={state.recursos.ferro < custo.ferro ? 'text-destructive' : 'text-secondary'}>{custo.ferro} FER</span>}
-        </div>
+        <div className="space-y-4">
+          <div className="flex gap-2 flex-wrap text-[10px] font-bold font-inter">
+            {custo.madeira && (
+              <span className={`px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${state.recursos.madeira < custo.madeira ? 'bg-destructive/10 text-destructive border border-destructive/30' : 'bg-background text-secondary border border-card-border'}`}>
+                <Trees size={10}/> {custo.madeira}
+              </span>
+            )}
+            {custo.pedra && (
+              <span className={`px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${state.recursos.pedra < custo.pedra ? 'bg-destructive/10 text-destructive border border-destructive/30' : 'bg-background text-secondary border border-card-border'}`}>
+                <Mountain size={10}/> {custo.pedra}
+              </span>
+            )}
+            {custo.ferro && (
+              <span className={`px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${state.recursos.ferro < custo.ferro ? 'bg-destructive/10 text-destructive border border-destructive/30' : 'bg-background text-secondary border border-card-border'}`}>
+                <Zap size={10}/> {custo.ferro}
+              </span>
+            )}
+          </div>
 
-        <button
-          disabled={!canAfford}
-          onClick={() => buildEdificio(tipo, nextLevel)}
-          className="w-full h-10 border border-primary text-primary hover:bg-primary hover:text-background font-bold text-xs tracking-widest disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-primary transition-colors"
-        >
-          CONSTRUIR
-        </button>
+          <button
+            disabled={!canAfford}
+            onClick={() => buildEdificio(tipo, nextLevel)}
+            className={`w-full h-10 border text-xs tracking-[0.2em] font-cinzel font-bold transition-all rounded-sm ${
+              canAfford 
+                ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground' 
+                : 'border-card-border text-muted-foreground opacity-50 cursor-not-allowed bg-black/20'
+            }`}
+          >
+            CONSTRUIR
+          </button>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto">
-      <header className="border-b border-border pb-4">
-        <h2 className="text-xl font-bold tracking-widest text-foreground">CIDADELA</h2>
+    <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
+      <header className="pb-3 border-b border-primary/30 relative">
+        <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">CIDADELA</h2>
+        <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
       </header>
 
       <section>
-        <h3 className="text-xs text-secondary tracking-widest mb-4">RECURSOS E ARMAZENAMENTO</h3>
-        <div className="bg-card border border-card-border p-4">
-          <ResourceBar label="COMIDA" current={state.recursos.comida} max={state.recursos.capacidadeArmazem} />
-          <ResourceBar label="MADEIRA" current={state.recursos.madeira} max={state.recursos.capacidadeArmazem} />
-          <ResourceBar label="PEDRA" current={state.recursos.pedra} max={state.recursos.capacidadeArmazem} />
-          <ResourceBar label="FERRO" current={state.recursos.ferro} max={state.recursos.capacidadeArmazem} />
+        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2">
+          ARMAZÉM DE RECURSOS
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <ResourceCard label="Comida" current={state.recursos.comida} max={state.recursos.capacidadeArmazem} icon={Wheat} />
+          <ResourceCard label="Madeira" current={state.recursos.madeira} max={state.recursos.capacidadeArmazem} icon={Trees} />
+          <ResourceCard label="Pedra" current={state.recursos.pedra} max={state.recursos.capacidadeArmazem} icon={Mountain} />
+          <ResourceCard label="Ferro" current={state.recursos.ferro} max={state.recursos.capacidadeArmazem} icon={Zap} />
         </div>
       </section>
 
       <section>
-        <h3 className="text-xs text-secondary tracking-widest mb-4">EDIFÍCIOS DISPONÍVEIS</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {renderEdificio('Fogueira', 'Fogueira', '+1 moral base por dia')}
-          {renderEdificio('Fazenda', 'Fazenda', '+5 comida por dia')}
-          {renderEdificio('Enfermaria', 'Enfermaria', 'Habitantes recuperam +5 fadiga por dia')}
-          {renderEdificio('Templo', 'Templo', '+2 moral/dia e +0.5 sanidade/dia para todos')}
-          {renderEdificio('Armazem', 'Armazém', 'Aumenta limite de recursos')}
-          {renderEdificio('Quartel', 'Quartel', 'Ponto de encontro (Desbloqueio futuro)')}
+        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+          INFRAESTRUTURA
+        </h3>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            {renderEdificio('Fogueira', 'Fogueira', '+1 moral base/dia. Aquece a alma.')}
+            {renderEdificio('Fazenda', 'Fazenda', '+5 comida diária. Sustento.')}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {renderEdificio('Enfermaria', 'Enfermaria', '+5 fadiga recuperada para todos.')}
+            {renderEdificio('Templo', 'Templo', '+2 moral e +0.5 sanidade/dia.')}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {renderEdificio('Armazem', 'Armazém', 'Expande a capacidade de estocagem.')}
+            {renderEdificio('Quartel', 'Quartel', 'Preparação para o combate.')}
+          </div>
         </div>
       </section>
     </div>

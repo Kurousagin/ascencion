@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -39,8 +39,9 @@
   --color-warning: hsl(var(--warning));
   --color-orange: hsl(var(--orange));
 
-  --font-sans: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --font-cinzel: 'Cinzel', serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -50,42 +51,91 @@
 
 :root {
   /* TORRE OBSCURA PALETTE */
-  --background: 216 33% 6%;      /* #0A0E14 */
-  --foreground: 210 33% 91%;     /* #E0E8F0 */
+  --background: 216 28% 7%;      /* #0D1117 */
+  --foreground: 213 31% 90%;     /* #E6EDF3 */
   
-  --card: 210 40% 10%;           /* #0F1923 */
-  --card-foreground: 210 33% 91%; 
-  --card-border: 214 41% 20%;    /* #1E3048 */
+  --card: 215 27% 11%;           /* #161B22 */
+  --card-foreground: 213 31% 90%; 
+  --card-border: 216 13% 19%;    /* #30363D */
   
-  --border: 214 41% 20%;
+  --border: 216 13% 19%;
   
-  --primary: 173 100% 45%;       /* #00E5CC */
-  --primary-foreground: 216 33% 6%;
+  --primary: 43 61% 52%;         /* #D4AF37 */
+  --primary-foreground: 216 28% 7%;
   
-  --secondary: 210 18% 51%;      /* #6B8299 */
-  --secondary-foreground: 216 33% 6%;
+  --secondary: 216 12% 54%;      /* #7D8590 */
+  --secondary-foreground: 213 31% 90%;
   
-  --muted: 214 41% 20%;
-  --muted-foreground: 210 25% 32%; /* #3D5266 */
+  --muted: 215 20% 15%;
+  --muted-foreground: 216 12% 54%;
   
-  --accent: 173 100% 45%;
-  --accent-foreground: 216 33% 6%;
+  --accent: 270 72% 62%;         /* #9B5DE5 */
+  --accent-foreground: 213 31% 90%;
   
-  --destructive: 349 100% 63%;   /* #FF4466 */
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 93% 63%;      /* #F85149 */
+  --destructive-foreground: 213 31% 90%;
   
-  --success: 152 100% 50%;       /* #00FF88 */
-  --warning: 48 100% 50%;        /* #FFCC00 */
-  --orange: 22 100% 63%;         /* #FF8844 */
+  --success: 130 50% 49%;        /* #3FB950 */
+  --warning: 42 74% 57%;         /* #E3B341 */
+  --orange: 22 100% 63%;
 
-  --input: 214 41% 20%;
-  --ring: 173 100% 45%;
+  --input: 216 13% 19%;
+  --ring: 43 61% 52%;
   
-  --popover: 210 40% 10%;
-  --popover-foreground: 210 33% 91%;
-  --popover-border: 214 41% 20%;
+  --popover: 215 27% 11%;
+  --popover-foreground: 213 31% 90%;
+  --popover-border: 216 13% 19%;
 
-  --radius: 0.125rem; /* very small radius for cyberpunk */
+  --radius: 0.25rem;
+
+  --rarity-comum: #8B949E;
+  --rarity-incomum: #2ED573;
+  --rarity-raro: #4A9EFF;
+  --rarity-epico: #9B5DE5;
+}
+
+.dark {
+  --background: 216 28% 7%;
+  --foreground: 213 31% 90%;
+  
+  --card: 215 27% 11%;
+  --card-foreground: 213 31% 90%; 
+  --card-border: 216 13% 19%;
+  
+  --border: 216 13% 19%;
+  
+  --primary: 43 61% 52%;
+  --primary-foreground: 216 28% 7%;
+  
+  --secondary: 216 12% 54%;
+  --secondary-foreground: 213 31% 90%;
+  
+  --muted: 215 20% 15%;
+  --muted-foreground: 216 12% 54%;
+  
+  --accent: 270 72% 62%;
+  --accent-foreground: 213 31% 90%;
+  
+  --destructive: 0 93% 63%;
+  --destructive-foreground: 213 31% 90%;
+  
+  --success: 130 50% 49%;
+  --warning: 42 74% 57%;
+  --orange: 22 100% 63%;
+
+  --input: 216 13% 19%;
+  --ring: 43 61% 52%;
+  
+  --popover: 215 27% 11%;
+  --popover-foreground: 213 31% 90%;
+  --popover-border: 216 13% 19%;
+
+  --radius: 0.25rem;
+
+  --rarity-comum: #8B949E;
+  --rarity-incomum: #2ED573;
+  --rarity-raro: #4A9EFF;
+  --rarity-epico: #9B5DE5;
 }
 
 @layer base {
@@ -98,19 +148,19 @@
   }
 }
 
-.scanlines {
-  background: linear-gradient(
-    to bottom,
-    rgba(255,255,255,0),
-    rgba(255,255,255,0) 50%,
-    rgba(0,0,0,0.2) 50%,
-    rgba(0,0,0,0.2)
-  );
-  background-size: 100% 4px;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  z-index: 50;
+.gold-line { 
+  height: 1px; 
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent); 
+}
+.glow-gold { 
+  box-shadow: 0 0 12px rgba(212,175,55,0.2); 
+}
+.tab-fade { 
+  animation: tabFade 0.2s ease; 
+}
+@keyframes tabFade { 
+  from { opacity: 0; transform: translateY(4px); } 
+  to { opacity: 1; transform: none; } 
 }
 
 .flash-green {
@@ -128,4 +178,18 @@
 @keyframes flashRed {
   0% { color: hsl(var(--destructive)); text-shadow: 0 0 8px hsl(var(--destructive)); }
   100% { color: inherit; text-shadow: none; }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }

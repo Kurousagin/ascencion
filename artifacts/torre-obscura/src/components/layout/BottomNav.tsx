@@ -1,4 +1,4 @@
-import { Shield, Activity, Users, TowerControl, AlignLeft } from 'lucide-react';
+import { Eye, Building2, Landmark, Users, ScrollText } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -7,28 +7,35 @@ interface BottomNavProps {
 
 export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
   const tabs = [
-    { id: 'obs', label: 'OBS', icon: Activity },
-    { id: 'torre', label: 'TORRE', icon: TowerControl },
-    { id: 'cidadela', label: 'CIDADELA', icon: Shield },
+    { id: 'obs', label: 'OBS', icon: Eye },
+    { id: 'torre', label: 'TORRE', icon: Building2 },
+    { id: 'cidadela', label: 'CIDADELA', icon: Landmark },
     { id: 'povo', label: 'POVO', icon: Users },
-    { id: 'log', label: 'LOG', icon: AlignLeft },
+    { id: 'log', label: 'LOG', icon: ScrollText },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border flex justify-around h-16 items-center z-50 px-2">
-      {tabs.map((tab) => {
+    <div className="bg-[#0D1117] border-t border-[rgba(212,175,55,0.3)] z-50 min-h-[64px] pb-2 flex px-2 relative font-inter shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+      {tabs.map(tab => {
         const Icon = tab.icon;
         const isActive = currentTab === tab.id;
+        
         return (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="flex-1 flex flex-col items-center justify-center pt-3 pb-1 relative transition-transform active:scale-95"
           >
-            <Icon size={20} />
-            <span className="text-[10px] tracking-wider font-bold">{tab.label}</span>
+            {isActive && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full mt-1.5 shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+            )}
+            <Icon 
+              size={22} 
+              className={`mb-1.5 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`} 
+            />
+            <span className={`text-[9px] font-bold tracking-widest ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+              {tab.label}
+            </span>
           </button>
         );
       })}
