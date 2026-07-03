@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
 
 // ─── Tipos de conteúdo para cada tipo de troca ────────────────────────────────
@@ -11,30 +11,35 @@ export interface ConteudoRecursos {
   ferro: number;
 }
 
-// Tipo "morador": envio de um NPC em empréstimo da remetente para a destinatária.
-// `npc` é o NPC serializado do game-data (opaco ao servidor).
-export interface ConteudoMorador {
-  npc: unknown;
-  diasEmprestimo: number;
-  donoDeviceId: string; // deviceId da dono original (remetente)
+// Snapshot completo de um morador transportado num empréstimo (ida) ou no
+// retorno (volta). Carrega atributos, profissão derivada, habilidade e estado
+// atual, para que a cidadela receptora possa usá-lo e devolvê-lo atualizado.
+export interface MoradorPayload {
+  id: string;
+  nome: string;
+  forca: number;
+  agilidade: number;
+  inteligencia: number;
+  resistencia: number;
+  sanidade: number;
+  lealdade: number;
+  fadiga: number;
+  vivo: boolean;
+  obscuro: boolean;
+  emExpedicao: boolean;
+  raridade: string;
+  habilidade: string;
+  posto: string | null;
 }
 
-// Tipo "retorno_morador": NPC sendo devolvido pela destinatária à dono original.
-export interface ConteudoRetornoMorador {
-  npc: unknown;
-  morreu: boolean; // true se o NPC faleceu durante o empréstimo
-  donoDeviceId: string;
-}
-
-export type ConteudoExchange =
-  | ConteudoRecursos
-  | ConteudoMorador
-  | ConteudoRetornoMorador;
-
-// ─── Tabela de trocas ─────────────────────────────────────────────────────────
 // Caixa de trocas: itens enviados de uma jogadora para a aliada, aguardando
 // serem recebidos (status pendente -> recebido).
-// Tipos: "recursos" | "morador" | "retorno_morador"
+//
+// tipo:
+//   'recursos'   — envio de recursos (fase 1).
+//   'emprestimo' — empréstimo de um morador por um prazo (fase 2, ida).
+//   'retorno'    — devolução de um morador emprestado ao dono (fase 2, volta),
+//                  possivelmente marcado como morto.
 export const exchangesTable = pgTable("exchanges", {
   id: serial("id").primaryKey(),
   tipo: text("tipo").notNull().default("recursos"),
@@ -46,8 +51,17 @@ export const exchangesTable = pgTable("exchanges", {
     .references(() => playersTable.id),
   // Nome do remetente denormalizado para exibição na caixa de entrada.
   remetenteNome: text("remetente_nome").notNull(),
-  conteudo: jsonb("conteudo").$type<ConteudoExchange>().notNull(),
-  status: text("status").notNull().default("pendente"), // 'pendente' | 'recebido'
+  // Recursos (apenas para tipo 'recursos'; null nos empréstimos/retornos).
+  conteudo: jsonb("conteudo").$type<ConteudoRecursos>(),
+  // Morador transportado (apenas para 'emprestimo'/'retorno').
+  morador: jsonb("morador").$type<MoradorPayload>(),
+  // Prazo do empréstimo em dias de jogo da cidadela receptora.
+  prazoDias: integer("prazo_dias"),
+  // No retorno: indica se o morador morreu enquanto estava emprestado.
+  morreu: boolean("morreu").notNull().default(false),
+  // Empréstimo que originou este retorno (fonte de verdade contra duplicação).
+  origemExchangeId: integer("origem_exchange_id"),
+  status: text("status").notNull().default("pendente"), // 'pendente' | 'recebido' | 'devolvido'
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   receivedAt: timestamp("received_at", { withTimezone: true }),
 });

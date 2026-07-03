@@ -141,10 +141,10 @@ paths:
     post:
       operationId: emprestarMorador
       tags: [alianca]
-      summary: Emprestar um morador para a aliada
+      summary: Emprestar um morador para a aliada por um prazo
       description: >
         Remove o morador da cidadela da remetente (tratado pelo cliente) e
-        cria uma troca do tipo "morador" na caixa de entrada da aliada.
+        cria uma troca do tipo "emprestimo" na caixa de entrada da aliada.
         Máximo de 2 empréstimos ativos simultâneos.
       requestBody:
         required: true
@@ -160,7 +160,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EmprestimoResultado"
         "400":
-          description: Limite de empréstimos ou requisição inválida
+          description: Requisição inválida ou limite de empréstimos excedido
           content:
             application/json:
               schema:
@@ -171,29 +171,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErroResposta"
-  /alianca/retornar:
+  /alianca/devolver:
     post:
-      operationId: retornarMorador
+      operationId: devolverMorador
       tags: [alianca]
-      summary: Devolver um morador emprestado à sua dono
+      summary: Devolver ao dono um morador emprestado (ou avisar sua morte)
       description: >
-        Chamado pela receptora quando o prazo do empréstimo vence ou o morador
-        morre. Cria uma troca do tipo "retorno_morador" na caixa da dono original.
+        Chamado pela receptora quando o prazo vence ou o morador morre.
+        Operação idempotente: a transição recebido→devolvido acontece apenas uma
+        vez; chamadas repetidas retornam duplicado=true sem efeito colateral.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RetornoInput"
+              $ref: "#/components/schemas/DevolucaoInput"
       responses:
         "200":
-          description: Retorno registrado
+          description: Devolução registrada (idempotente)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RetornoResultado"
+                $ref: "#/components/schemas/DevolucaoResultado"
         "404":
-          description: Sem aliada
+          description: Empréstimo de origem não encontrado
           content:
             application/json:
               schema:
@@ -398,56 +399,6 @@ components:
         - recebidoPelaAliada
         - taxaTorre
         - restanteHoje
-    # Conteúdo opaco de um NPC serializado — o servidor não inspeciona seus campos.
-    NPCPayload:
-      type: object
-      description: NPC serializado do game-data (opaco ao servidor)
-      additionalProperties: {}
-    EmprestimoInput:
-      type: object
-      properties:
-        deviceId:
-          type: string
-        npc:
-          $ref: "#/components/schemas/NPCPayload"
-        diasEmprestimo:
-          type: integer
-          minimum: 1
-          maximum: 30
-      required:
-        - deviceId
-        - npc
-        - diasEmprestimo
-    EmprestimoResultado:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        diasEmprestimo:
-          type: integer
-      required:
-        - ok
-        - diasEmprestimo
-    RetornoInput:
-      type: object
-      properties:
-        deviceId:
-          type: string
-        npc:
-          $ref: "#/components/schemas/NPCPayload"
-        morreu:
-          type: boolean
-      required:
-        - deviceId
-        - npc
-        - morreu
-    RetornoResultado:
-      type: object
-      properties:
-        ok:
-          type: boolean
-      required:
-        - ok
     Exchange:
       type: object
       properties:
@@ -462,15 +413,15 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Recursos"
             - type: "null"
-        # Presente para tipo="morador" e "retorno_morador"
+        # Presente para tipo="emprestimo" e "retorno"
         morador:
           oneOf:
-            - $ref: "#/components/schemas/NPCPayload"
+            - $ref: "#/components/schemas/Morador"
             - type: "null"
-        diasEmprestimo:
+        prazoDias:
           type: ["integer", "null"]
         morreu:
-          type: ["boolean", "null"]
+          type: boolean
         status:
           type: string
         criadoEm:
@@ -510,16 +461,120 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Recursos"
             - type: "null"
-        # Preenchido para tipo="morador" e "retorno_morador"
+        # Preenchido para tipo="emprestimo" e "retorno"
         morador:
           oneOf:
-            - $ref: "#/components/schemas/NPCPayload"
+            - $ref: "#/components/schemas/Morador"
             - type: "null"
-        diasEmprestimo:
+        prazoDias:
           type: ["integer", "null"]
         morreu:
-          type: ["boolean", "null"]
+          type: boolean
       required:
         - id
         - tipo
         - remetenteNome
+    Morador:
+      type: object
+      properties:
+        id:
+          type: string
+        nome:
+          type: string
+        forca:
+          type: integer
+        agilidade:
+          type: integer
+        inteligencia:
+          type: integer
+        resistencia:
+          type: integer
+        sanidade:
+          type: number
+        lealdade:
+          type: number
+        fadiga:
+          type: number
+        vivo:
+          type: boolean
+        obscuro:
+          type: boolean
+        emExpedicao:
+          type: boolean
+        raridade:
+          type: string
+        habilidade:
+          type: string
+        posto:
+          type: ["string", "null"]
+      required:
+        - id
+        - nome
+        - forca
+        - agilidade
+        - inteligencia
+        - resistencia
+        - sanidade
+        - lealdade
+        - fadiga
+        - vivo
+        - obscuro
+        - emExpedicao
+        - raridade
+        - habilidade
+        - posto
+    EmprestimoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        morador:
+          $ref: "#/components/schemas/Morador"
+        prazoDias:
+          type: integer
+      required:
+        - deviceId
+        - morador
+        - prazoDias
+    EmprestimoResultado:
+      type: object
+      properties:
+        id:
+          type: integer
+        prazoDias:
+          type: integer
+        emprestimosAtivos:
+          type: integer
+        limiteEmprestimos:
+          type: integer
+      required:
+        - id
+        - prazoDias
+        - emprestimosAtivos
+        - limiteEmprestimos
+    DevolucaoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        origemExchangeId:
+          type: integer
+        morador:
+          $ref: "#/components/schemas/Morador"
+        morreu:
+          type: boolean
+      required:
+        - deviceId
+        - origemExchangeId
+        - morador
+        - morreu
+    DevolucaoResultado:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        duplicado:
+          type: boolean
+      required:
+        - ok
+        - duplicado

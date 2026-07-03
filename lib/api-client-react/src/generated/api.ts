@@ -22,6 +22,8 @@ import type {
 import type {
   Aliada,
   CaixaResposta,
+  DevolucaoInput,
+  DevolucaoResultado,
   EmprestimoInput,
   EmprestimoResultado,
   EnvioInput,
@@ -32,9 +34,7 @@ import type {
   Perfil,
   PerfilInput,
   Recebimento,
-  RecebimentoInput,
-  RetornoInput,
-  RetornoResultado
+  RecebimentoInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -439,8 +439,8 @@ export const getEmprestarMoradorUrl = () => {
 }
 
 /**
- * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "morador" na caixa de entrada da aliada. Máximo de 2 empréstimos ativos simultâneos.
- * @summary Emprestar um morador para a aliada
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "emprestimo" na caixa de entrada da aliada. Máximo de 2 empréstimos ativos simultâneos.
+ * @summary Emprestar um morador para a aliada por um prazo
  */
 export const emprestarMorador = async (emprestimoInput: EmprestimoInput, options?: RequestInit): Promise<EmprestimoResultado> => {
 
@@ -488,7 +488,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type EmprestarMoradorMutationError = ErrorType<ErroResposta>
 
     /**
- * @summary Emprestar um morador para a aliada
+ * @summary Emprestar um morador para a aliada por um prazo
  */
 export const useEmprestarMorador = <TError = ErrorType<ErroResposta>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emprestarMorador>>, TError,{data: BodyType<EmprestimoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -501,37 +501,37 @@ export const useEmprestarMorador = <TError = ErrorType<ErroResposta>,
       return useMutation(getEmprestarMoradorMutationOptions(options));
     }
 
-export const getRetornarMoradorUrl = () => {
+export const getDevolverMoradorUrl = () => {
 
 
 
 
-  return `/api/alianca/retornar`
+  return `/api/alianca/devolver`
 }
 
 /**
- * Chamado pela receptora quando o prazo do empréstimo vence ou o morador morre. Cria uma troca do tipo "retorno_morador" na caixa da dono original.
- * @summary Devolver um morador emprestado à sua dono
+ * Chamado pela receptora quando o prazo vence ou o morador morre. Operação idempotente: a transição recebido→devolvido acontece apenas uma vez; chamadas repetidas retornam duplicado=true sem efeito colateral.
+ * @summary Devolver ao dono um morador emprestado (ou avisar sua morte)
  */
-export const retornarMorador = async (retornoInput: RetornoInput, options?: RequestInit): Promise<RetornoResultado> => {
+export const devolverMorador = async (devolucaoInput: DevolucaoInput, options?: RequestInit): Promise<DevolucaoResultado> => {
 
-  return customFetch<RetornoResultado>(getRetornarMoradorUrl(),
+  return customFetch<DevolucaoResultado>(getDevolverMoradorUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(retornoInput)
+    body: JSON.stringify(devolucaoInput)
   }
 );}
 
 
 
 
-export const getRetornarMoradorMutationOptions = <TError = ErrorType<ErroResposta>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext> => {
+export const getDevolverMoradorMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devolverMorador>>, TError,{data: BodyType<DevolucaoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof devolverMorador>>, TError,{data: BodyType<DevolucaoInput>}, TContext> => {
 
-const mutationKey = ['retornarMorador'];
+const mutationKey = ['devolverMorador'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -541,10 +541,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retornarMorador>>, {data: BodyType<RetornoInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof devolverMorador>>, {data: BodyType<DevolucaoInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  retornarMorador(data,requestOptions)
+          return  devolverMorador(data,requestOptions)
         }
 
 
@@ -554,22 +554,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type RetornarMoradorMutationResult = NonNullable<Awaited<ReturnType<typeof retornarMorador>>>
-    export type RetornarMoradorMutationBody = BodyType<RetornoInput>
-    export type RetornarMoradorMutationError = ErrorType<ErroResposta>
+    export type DevolverMoradorMutationResult = NonNullable<Awaited<ReturnType<typeof devolverMorador>>>
+    export type DevolverMoradorMutationBody = BodyType<DevolucaoInput>
+    export type DevolverMoradorMutationError = ErrorType<ErroResposta>
 
     /**
- * @summary Devolver um morador emprestado à sua dono
+ * @summary Devolver ao dono um morador emprestado (ou avisar sua morte)
  */
-export const useRetornarMorador = <TError = ErrorType<ErroResposta>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retornarMorador>>, TError,{data: BodyType<RetornoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDevolverMorador = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devolverMorador>>, TError,{data: BodyType<DevolucaoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof retornarMorador>>,
+        Awaited<ReturnType<typeof devolverMorador>>,
         TError,
-        {data: BodyType<RetornoInput>},
+        {data: BodyType<DevolucaoInput>},
         TContext
       > => {
-      return useMutation(getRetornarMoradorMutationOptions(options));
+      return useMutation(getDevolverMoradorMutationOptions(options));
     }
 
 export const getListarCaixaUrl = (deviceId: string,) => {

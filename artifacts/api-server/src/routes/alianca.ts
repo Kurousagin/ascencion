@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -7,8 +7,7 @@ import {
   exchangesTable,
   type ResumoCidadela,
   type ConteudoRecursos,
-  type ConteudoMorador,
-  type ConteudoRetornoMorador,
+  type MoradorPayload,
 } from "@workspace/db";
 import {
   RegistrarPerfilBody,
@@ -25,8 +24,8 @@ import {
   ReceberItemResponse,
   EmprestarMoradorBody,
   EmprestarMoradorResponse,
-  RetornarMoradorBody,
-  RetornarMoradorResponse,
+  DevolverMoradorBody,
+  DevolverMoradorResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -34,8 +33,14 @@ const router: IRouter = Router();
 // ─── Balanceamento ────────────────────────────────────────────────────────────
 const LIMITE_ENVIO_DIARIO = 300;
 const TAXA_TORRE = 0.15;
-const LIMITE_EMPRESTIMOS_ATIVOS = 2; // máx. empréstimos simultâneos por jogadora
 
+// Empréstimo de moradores: prazo permitido e teto de empréstimos simultâneos
+// (contados como itens de ida ainda pendentes ou já em uso na aliada).
+const PRAZO_MIN_DIAS = 3;
+const PRAZO_MAX_DIAS = 60;
+const LIMITE_EMPRESTIMOS = 2;
+
+// Código de aliança: 6 caracteres, sem caracteres ambíguos (0/O, 1/I, etc.).
 const ALFABETO_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function gerarCodigo(): string {
@@ -87,23 +92,14 @@ async function temAliada(playerId: number): Promise<boolean> {
 
 // Mapeia um registro de troca para o formato da caixa de entrada.
 function mapExchange(it: typeof exchangesTable.$inferSelect) {
-  const isRecursos = it.tipo === "recursos";
-  const isMorador = it.tipo === "morador";
-  const isRetorno = it.tipo === "retorno_morador";
   return {
     id: it.id,
     tipo: it.tipo,
     remetenteNome: it.remetenteNome,
-    recursos: isRecursos ? (it.conteudo as ConteudoRecursos) : null,
-    morador: (isMorador || isRetorno)
-      ? (it.conteudo as ConteudoMorador | ConteudoRetornoMorador).npc
-      : null,
-    diasEmprestimo: isMorador
-      ? (it.conteudo as ConteudoMorador).diasEmprestimo
-      : null,
-    morreu: isRetorno
-      ? (it.conteudo as ConteudoRetornoMorador).morreu
-      : null,
+    recursos: it.conteudo ?? null,
+    morador: it.morador ?? null,
+    prazoDias: it.prazoDias ?? null,
+    morreu: it.morreu,
     status: it.status,
     criadoEm: it.createdAt,
   };
@@ -343,124 +339,6 @@ router.post("/alianca/enviar", async (req, res): Promise<void> => {
   res.json(data);
 });
 
-// ─── POST /alianca/emprestar ───────────────────────────────────────────────────
-router.post("/alianca/emprestar", async (req, res): Promise<void> => {
-  const parsed = EmprestarMoradorBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { deviceId, npc, diasEmprestimo } = parsed.data;
-
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.deviceId, deviceId))
-    .limit(1);
-  if (!player) {
-    res.status(404).json({ error: "Perfil não encontrado." });
-    return;
-  }
-  const [link] = await db
-    .select()
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
-    .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Você ainda não tem uma aliada." });
-    return;
-  }
-
-  // Verificar limite de empréstimos VERDADEIRAMENTE ativos desta jogadora.
-  // Um empréstimo está ativo enquanto não houver um retorno_morador com o mesmo
-  // npc.id chegando de volta à dono. Contar apenas status="pendente" é incorreto
-  // porque o status muda para "recebido" quando a aliada aceita, mas o NPC ainda
-  // está emprestado.
-  const ativosResult = await db.execute(sql`
-    SELECT COUNT(*)::int AS count
-    FROM exchanges m
-    WHERE m.tipo = 'morador'
-      AND m.from_player_id = ${player.id}
-      AND NOT EXISTS (
-        SELECT 1 FROM exchanges r
-        WHERE r.tipo = 'retorno_morador'
-          AND r.to_player_id   = ${player.id}
-          AND r.conteudo -> 'npc' ->> 'id' = m.conteudo -> 'npc' ->> 'id'
-      )
-  `);
-  const emprestimosAtivos = (ativosResult.rows[0] as { count: number }).count ?? 0;
-  if (emprestimosAtivos >= LIMITE_EMPRESTIMOS_ATIVOS) {
-    res.status(400).json({
-      error: `Limite de ${LIMITE_EMPRESTIMOS_ATIVOS} empréstimos simultâneos atingido. Aguarde um retorno antes de emprestar novamente.`,
-    });
-    return;
-  }
-
-  await db.insert(exchangesTable).values({
-    tipo: "morador",
-    fromPlayerId: player.id,
-    toPlayerId: link.allyId,
-    remetenteNome: player.nome,
-    conteudo: {
-      npc,
-      diasEmprestimo: Math.min(30, Math.max(1, Math.floor(diasEmprestimo))),
-      donoDeviceId: deviceId,
-    } as ConteudoMorador,
-  });
-
-  req.log.info({ from: player.id, to: link.allyId, dias: diasEmprestimo }, "Morador emprestado");
-
-  const data = EmprestarMoradorResponse.parse({ ok: true, diasEmprestimo });
-  res.json(data);
-});
-
-// ─── POST /alianca/retornar ────────────────────────────────────────────────────
-router.post("/alianca/retornar", async (req, res): Promise<void> => {
-  const parsed = RetornarMoradorBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { deviceId, npc, morreu } = parsed.data;
-
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.deviceId, deviceId))
-    .limit(1);
-  if (!player) {
-    res.status(404).json({ error: "Perfil não encontrado." });
-    return;
-  }
-  const [link] = await db
-    .select()
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
-    .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Sem aliada para retornar o morador." });
-    return;
-  }
-
-  // Envia o retorno à dono original (que é a aliada desta jogadora)
-  await db.insert(exchangesTable).values({
-    tipo: "retorno_morador",
-    fromPlayerId: player.id,
-    toPlayerId: link.allyId,
-    remetenteNome: player.nome,
-    conteudo: {
-      npc,
-      morreu: Boolean(morreu),
-      donoDeviceId: link.allyId.toString(),
-    } as ConteudoRetornoMorador,
-  });
-
-  req.log.info({ from: player.id, to: link.allyId, morreu }, "Morador retornado");
-
-  const data = RetornarMoradorResponse.parse({ ok: true });
-  res.json(data);
-});
-
 // ─── GET /alianca/:deviceId/caixa ──────────────────────────────────────────────
 router.get("/alianca/:deviceId/caixa", async (req, res): Promise<void> => {
   const parsed = ListarCaixaParams.safeParse(req.params);
@@ -534,8 +412,145 @@ router.post("/alianca/receber", async (req, res): Promise<void> => {
     remetenteNome: mapped.remetenteNome,
     recursos: mapped.recursos,
     morador: mapped.morador,
-    diasEmprestimo: mapped.diasEmprestimo,
+    prazoDias: mapped.prazoDias,
     morreu: mapped.morreu,
+  });
+  res.json(data);
+});
+
+// ─── POST /alianca/emprestar — emprestar um morador à aliada por um prazo ───────
+router.post("/alianca/emprestar", async (req, res): Promise<void> => {
+  const parsed = EmprestarMoradorBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { deviceId, morador, prazoDias } = parsed.data;
+
+  const prazo = Math.floor(prazoDias);
+  if (prazo < PRAZO_MIN_DIAS || prazo > PRAZO_MAX_DIAS) {
+    res.status(400).json({
+      error: `O prazo deve ficar entre ${PRAZO_MIN_DIAS} e ${PRAZO_MAX_DIAS} dias.`,
+    });
+    return;
+  }
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
+    .limit(1);
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
+    return;
+  }
+  const [link] = await db
+    .select()
+    .from(alliancesTable)
+    .where(eq(alliancesTable.playerId, player.id))
+    .limit(1);
+  if (!link) {
+    res.status(404).json({ error: "Você ainda não tem uma aliada." });
+    return;
+  }
+
+  // Teto de empréstimos simultâneos: contam os itens de ida ainda não devolvidos
+  // (aguardando recebimento ou já em uso na aliada).
+  const ativos = await db
+    .select({ id: exchangesTable.id })
+    .from(exchangesTable)
+    .where(
+      and(
+        eq(exchangesTable.fromPlayerId, player.id),
+        eq(exchangesTable.tipo, "emprestimo"),
+        inArray(exchangesTable.status, ["pendente", "recebido"]),
+      ),
+    );
+  if (ativos.length >= LIMITE_EMPRESTIMOS) {
+    res.status(400).json({
+      error: `Você já tem ${ativos.length} morador(es) emprestado(s) (limite ${LIMITE_EMPRESTIMOS}).`,
+    });
+    return;
+  }
+
+  const [criado] = await db
+    .insert(exchangesTable)
+    .values({
+      tipo: "emprestimo",
+      fromPlayerId: player.id,
+      toPlayerId: link.allyId,
+      remetenteNome: player.nome,
+      morador: morador as MoradorPayload,
+      prazoDias: prazo,
+    })
+    .returning();
+
+  req.log.info({ from: player.id, to: link.allyId, prazo }, "Morador emprestado");
+
+  const data = EmprestarMoradorResponse.parse({
+    id: criado.id,
+    prazoDias: prazo,
+    emprestimosAtivos: ativos.length + 1,
+    limiteEmprestimos: LIMITE_EMPRESTIMOS,
+  });
+  res.json(data);
+});
+
+// ─── POST /alianca/devolver — devolver morador emprestado ao dono ───────────────
+router.post("/alianca/devolver", async (req, res): Promise<void> => {
+  const parsed = DevolverMoradorBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { deviceId, origemExchangeId, morador, morreu } = parsed.data;
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
+    .limit(1);
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
+    return;
+  }
+
+  // Idempotência: só devolve se o empréstimo de origem ainda estiver "recebido"
+  // e destinado a esta jogadora. A transição para "devolvido" é a fonte de verdade
+  // que impede devolução duplicada por reenvio do cliente.
+  const resultado = await db.transaction(async (tx) => {
+    const [origem] = await tx
+      .update(exchangesTable)
+      .set({ status: "devolvido" })
+      .where(
+        and(
+          eq(exchangesTable.id, origemExchangeId),
+          eq(exchangesTable.toPlayerId, player.id),
+          eq(exchangesTable.tipo, "emprestimo"),
+          eq(exchangesTable.status, "recebido"),
+        ),
+      )
+      .returning();
+
+    if (!origem) return { duplicado: true as const };
+
+    await tx.insert(exchangesTable).values({
+      tipo: "retorno",
+      fromPlayerId: player.id,
+      toPlayerId: origem.fromPlayerId,
+      remetenteNome: player.nome,
+      morador: morador as MoradorPayload,
+      morreu,
+      origemExchangeId: origem.id,
+    });
+    return { duplicado: false as const };
+  });
+
+  req.log.info({ from: player.id, duplicado: resultado.duplicado, morreu }, "Morador devolvido");
+
+  const data = DevolverMoradorResponse.parse({
+    ok: true,
+    duplicado: resultado.duplicado,
   });
   res.json(data);
 });

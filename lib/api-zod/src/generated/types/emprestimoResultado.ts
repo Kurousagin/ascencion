@@ -7,6 +7,8 @@
  */
 
 export interface EmprestimoResultado {
-  ok: boolean;
-  diasEmprestimo: number;
+  id: number;
+  prazoDias: number;
+  emprestimosAtivos: number;
+  limiteEmprestimos: number;
 }

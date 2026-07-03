@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, ArrowRightLeft } from 'lucide-react';
+import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus } from 'lucide-react';
 import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId } from '../lib/game-data';
 
 export function People() {
@@ -152,9 +152,9 @@ export function People() {
                       <ShieldAlert size={10}/> OBSCURO
                     </span>
                   )}
-                  {npc.emprestadoDe && (
-                    <span className="text-[9px] bg-blue-500/10 border border-blue-400/40 text-blue-400 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
-                      <ArrowRightLeft size={9}/> EMPRESTADA{npc.retornaEm !== undefined ? ` (dia ${npc.retornaEm})` : ''}
+                  {npc.emprestado && (
+                    <span className="text-[9px] bg-primary/15 border border-primary text-primary px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                      <UserPlus size={10}/> EMPRESTADO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.emprestadoAte != null ? ` · volta dia ${npc.emprestadoAte}` : ''}
                     </span>
                   )}
                 </div>

@@ -5,10 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { NPCPayload } from './nPCPayload';
+import type { Morador } from './morador';
 
-export interface RetornoInput {
+export interface DevolucaoInput {
   deviceId: string;
-  npc: NPCPayload;
+  origemExchangeId: number;
+  morador: Morador;
   morreu: boolean;
 }

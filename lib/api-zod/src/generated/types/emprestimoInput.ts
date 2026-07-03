@@ -5,14 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { NPCPayload } from './nPCPayload';
+import type { Morador } from './morador';
 
 export interface EmprestimoInput {
   deviceId: string;
-  npc: NPCPayload;
-  /**
-     * @minimum 1
-     * @maximum 30
-     */
-  diasEmprestimo: number;
+  morador: Morador;
+  prazoDias: number;
 }

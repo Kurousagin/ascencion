@@ -79,11 +79,28 @@ export interface NPC {
   raridade: Raridade;
   habilidade: HabilidadeId;
   posto: EdificioTipo | null; // edifício onde trabalha (null = ocioso)
-  // Empréstimo: preenchido somente na receptora (undefined no lado da dono).
-  // emprestadoDe armazena o NOME DE EXIBIÇÃO da dono (remetenteNome), não um deviceId.
-  // Usado apenas como flag (truthy = NPC está emprestado) e para exibição na UI.
-  emprestadoDe?: string; // nome da cidadela dono (para exibição)
-  retornaEm?: number;   // dia de jogo (da receptora) em que o empréstimo vence
+  // ─── Empréstimo (fase 2 do multiplayer) ──────────────────────────────────
+  // Presentes apenas em moradores emprestados que estão TRABALHANDO na minha
+  // cidadela (eu sou a receptora). Um morador próprio nunca tem estes campos.
+  emprestado?: boolean;         // true = veio emprestado da aliada
+  emprestadoAte?: number;       // dia (meu) em que deve retornar ao dono
+  donoNome?: string;            // nome da cidadela dona, para exibição
+  origemExchangeId?: number;    // id da troca de ida (fonte de verdade p/ devolução)
+}
+
+// Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo).
+export type MoradorBase = Omit<NPC, 'emprestado' | 'emprestadoAte' | 'donoNome' | 'origemExchangeId'>;
+
+// Remove marcadores locais de empréstimo antes de trafegar o morador pela rede.
+export function moradorBase(npc: NPC): MoradorBase {
+  const { emprestado: _e, emprestadoAte: _a, donoNome: _d, origemExchangeId: _o, ...base } = npc;
+  return base;
+}
+
+// Um morador pode ser emprestado se está vivo, ocioso (sem posto), fora de
+// expedição e não é ele próprio um emprestado da aliada.
+export function podeEmprestar(npc: NPC): boolean {
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && npc.posto === null;
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento';

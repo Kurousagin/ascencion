@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { NPCPayload } from './nPCPayload';
+import type { Morador } from './morador';
 import type { Recursos } from './recursos';
 
 export interface Recebimento {
@@ -13,9 +13,8 @@ export interface Recebimento {
   tipo: string;
   remetenteNome: string;
   recursos?: Recursos | null;
-  morador?: NPCPayload | null;
+  morador?: Morador | null;
   /** @nullable */
-  diasEmprestimo?: number | null;
-  /** @nullable */
-  morreu?: boolean | null;
+  prazoDias?: number | null;
+  morreu?: boolean;
 }

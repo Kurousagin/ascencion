@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
-import { NPC, getProfissao, PROFISSOES, ProfissaoId } from '../lib/game-data';
+import { PROFISSOES, ProfissaoId, getProfissao, podeEmprestar } from '../lib/game-data';
 import {
   Handshake, Copy, Check, Send, Inbox, Users, Wheat, Trees, Mountain, Zap,
-  Wifi, WifiOff, Pencil, CalendarDays, Building2, UserCheck, ArrowRightLeft,
-  Skull,
+  Wifi, WifiOff, Pencil, CalendarDays, Building2, UserPlus, Clock, Skull, Undo2,
 } from 'lucide-react';
+
+const PRAZOS_DIAS = [5, 10, 20];
 
 type ResKey = 'comida' | 'madeira' | 'pedra' | 'ferro';
 const RES_META: { key: ResKey; label: string; icon: any }[] = [
@@ -20,7 +21,7 @@ const OPCOES_DIAS = [3, 7, 14] as const;
 
 export function Alliance() {
   const { state, debitarRecursos, estornarRecursos } = useGame();
-  const { perfil, aliada, caixa, online, parear, enviar, receber, emprestar, refresh } = useAlliance();
+  const { perfil, aliada, caixa, online, parear, enviar, emprestar, receber, refresh } = useAlliance();
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -34,22 +35,16 @@ export function Alliance() {
   const [enviando, setEnviando] = useState(false);
 
   // ── Estado do empréstimo de moradores ──
-  const [npcSelecionadoId, setNpcSelecionadoId] = useState<string | null>(null);
-  const [diasEmprestimo, setDiasEmprestimo] = useState<3 | 7 | 14>(7);
-  const [emprestando, setEmprestando] = useState(false);
-
   // ── Estado do recebimento da caixa ──
   const [recebendoId, setRecebendoId] = useState<number | null>(null);
+  const [emprestimoNpcId, setEmprestimoNpcId] = useState('');
+  const [emprestimoPrazo, setEmprestimoPrazo] = useState<number>(PRAZOS_DIAS[1]);
+  const [emprestando, setEmprestando] = useState(false);
 
   // ── Mensagens de feedback ──
   const [msg, setMsg] = useState<{ tipo: 'erro' | 'ok'; texto: string } | null>(null);
 
   const restanteHoje = perfil ? Math.max(0, perfil.limiteEnvioDiario - perfil.enviadoHoje) : 0;
-
-  // NPCs elegíveis para empréstimo (vivos, não emprestados, não em expedição)
-  const elegiveisParaEmprestimo = state.npcs.filter(
-    n => n.vivo && !n.emprestadoDe && !n.emExpedicao,
-  );
 
   const copiarCodigo = async () => {
     if (!perfil) return;
@@ -101,20 +96,6 @@ export function Alliance() {
     setEnviando(false);
   };
 
-  const handleEmprestar = async () => {
-    if (!npcSelecionadoId) return;
-    setEmprestando(true);
-    setMsg(null);
-    const r = await emprestar(npcSelecionadoId, diasEmprestimo);
-    setEmprestando(false);
-    if (r.ok) {
-      setNpcSelecionadoId(null);
-      setMsg({ tipo: 'ok', texto: `Morador enviado por ${diasEmprestimo} dias.` });
-    } else {
-      setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao enviar morador.' });
-    }
-  };
-
   const handleReceber = async (id: number) => {
     setRecebendoId(id);
     setMsg(null);
@@ -123,115 +104,21 @@ export function Alliance() {
     if (!r.ok) setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao receber.' });
   };
 
-  // Renderiza um NPC compacto para seleção de empréstimo
-  const renderNpcCard = (npc: NPC) => {
-    const prof = getProfissao(npc);
-    const selecionado = npcSelecionadoId === npc.id;
-    return (
-      <div
-        key={npc.id}
-        onClick={() => setNpcSelecionadoId(selecionado ? null : npc.id)}
-        className={`flex items-center gap-3 p-2.5 rounded-sm border cursor-pointer transition-all touch-manipulation ${
-          selecionado
-            ? 'border-primary bg-primary/10'
-            : 'border-card-border bg-background/40 hover:border-primary/40'
-        }`}
-      >
-        <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-[10px] font-cinzel font-bold text-primary shrink-0">
-          {npc.nome[0]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-bold text-foreground text-sm leading-tight truncate">{npc.nome}</div>
-          <div className="text-[9px] text-primary/80 uppercase tracking-wider">{PROFISSOES[prof].nome}</div>
-        </div>
-        <div className="text-[9px] text-secondary shrink-0">
-          {Math.round(npc.fadiga)}% fadiga
-        </div>
-        {selecionado && <Check size={14} className="text-primary shrink-0" />}
-      </div>
-    );
-  };
+  // Moradores próprios elegíveis para empréstimo (vivos, ociosos, fora de expedição).
+  const elegiveis = state.npcs.filter(podeEmprestar);
 
-  // Renderiza um item da caixa de entrada baseado no tipo
-  const renderCaixaItem = (item: typeof caixa[0]) => {
-    const ehMorador = item.tipo === 'morador';
-    const ehRetorno = item.tipo === 'retorno_morador';
-    const ehRecursos = item.tipo === 'recursos';
-    const npcData = item.morador as Record<string, unknown> | null | undefined;
-    const npcNome = npcData?.nome as string | undefined;
-    const npcProf = npcData
-      ? getProfissao({
-          forca: npcData.forca as number ?? 5,
-          agilidade: npcData.agilidade as number ?? 5,
-          inteligencia: npcData.inteligencia as number ?? 5,
-          resistencia: npcData.resistencia as number ?? 5,
-        })
-      : 'combatente' as ProfissaoId;
-
-    return (
-      <div key={item.id} className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-3">
-        <div className="text-[11px] text-secondary mb-2 flex items-center gap-1.5">
-          {ehMorador && <UserCheck size={10} className="text-primary/70" />}
-          {ehRetorno && <ArrowRightLeft size={10} className="text-primary/70" />}
-          {ehRecursos && <Send size={10} className="text-primary/70" />}
-          De <span className="text-foreground font-bold">{item.remetenteNome}</span>
-        </div>
-
-        {/* Recursos */}
-        {ehRecursos && item.recursos && (
-          <div className="flex gap-2 flex-wrap mb-3 text-[10px] font-bold">
-            {RES_META.filter(m => (item.recursos?.[m.key] ?? 0) > 0).map(({ key, icon: Icon }) => (
-              <span key={key} className="px-1.5 py-0.5 rounded-sm flex items-center gap-1 bg-background text-success border border-success/30">
-                <Icon size={10} /> +{item.recursos![key]}
-              </span>
-            ))}
-            {RES_META.every(m => (item.recursos?.[m.key] ?? 0) === 0) && (
-              <span className="text-muted-foreground">Envio vazio</span>
-            )}
-          </div>
-        )}
-
-        {/* Morador chegando */}
-        {ehMorador && npcNome && (
-          <div className="mb-3 flex items-center gap-2 p-2 bg-primary/5 border border-primary/20 rounded-sm">
-            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-[10px] font-cinzel font-bold text-primary shrink-0">
-              {npcNome[0]}
-            </div>
-            <div>
-              <div className="font-bold text-foreground text-sm">{npcNome}</div>
-              <div className="text-[9px] text-primary/80 uppercase">{PROFISSOES[npcProf].nome} — {item.diasEmprestimo} dias</div>
-            </div>
-          </div>
-        )}
-
-        {/* Retorno de morador */}
-        {ehRetorno && (
-          <div className={`mb-3 flex items-center gap-2 p-2 rounded-sm border ${item.morreu ? 'bg-destructive/5 border-destructive/20' : 'bg-success/5 border-success/20'}`}>
-            {item.morreu
-              ? <Skull size={14} className="text-destructive shrink-0" />
-              : <UserCheck size={14} className="text-success shrink-0" />}
-            <div>
-              {npcNome && <div className="font-bold text-foreground text-sm">{npcNome}</div>}
-              <div className={`text-[9px] uppercase tracking-wider ${item.morreu ? 'text-destructive' : 'text-success'}`}>
-                {item.morreu ? 'Caiu em batalha' : 'Retornou em segurança'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={() => handleReceber(item.id)}
-          disabled={recebendoId === item.id}
-          className={`w-full min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40 ${
-            item.morreu
-              ? 'border-destructive/50 text-destructive hover:bg-destructive/10'
-              : 'border-success text-success hover:bg-success hover:text-background'
-          }`}
-        >
-          <Check size={14} /> {recebendoId === item.id ? 'RECEBENDO...' : (ehMorador ? 'ACOLHER' : 'RECEBER')}
-        </button>
-      </div>
-    );
+  const handleEmprestar = async () => {
+    if (!emprestimoNpcId) return;
+    setEmprestando(true);
+    setMsg(null);
+    const r = await emprestar(emprestimoNpcId, emprestimoPrazo);
+    setEmprestando(false);
+    if (r.ok) {
+      setEmprestimoNpcId('');
+      setMsg({ tipo: 'ok', texto: 'Morador emprestado à aliada.' });
+    } else {
+      setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao emprestar.' });
+    }
   };
 
   return (
@@ -382,40 +269,53 @@ export function Alliance() {
             </div>
           </section>
 
-          {/* Emprestar morador */}
           <section>
             <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
-              <UserCheck size={13} /> EMPRESTAR MORADOR
+              <UserPlus size={13} /> EMPRESTAR MORADOR
             </h3>
             <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
               <p className="text-[10px] text-secondary/80 leading-relaxed">
-                Selecione um morador para emprestar à aliada. Ele ajuda por alguns dias e retorna automaticamente (ou não volta se cair em batalha).
+                Empreste um morador ocioso à aliada por um prazo. Ele some da sua cidadela,
+                trabalha e vai a expedições na dela, e retorna ao fim do prazo com o estado
+                atualizado. Se cair numa expedição da aliada, é perdido.
               </p>
 
-              {elegiveisParaEmprestimo.length === 0 ? (
-                <div className="text-center text-[11px] text-muted-foreground py-4 border border-dashed border-card-border rounded-sm">
-                  Nenhum morador disponível para empréstimo.
+              {elegiveis.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground italic py-2">
+                  Nenhum morador elegível. Só é possível emprestar quem está vivo, ocioso
+                  (sem posto) e fora de expedição.
                 </div>
               ) : (
-                <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
-                  {elegiveisParaEmprestimo.map(renderNpcCard)}
-                </div>
-              )}
-
-              {npcSelecionadoId && (
                 <>
-                  {/* Seletor de duração */}
-                  <div className="space-y-1 border-t border-primary/10 pt-3">
-                    <p className="text-[10px] text-secondary tracking-wide">Duração do empréstimo (dias de jogo):</p>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-secondary tracking-wide">Morador</label>
+                    <select
+                      value={emprestimoNpcId}
+                      onChange={e => setEmprestimoNpcId(e.target.value)}
+                      className="w-full bg-background/60 border border-primary/20 rounded-sm py-2.5 px-2 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                    >
+                      <option value="">Selecione um morador...</option>
+                      {elegiveis.map(n => (
+                        <option key={n.id} value={n.id}>
+                          {n.nome} — {PROFISSOES[getProfissao(n)].nome} ({n.raridade})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                      <Clock size={11} className="text-primary/70" /> Prazo (dias da aliada)
+                    </label>
                     <div className="flex gap-2">
-                      {OPCOES_DIAS.map(d => (
+                      {PRAZOS_DIAS.map(d => (
                         <button
                           key={d}
-                          onClick={() => setDiasEmprestimo(d)}
-                          className={`flex-1 min-h-[40px] text-xs font-cinzel font-bold border rounded-sm transition-all touch-manipulation ${
-                            diasEmprestimo === d
-                              ? 'border-primary bg-primary/20 text-primary'
-                              : 'border-card-border text-muted-foreground hover:border-primary/40'
+                          onClick={() => setEmprestimoPrazo(d)}
+                          className={`flex-1 min-h-[40px] text-xs font-bold rounded-sm border transition-all touch-manipulation ${
+                            emprestimoPrazo === d
+                              ? 'bg-primary/15 border-primary text-primary'
+                              : 'bg-background/40 border-card-border text-secondary hover:border-primary/40'
                           }`}
                         >
                           {d} dias
@@ -423,12 +323,13 @@ export function Alliance() {
                       ))}
                     </div>
                   </div>
+
                   <button
                     onClick={handleEmprestar}
-                    disabled={emprestando}
-                    className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40"
+                    disabled={emprestando || !emprestimoNpcId}
+                    className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <UserCheck size={14} /> {emprestando ? 'ENVIANDO...' : 'EMPRESTAR'}
+                    <UserPlus size={14} /> {emprestando ? 'ENVIANDO...' : 'EMPRESTAR À ALIADA'}
                   </button>
                 </>
               )}
@@ -448,7 +349,68 @@ export function Alliance() {
           </div>
         ) : (
           <div className="space-y-3">
-            {caixa.map(renderCaixaItem)}
+            {caixa.map(item => {
+              const isEmprestimo = item.tipo === 'emprestimo' && item.morador;
+              const isRetorno = item.tipo === 'retorno' && item.morador;
+              const recursos = item.recursos;
+              return (
+                <div key={item.id} className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-3">
+                  <div className="text-[11px] text-secondary mb-2">
+                    {isEmprestimo && <span className="text-primary font-bold">Empréstimo · </span>}
+                    {isRetorno && <span className={`font-bold ${item.morreu ? 'text-destructive' : 'text-success'}`}>Retorno · </span>}
+                    De <span className="text-foreground font-bold">{item.remetenteNome}</span>
+                  </div>
+
+                  {isEmprestimo && item.morador && (
+                    <div className="mb-3 text-[11px] bg-background/50 border border-primary/20 rounded-sm p-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <UserPlus size={12} className="text-primary" />
+                        <span className="text-foreground font-bold">{item.morador.nome}</span>
+                        <span className="text-primary text-[10px]">
+                          {PROFISSOES[getProfissao(item.morador)].nome}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-secondary flex items-center gap-1">
+                        <Clock size={10} className="text-primary/70" /> Prazo: {item.prazoDias ?? '—'} dias na sua cidadela
+                      </div>
+                    </div>
+                  )}
+
+                  {isRetorno && item.morador && (
+                    <div className={`mb-3 text-[11px] bg-background/50 border rounded-sm p-2.5 ${item.morreu ? 'border-destructive/30' : 'border-success/30'}`}>
+                      <div className="flex items-center gap-2">
+                        {item.morreu ? <Skull size={12} className="text-destructive" /> : <Undo2 size={12} className="text-success" />}
+                        <span className="text-foreground font-bold">{item.morador.nome}</span>
+                        <span className={`text-[10px] ${item.morreu ? 'text-destructive' : 'text-success'}`}>
+                          {item.morreu ? 'PERDIDO EM EXPEDIÇÃO' : 'volta são e salvo'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isEmprestimo && !isRetorno && (
+                    <div className="flex gap-2 flex-wrap mb-3 text-[10px] font-bold">
+                      {recursos && RES_META.filter(m => recursos[m.key] > 0).map(({ key, icon: Icon }) => (
+                        <span key={key} className="px-1.5 py-0.5 rounded-sm flex items-center gap-1 bg-background text-success border border-success/30">
+                          <Icon size={10} /> +{recursos[key]}
+                        </span>
+                      ))}
+                      {(!recursos || RES_META.every(m => recursos[m.key] === 0)) && <span className="text-muted-foreground">Envio vazio</span>}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleReceber(item.id)}
+                    disabled={recebendoId === item.id}
+                    className="w-full min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-success text-success hover:bg-success hover:text-background active:scale-[0.98] disabled:opacity-40"
+                  >
+                    <Check size={14} /> {recebendoId === item.id
+                      ? 'RECEBENDO...'
+                      : isEmprestimo ? 'ACOLHER MORADOR' : isRetorno ? 'CONFIRMAR' : 'RECEBER'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

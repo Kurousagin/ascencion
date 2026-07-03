@@ -76,34 +76,23 @@ export interface EnvioResultado {
   restanteHoje: number;
 }
 
-/**
- * NPC serializado do game-data (opaco ao servidor)
- */
-export interface NPCPayload {[key: string]: unknown}
-
-export interface EmprestimoInput {
-  deviceId: string;
-  npc: NPCPayload;
-  /**
-     * @minimum 1
-     * @maximum 30
-     */
-  diasEmprestimo: number;
-}
-
-export interface EmprestimoResultado {
-  ok: boolean;
-  diasEmprestimo: number;
-}
-
-export interface RetornoInput {
-  deviceId: string;
-  npc: NPCPayload;
-  morreu: boolean;
-}
-
-export interface RetornoResultado {
-  ok: boolean;
+export interface Morador {
+  id: string;
+  nome: string;
+  forca: number;
+  agilidade: number;
+  inteligencia: number;
+  resistencia: number;
+  sanidade: number;
+  lealdade: number;
+  fadiga: number;
+  vivo: boolean;
+  obscuro: boolean;
+  emExpedicao: boolean;
+  raridade: string;
+  habilidade: string;
+  /** @nullable */
+  posto: string | null;
 }
 
 export interface Exchange {
@@ -111,11 +100,10 @@ export interface Exchange {
   tipo: string;
   remetenteNome: string;
   recursos?: Recursos | null;
-  morador?: NPCPayload | null;
+  morador?: Morador | null;
   /** @nullable */
-  diasEmprestimo?: number | null;
-  /** @nullable */
-  morreu?: boolean | null;
+  prazoDias?: number | null;
+  morreu?: boolean;
   status: string;
   criadoEm: string;
 }
@@ -132,10 +120,34 @@ export interface Recebimento {
   tipo: string;
   remetenteNome: string;
   recursos?: Recursos | null;
-  morador?: NPCPayload | null;
+  morador?: Morador | null;
   /** @nullable */
-  diasEmprestimo?: number | null;
-  /** @nullable */
-  morreu?: boolean | null;
+  prazoDias?: number | null;
+  morreu?: boolean;
+}
+
+export interface EmprestimoInput {
+  deviceId: string;
+  morador: Morador;
+  prazoDias: number;
+}
+
+export interface EmprestimoResultado {
+  id: number;
+  prazoDias: number;
+  emprestimosAtivos: number;
+  limiteEmprestimos: number;
+}
+
+export interface DevolucaoInput {
+  deviceId: string;
+  origemExchangeId: number;
+  morador: Morador;
+  morreu: boolean;
+}
+
+export interface DevolucaoResultado {
+  ok: boolean;
+  duplicado: boolean;
 }
 

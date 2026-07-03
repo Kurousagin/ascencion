@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * NPC serializado do game-data (opaco ao servidor)
- */
-export interface NPCPayload {[key: string]: unknown}
+export interface DevolucaoResultado {
+  ok: boolean;
+  duplicado: boolean;
+}

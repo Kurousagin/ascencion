@@ -133,37 +133,69 @@ export const EnviarRecursosResponse = zod.object({
 
 
 /**
- * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "morador" na caixa de entrada da aliada. Máximo de 2 empréstimos ativos simultâneos.
- * @summary Emprestar um morador para a aliada
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "emprestimo" na caixa de entrada da aliada. Máximo de 2 empréstimos ativos simultâneos.
+ * @summary Emprestar um morador para a aliada por um prazo
  */
-export const emprestarMoradorBodyDiasEmprestimoMax = 30;
-
-
-
 export const EmprestarMoradorBody = zod.object({
   "deviceId": zod.string(),
-  "npc": zod.record(zod.string(), zod.unknown()).describe('NPC serializado do game-data (opaco ao servidor)'),
-  "diasEmprestimo": zod.number().min(1).max(emprestarMoradorBodyDiasEmprestimoMax)
+  "morador": zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+}),
+  "prazoDias": zod.number()
 })
 
 export const EmprestarMoradorResponse = zod.object({
-  "ok": zod.boolean(),
-  "diasEmprestimo": zod.number()
+  "id": zod.number(),
+  "prazoDias": zod.number(),
+  "emprestimosAtivos": zod.number(),
+  "limiteEmprestimos": zod.number()
 })
 
 
 /**
- * Chamado pela receptora quando o prazo do empréstimo vence ou o morador morre. Cria uma troca do tipo "retorno_morador" na caixa da dono original.
- * @summary Devolver um morador emprestado à sua dono
+ * Chamado pela receptora quando o prazo vence ou o morador morre. Operação idempotente: a transição recebido→devolvido acontece apenas uma vez; chamadas repetidas retornam duplicado=true sem efeito colateral.
+ * @summary Devolver ao dono um morador emprestado (ou avisar sua morte)
  */
-export const RetornarMoradorBody = zod.object({
+export const DevolverMoradorBody = zod.object({
   "deviceId": zod.string(),
-  "npc": zod.record(zod.string(), zod.unknown()).describe('NPC serializado do game-data (opaco ao servidor)'),
+  "origemExchangeId": zod.number(),
+  "morador": zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+}),
   "morreu": zod.boolean()
 })
 
-export const RetornarMoradorResponse = zod.object({
-  "ok": zod.boolean()
+export const DevolverMoradorResponse = zod.object({
+  "ok": zod.boolean(),
+  "duplicado": zod.boolean()
 })
 
 
@@ -184,9 +216,25 @@ export const ListarCaixaResponseItem = zod.object({
   "pedra": zod.number(),
   "ferro": zod.number()
 }),zod.null()]).optional(),
-  "morador": zod.union([zod.record(zod.string(), zod.unknown()).describe('NPC serializado do game-data (opaco ao servidor)'),zod.null()]).optional(),
-  "diasEmprestimo": zod.number().nullish(),
-  "morreu": zod.boolean().nullish(),
+  "morador": zod.union([zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+}),zod.null()]).optional(),
+  "prazoDias": zod.number().nullish(),
+  "morreu": zod.boolean().optional(),
   "status": zod.string(),
   "criadoEm": zod.coerce.date()
 })
@@ -211,9 +259,25 @@ export const ReceberItemResponse = zod.object({
   "pedra": zod.number(),
   "ferro": zod.number()
 }),zod.null()]).optional(),
-  "morador": zod.union([zod.record(zod.string(), zod.unknown()).describe('NPC serializado do game-data (opaco ao servidor)'),zod.null()]).optional(),
-  "diasEmprestimo": zod.number().nullish(),
-  "morreu": zod.boolean().nullish()
+  "morador": zod.union([zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+}),zod.null()]).optional(),
+  "prazoDias": zod.number().nullish(),
+  "morreu": zod.boolean().optional()
 })
 
 

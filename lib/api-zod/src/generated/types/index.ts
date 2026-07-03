@@ -8,6 +8,8 @@
 
 export * from './aliada';
 export * from './caixaResposta';
+export * from './devolucaoInput';
+export * from './devolucaoResultado';
 export * from './emprestimoInput';
 export * from './emprestimoResultado';
 export * from './envioInput';
@@ -15,7 +17,7 @@ export * from './envioResultado';
 export * from './erroResposta';
 export * from './exchange';
 export * from './healthStatus';
-export * from './nPCPayload';
+export * from './morador';
 export * from './pareamentoInput';
 export * from './perfil';
 export * from './perfilInput';
@@ -24,5 +26,3 @@ export * from './recebimentoInput';
 export * from './recursos';
 export * from './resumoCidadela';
 export * from './resumoProfissoes';
-export * from './retornoInput';
-export * from './retornoResultado';
