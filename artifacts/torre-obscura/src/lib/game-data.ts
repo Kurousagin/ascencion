@@ -111,8 +111,10 @@ export const EDIFICIOS_CUSTOS: Record<string, { madeira?: number; pedra?: number
   Enfermaria: { madeira: 15, pedra: 10 },
   Quartel: { madeira: 25, pedra: 20, ferro: 10 },
   Templo: { pedra: 30, madeira: 20 },
-  'Armazem_2': { madeira: 20, pedra: 10 },
-  'Armazem_3': { madeira: 40, pedra: 25, ferro: 15 },
+  // Armazém: nível 1 (60→120), nível 2 (120→250)
+  'Armazem_1': { madeira: 20, pedra: 10 },
+  'Armazem_2': { madeira: 40, pedra: 25 },
+  'Armazem_3': { madeira: 60, pedra: 40, ferro: 15 },
 };
 
 export const FLOORS = Array.from({ length: 20 }).map((_, i) => {

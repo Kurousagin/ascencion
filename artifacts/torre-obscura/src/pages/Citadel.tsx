@@ -51,10 +51,14 @@ export function Citadel() {
     }
 
     const nextLevel = isArmazem ? nivelAtual + 1 : 1;
-    const costKey = nextLevel > 1 ? `${tipo}_${nextLevel}` : tipo;
+    // Armazém always uses numbered key (Armazem_1, Armazem_2…); others use tipo directly
+    const costKey = isArmazem ? `${tipo}_${nextLevel}` : tipo;
     const custo = EDIFICIOS_CUSTOS[costKey];
-    
-    const canAfford = 
+
+    // Safety: if cost entry missing, don't render
+    if (!custo) return null;
+
+    const canAfford =
       (state.recursos.madeira >= (custo.madeira || 0)) &&
       (state.recursos.pedra >= (custo.pedra || 0)) &&
       (state.recursos.ferro >= (custo.ferro || 0));
