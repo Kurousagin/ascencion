@@ -492,9 +492,13 @@ export const FLOORS = Array.from({ length: 20 }).map((_, i) => {
   const tierNames = ['Salões Poeirentos', 'Câmaras Sombrias', 'Espirais Malditas', 'Ápice Obscuro'];
   const tierName = tierNames[tier - 1];
   const baseDifficulty = floor * 8;
-  const difficulty = isBoss ? Math.floor(baseDifficulty * 1.8) : baseDifficulty;
-  const baseMortality = floor * 2.5;
-  const mortality = isBoss ? floor * 4 : baseMortality;
+  // Multiplicador de chefe escalado por tier: menor no início para não travar o
+  // jogador no andar 5 antes de ter recursos para construir edifícios de suporte.
+  const bossMultiplier = tier === 1 ? 1.4 : tier === 2 ? 1.6 : tier === 3 ? 1.8 : 2.0;
+  const difficulty = isBoss ? Math.floor(baseDifficulty * bossMultiplier) : baseDifficulty;
+  // Mortalidade reduzida levemente para dar margem a tentativas repetidas.
+  const baseMortality = floor * 2;
+  const mortality = isBoss ? floor * 3 : baseMortality;
   return { floor, tierName, isBoss, difficulty, mortality, tier };
 });
 
@@ -508,12 +512,15 @@ export interface RecompensaAndar {
 }
 
 // Resources credited to the warehouse on a successful floor climb.
+// Madeira e pedra foram aumentados para garantir recursos suficientes mesmo quando
+// o jogador precisa repetir andares já conquistados (modo exploração/farm).
+// Ferro disponível a partir do andar 3 para destravar construções mais cedo.
 export function calcRecompensaAndar(floor: number, tier: number): RecompensaAndar {
   return {
-    comida:  floor * 2 + 6,
-    madeira: floor * 3 + tier * 3,
-    pedra:   floor * 2 + tier * 2,
-    ferro:   floor >= 4 ? floor + tier : 0,
+    comida:  floor * 2 + 8,
+    madeira: floor * 4 + tier * 4,
+    pedra:   floor * 3 + tier * 3,
+    ferro:   floor >= 3 ? floor + tier : 0,
   };
 }
 

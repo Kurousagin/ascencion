@@ -18,7 +18,7 @@ interface GameContextType {
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
   buildEdificio: (tipo: EdificioTipo) => void;
-  sendExpedition: (npcIds: string[]) => void;
+  sendExpedition: (npcIds: string[], targetFloor?: number) => void;
   invocarMorador: () => void;
   assignPosto: (npcId: string, tipo: EdificioTipo | null) => void;
   // Aliança: movimentação de recursos no armazém (a rede fica no AllianceContext).
@@ -334,11 +334,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
-  const sendExpedition = (npcIds: string[]) => {
+  const sendExpedition = (npcIds: string[], targetFloor?: number) => {
     if (!state || npcIds.length === 0) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
-    const floorData = FLOORS[s.andarAtual - 1];
+
+    // targetFloor permite explorar andares já conquistados (modo farm).
+    // Sem targetFloor (ou igual a andarAtual) → modo avançar.
+    const isFarming = targetFloor !== undefined && targetFloor < s.andarAtual && targetFloor >= 1;
+    const efectiveFloor = isFarming ? targetFloor : s.andarAtual;
+    const floorData = FLOORS[efectiveFloor - 1];
     if (!floorData) return;
+
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
     if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra)) return;
@@ -356,9 +362,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (isVictory) {
       const r = calcRecompensaAndar(floorData.floor, floorData.tier);
-      // Batedores no grupo aumentam o loot (+15% por batedor)
+      // Batedores no grupo aumentam o loot (+15% por batedor).
+      // Modo farm: loot reduzido a 70% (sem o incentivo de avançar).
       const batedores = group.filter(n => getProfissao(n) === 'batedor').length;
-      const lootMult = 1 + batedores * 0.15;
+      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15);
       const comidaG = Math.round(r.comida * lootMult);
       const madeiraG = Math.round(r.madeira * lootMult);
       const pedraG = Math.round(r.pedra * lootMult);
@@ -368,28 +375,49 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       s.recursos.madeira = Math.min(cap, s.recursos.madeira + madeiraG);
       s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + pedraG);
       if (ferroG) s.recursos.ferro = Math.min(cap, s.recursos.ferro + ferroG);
-      s.andarAtual++;
+      // Só avança o andare em modo avançar.
+      if (!isFarming) {
+        s.andarAtual++;
+        if (s.andarAtual > 20) s.vitoria = true;
+      }
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
-      addLog(s, 'vitoria', `ANDAR ${floorData.floor} CONQUISTADO. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}`);
-      if (s.andarAtual > 20) s.vitoria = true;
+      const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}`);
 
-      // Resgate: chance de encontrar um sobrevivente (maior em andares de chefe)
-      const popViva = s.npcs.filter(n => n.vivo).length;
-      if (popViva < ef.capPopulacao) {
-        const chanceResgate = floorData.isBoss ? 0.35 : 0.12;
-        if (Math.random() < chanceResgate) {
-          const novo = generateNPC(Math.random() < 0.1);
-          s.npcs.push(novo);
-          addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
+      // Resgate: chance de encontrar um sobrevivente (apenas ao avançar, chefes têm mais chance)
+      if (!isFarming) {
+        const popViva = s.npcs.filter(n => n.vivo).length;
+        if (popViva < ef.capPopulacao) {
+          const chanceResgate = floorData.isBoss ? 0.35 : 0.12;
+          if (Math.random() < chanceResgate) {
+            const novo = generateNPC(Math.random() < 0.1);
+            s.npcs.push(novo);
+            addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
+          }
         }
       }
     } else {
-      group.forEach(n => { n.lealdade -= 5; n.sanidade -= 5; });
+      // Falha: penalidades reduzidas (era -5/-5, agora -3/-3) e loot parcial
+      // de 30% do andar — garante algum progresso mesmo travado.
+      group.forEach(n => { n.lealdade -= 3; n.sanidade -= 3; });
+      const r = calcRecompensaAndar(floorData.floor, floorData.tier);
+      const consolaMadeira = Math.round(r.madeira * 0.30);
+      const consolaPedra   = Math.round(r.pedra   * 0.30);
+      const consolaFerro   = r.ferro ? Math.round(r.ferro * 0.30) : 0;
+      const consolaComida  = Math.round(r.comida  * 0.30);
+      s.recursos.madeira = Math.min(cap, s.recursos.madeira + consolaMadeira);
+      s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + consolaPedra);
+      if (consolaFerro) s.recursos.ferro = Math.min(cap, s.recursos.ferro + consolaFerro);
+      s.recursos.comida  = Math.min(cap, s.recursos.comida  + consolaComida);
       const falta = Math.ceil(floorData.difficulty - groupPower);
       const fatigados = group.filter(n => n.fadiga >= 50).length;
       let motivo = `Poder insuficiente (${groupPower.toFixed(0)}/${floorData.difficulty}, faltaram ${falta}).`;
       if (fatigados > 0) motivo += ` ${fatigados} membro(s) fatigado(s) reduziram o poder.`;
-      addLog(s, 'alerta', `FALHA NO ANDAR ${floorData.floor} — ${motivo}`);
+      const consStr = `Recuperados: +${consolaMadeira} madeira, +${consolaPedra} pedra${consolaFerro ? `, +${consolaFerro} ferro` : ''}, +${consolaComida} comida.`;
+      const falhaLabel = isFarming
+        ? `EXPLORAÇÃO ANDAR ${floorData.floor} — falha`
+        : `FALHA NO ANDAR ${floorData.floor}`;
+      addLog(s, 'alerta', `${falhaLabel} — ${motivo} ${consStr}`);
     }
 
     // Mortality per NPC
