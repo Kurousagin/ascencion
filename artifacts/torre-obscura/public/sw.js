@@ -1,4 +1,4 @@
-const CACHE_NAME = 'torre-obscura-v1';
+const CACHE_NAME = 'torre-obscura-v2';
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_URLS = ['/'];
