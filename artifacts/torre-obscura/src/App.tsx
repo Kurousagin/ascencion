@@ -18,7 +18,10 @@ function MainGameArea() {
   if (state.gameOver || state.vitoria) return <GameOverScreen />;
 
   return (
-    <div className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col">
+    <div
+      className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       {/* Content area — no z-index so it never buries the nav */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <AnimatePresence mode="wait">

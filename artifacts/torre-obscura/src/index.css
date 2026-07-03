@@ -156,9 +156,12 @@
     overscroll-behavior: none;
   }
 
-  /* Tailwind doesn't generate pb-safe by default — define it here */
+  /* Safe-area utilities — Tailwind doesn't generate these by default */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* h-dvh polyfill — falls back to 100vh if dvh not supported */
