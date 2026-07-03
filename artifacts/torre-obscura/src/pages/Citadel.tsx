@@ -96,9 +96,9 @@ export function Citadel() {
           <button
             disabled={!canAfford}
             onClick={() => buildEdificio(tipo, nextLevel)}
-            className={`w-full h-10 border text-xs tracking-[0.2em] font-cinzel font-bold transition-all rounded-sm ${
+            className={`w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold transition-all rounded-sm touch-manipulation ${
               canAfford 
-                ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground' 
+                ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98]' 
                 : 'border-card-border text-muted-foreground opacity-50 cursor-not-allowed bg-black/20'
             }`}
           >

@@ -2,30 +2,34 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+    <!--
+      interactive-widget=resizes-content: on iOS 26+ the virtual keyboard
+      and browser chrome resize the layout content box (not just the viewport),
+      keeping the bottom nav anchored above the chrome.
+      viewport-fit=cover: extend to fill safe-area insets (home indicator / Dynamic Island).
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <title>Torre Obscura</title>
-    <meta name="description" content="Guie sobreviventes numa torre mística de 20 andares. Jogo idle cyberpunk em português." />
+    <meta name="description" content="Guie sobreviventes numa torre mística de 20 andares. Jogo idle RPG em português." />
 
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- iOS PWA -->
+    <!-- iOS PWA (standalone / installed) -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Torre Obscura" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Theme color (iOS Safari chrome, Android) -->
-    <meta name="theme-color" content="#0A0E14" />
-    <meta name="msapplication-TileColor" content="#0A0E14" />
+    <!-- Theme color -->
+    <meta name="theme-color" content="#0D1117" />
+    <meta name="msapplication-TileColor" content="#0D1117" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/icon-192.png" />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="Torre Obscura" />
-    <meta property="og:description" content="Guie sobreviventes numa torre mística de 20 andares. Jogo idle cyberpunk." />
-    <meta property="og:type" content="website" />
   </head>
   <body>
     <div id="root"></div>

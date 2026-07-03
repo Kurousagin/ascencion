@@ -139,12 +139,36 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  *, *::before, *::after {
+    @apply border-border box-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body, #root {
+    height: 100%;
+    /* Fill the safe area with the app background on iOS */
+    background-color: hsl(var(--background));
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* Prevent iOS rubber-band scroll on the body */
+    overscroll-behavior: none;
+  }
+
+  /* Tailwind doesn't generate pb-safe by default — define it here */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* h-dvh polyfill — falls back to 100vh if dvh not supported */
+  .h-dvh {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .min-h-dvh {
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

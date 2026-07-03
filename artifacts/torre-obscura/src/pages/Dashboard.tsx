@@ -75,7 +75,7 @@ export function Dashboard() {
             <button
               key={spd}
               onClick={() => setSpeed(spd as any)}
-              className={`flex-1 h-12 flex items-center justify-center rounded font-cinzel font-bold tracking-widest transition-all ${
+              className={`flex-1 h-12 flex items-center justify-center rounded font-cinzel font-bold tracking-widest transition-all touch-manipulation ${
                 state.velocidade === spd
                   ? 'border border-primary text-primary-foreground bg-primary glow-gold'
                   : 'border border-card-border text-secondary bg-[#161B22] hover:border-primary/50'
@@ -89,7 +89,7 @@ export function Dashboard() {
 
       <button
         onClick={advanceDay}
-        className="w-full h-[60px] bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg flex items-center justify-center gap-3 mt-4 hover:bg-opacity-90 active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(212,175,55,0.2)] rounded-sm"
+        className="w-full h-[60px] bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg flex items-center justify-center gap-3 mt-4 hover:bg-opacity-90 active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(212,175,55,0.2)] rounded-sm touch-manipulation"
       >
         <FastForward size={20} />
         AVANÇAR DIA

@@ -106,7 +106,7 @@ export function Tower() {
 
         <button 
           onClick={() => setModalOpen(true)}
-          className={`w-full h-14 font-cinzel font-bold tracking-[0.2em] text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 relative z-10 ${
+          className={`w-full h-14 font-cinzel font-bold tracking-[0.2em] text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 touch-manipulation ${
             isBoss 
               ? 'bg-destructive text-destructive-foreground shadow-[0_0_15px_rgba(248,81,73,0.4)]' 
               : 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(212,175,55,0.4)]'
@@ -208,7 +208,7 @@ export function Tower() {
               <button
                 onClick={handleConfirm}
                 disabled={!canAfford || selectedNpcs.length === 0}
-                className="w-full h-14 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-sm shadow-[0_0_10px_rgba(212,175,55,0.2)]"
+                className="w-full h-14 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-sm shadow-[0_0_10px_rgba(212,175,55,0.2)] touch-manipulation"
               >
                 INICIAR ESCALADA
               </button>
