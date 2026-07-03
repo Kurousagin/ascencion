@@ -310,6 +310,78 @@ export const generateNPC = (isObscuro = false): NPC => {
   };
 };
 
+// ─── GACHA — RITUAL EM TRINDADE ──────────────────────────────────────────────
+// Cada ritual invoca GACHA_BATCH sobreviventes de uma vez. A raridade de cada um
+// é sorteada antes de gerar os atributos, garantindo que raros realmente sejam raros
+// e épicos sejam excepcionais. Custo por ritual é mais vantajoso por unidade que a
+// invocação simples anterior.
+
+export const GACHA_BATCH = 3;
+
+export const GACHA_ODDS: Array<{ raridade: Raridade; peso: number }> = [
+  { raridade: 'Épico',   peso: 3  },
+  { raridade: 'Raro',    peso: 12 },
+  { raridade: 'Incomum', peso: 30 },
+  { raridade: 'Comum',   peso: 55 },
+];
+
+function statsParaRaridade(r: Raridade): { min: number; max: number } {
+  switch (r) {
+    case 'Épico':   return { min: 9,  max: 15 };
+    case 'Raro':    return { min: 6,  max: 12 };
+    case 'Incomum': return { min: 4,  max: 9  };
+    case 'Comum':   return { min: 2,  max: 7  };
+  }
+}
+
+export function rollGachaRaridade(): Raridade {
+  const total = GACHA_ODDS.reduce((s, o) => s + o.peso, 0);
+  let r = Math.random() * total;
+  for (const o of GACHA_ODDS) {
+    r -= o.peso;
+    if (r <= 0) return o.raridade;
+  }
+  return 'Comum';
+}
+
+// Gera um NPC cujos atributos são escalonados pela raridade sorteada no gacha.
+// Raridades maiores garantem ranges maiores E lealdade mais alta (mais confiáveis).
+export function generateNpcGacha(forcadoRaridade?: Raridade): NPC {
+  const raridade = forcadoRaridade ?? rollGachaRaridade();
+  const { min, max } = statsParaRaridade(raridade);
+  const lealdadeBase =
+    raridade === 'Épico'   ? getRandomInt(75, 95) :
+    raridade === 'Raro'    ? getRandomInt(65, 90) :
+    raridade === 'Incomum' ? getRandomInt(60, 85) :
+                             getRandomInt(55, 80);
+  const base = {
+    id: crypto.randomUUID(),
+    nome: NAMES[Math.floor(Math.random() * NAMES.length)],
+    forca:        getRandomInt(min, max),
+    agilidade:    getRandomInt(min, max),
+    inteligencia: getRandomInt(min, max),
+    resistencia:  getRandomInt(min, max),
+    sanidade:  getRandomInt(60, 90),
+    lealdade:  lealdadeBase,
+    fadiga:    getRandomInt(5, 20),
+    vivo: true,
+    obscuro: false,
+    emExpedicao: false,
+    posto: null as EdificioTipo | null,
+  };
+  return { ...base, raridade, habilidade: getRandomHabilidade() };
+}
+
+// Custo do ritual em trindade. Mais vantajoso por unidade que a invocação simples
+// (≈ mesmo custo total de antes, mas por 3 NPCs em vez de 1).
+export function calcCustoGacha(popViva: number): { comida: number; madeira: number; ferro: number } {
+  return {
+    comida:  25 + popViva * 5,
+    madeira: 12 + popViva * 2,
+    ferro:   Math.max(1, Math.floor(popViva / 2)),
+  };
+}
+
 // ─── POWER CALCULATION (with skill bonuses) ───────────────────────────────────
 
 export function calcNpcPower(npc: NPC): number {

@@ -3,12 +3,13 @@ import { flushSync } from 'react-dom';
 import {
   GameState, NPC, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
-  calcCustoExpedicao, calcRecompensaAndar, calcCustoInvocacao,
+  calcCustoExpedicao, calcRecompensaAndar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA,
   podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
+  generateNpcGacha, calcCustoGacha, GACHA_BATCH,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -20,7 +21,7 @@ interface GameContextType {
   setSpeed: (speed: 1 | 2 | 5) => void;
   buildEdificio: (tipo: EdificioTipo) => void;
   sendExpedition: (npcIds: string[], targetFloor?: number) => void;
-  invocarMorador: () => void;
+  invocarGacha: () => NPC[]; // retorna os NPCs gerados (já adicionados ao estado)
   assignPosto: (npcId: string, tipo: EdificioTipo | null) => void;
   // Aliança: movimentação de recursos no armazém (a rede fica no AllianceContext).
   debitarRecursos: (r: Recursos) => boolean;
@@ -453,23 +454,31 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
-  const invocarMorador = () => {
-    if (!state) return;
+  const invocarGacha = (): NPC[] => {
+    if (!state) return [];
     const s = JSON.parse(JSON.stringify(state)) as GameState;
     const popViva = s.npcs.filter(n => n.vivo).length;
     const ef = getEfeitos(s.edificios, s.npcs);
-    if (popViva >= ef.capPopulacao) return; // sem espaço no alojamento
-    const custo = calcCustoInvocacao(popViva);
-    if (s.recursos.comida < custo.comida) return;
-    if (s.recursos.madeira < custo.madeira) return;
-    if (s.recursos.ferro < custo.ferro) return;
-    s.recursos.comida -= custo.comida;
+    const slots = ef.capPopulacao - popViva;
+    if (slots <= 0) return [];
+    const custo = calcCustoGacha(popViva);
+    if (s.recursos.comida < custo.comida) return [];
+    if (s.recursos.madeira < custo.madeira) return [];
+    if (s.recursos.ferro < custo.ferro) return [];
+    s.recursos.comida  -= custo.comida;
     s.recursos.madeira -= custo.madeira;
-    s.recursos.ferro -= custo.ferro;
-    const novo = generateNPC(false);
-    s.npcs.push(novo);
-    addLog(s, 'descoberta', `RITUAL DE INVOCAÇÃO: ${novo.nome.toUpperCase()} respondeu ao chamado do Observador.`);
+    s.recursos.ferro   -= custo.ferro;
+    const batch = Math.min(GACHA_BATCH, slots);
+    const novos: NPC[] = [];
+    for (let i = 0; i < batch; i++) {
+      const npc = generateNpcGacha();
+      s.npcs.push(npc);
+      novos.push(npc);
+    }
+    const nomes = novos.map(n => n.nome).join(', ');
+    addLog(s, 'descoberta', `RITUAL EM TRINDADE: ${nomes} responderam ao chamado do Observador.`);
     saveState(s);
+    return novos;
   };
 
   // Reserva (debita) recursos do armazém para enviar à aliada. A validação e a
@@ -766,7 +775,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       setSpeed,
       buildEdificio,
       sendExpedition,
-      invocarMorador,
+      invocarGacha,
       assignPosto,
       debitarRecursos,
       estornarRecursos,
