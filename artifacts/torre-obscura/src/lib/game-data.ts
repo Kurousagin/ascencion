@@ -663,6 +663,46 @@ const FLOOR_NOMES: string[] = [
   'Abismo Superior',    'Câmara do Caos',      'Cidadela da Queda',   'Antecâmara do Fim',   'Ápice Obscuro',
 ];
 
+// Texto atmosférico de cada andar — conta uma história dentro de cada capítulo (5 andares).
+// Capítulo 1 (1–5): "O Que Foi Selado" — exploradores adentram a Torre pela primeira vez.
+// Capítulo 2 (6–10): "O Que Vivia Aqui" — vestígios de uma civilização que habitou a Torre e desapareceu.
+// Capítulo 3 (11–15): "O Que a Torre Faz" — a Torre revela ser um organismo vivo que consome.
+// Capítulo 4 (16–20): "O Que Sempre Esteve Aqui" — o ápice e a entidade que usou a Torre como isca.
+const FLOOR_DESCRICOES: string[] = [
+  // Cap. 1 — "O Que Foi Selado"
+  'A neblina não é natural. As árvores sangram escuridão, e algo nos observa de dentro do cinabre.',
+  'Os túneis foram escavados com pressa. Ferramentas enferrujadas e ossos sugerem que os construtores nunca saíram.',
+  'A vegetação aqui cresce para dentro. Raízes atravessam as paredes como dedos buscando algo enterrado no núcleo da Torre.',
+  'Os cristais pulsam em ritmo constante. Quem os ouve por tempo demais começa a murmurar de volta.',
+  'A última linha de defesa dos que ergueram este lugar. O Guardião não protege o que está acima — garante que ninguém veja o que está abaixo.',
+  // Cap. 2 — "O Que Vivia Aqui"
+  'Além do Guardião, a pedra lembra formas. Colunas entalhadas representam figuras sem rosto adorando algo acima.',
+  'A vida aqui é exuberante demais. Plantas que não existem no mundo exterior florescem sob uma luz que não vem de nenhuma janela.',
+  'Prateleiras até um teto invisível. Os livros foram escritos em ordem cronológica — mas os mais antigos estão no topo.',
+  'As forjas ainda estão quentes. Armaduras de um design impossível esperam mestres que nunca voltaram para vesti-las.',
+  'Ele catalogou cada alma que passou por aqui. O Arquivista sabe seus nomes — e os nomes das pessoas que você perdeu.',
+  // Cap. 3 — "O Que a Torre Faz"
+  'As faces nas águas negras são reconhecíveis. Elas pedem que você se junte a elas. Algumas das vozes parecem familiares.',
+  'Cada golpe de picareta ressoa como um gemido. O minério aqui não é extração — é amputação.',
+  'Os altares mudam de forma quando você não está olhando. O objeto de adoração adapta-se ao maior medo de quem o observa.',
+  'Soldados de pedra tomam posições diferentes a cada visita. Estão se preparando — não para defender, mas para executar.',
+  'A Torre aprendeu com você. O que você encontra aqui usa suas táticas, seu planejamento, sua força. Derrote o que você poderia ter se tornado.',
+  // Cap. 4 — "O Que Sempre Esteve Aqui"
+  'A gravidade é sugestão. O horizonte curva para cima. Algo do outro lado observa com fome crescente.',
+  'As leis da física são rascunhos riscados. Tempo, espaço e memória derretem em possibilidades simultâneas.',
+  'Construída pelos que tentaram parar o que você está prestes a acordar. Eles falharam. Suas advertências ainda estão nas paredes.',
+  'Você ouve uma respiração. Lenta. Rítmica. Enorme. Do outro lado da última porta.',
+  'Não há monstro. Há uma presença que sempre existiu e usou a Torre como isca. A questão não é se você pode vencê-la — é se algo de você sobra depois.',
+];
+
+// Bosses dos andares 5, 10, 15 e 20 — um por capítulo.
+const FLOOR_BOSS: Record<number, { nome: string; epiteto: string }> = {
+   5: { nome: 'GUARDIÃO DO LIMIAR',     epiteto: 'Ele não esquece nenhum rosto que tentou passar.' },
+  10: { nome: 'ARQUIVISTA CORROMPIDO',  epiteto: 'Cada segredo da Torre mora em sua memória podre.' },
+  15: { nome: 'REFLEXO PROFANO',        epiteto: 'Derrote o que você poderia ter se tornado.' },
+  20: { nome: 'O QUE SEMPRE ESTEVE AQUI', epiteto: 'A Torre era a armadilha. Você era a presa.' },
+};
+
 // Dificuldade não-linear: cada andar tem seu próprio ritmo, não só floor*8.
 // Bosses (5, 10, 15, 20) têm pico maior; andares "difíceis de bioma" têm +10–20%.
 const BASE_DIFICULDADE: number[] = [
@@ -671,6 +711,14 @@ const BASE_DIFICULDADE: number[] = [
   75,  88, 100, 118,  155,  // 11–15 (boss 15)
  130, 148, 168, 190,  230,  // 16–20 (boss 20)
 ];
+
+// Títulos de capítulo — exibidos no topo do card antes do andar.
+export const CAPITULO_NOMES: Record<number, string> = {
+  1: 'O Que Foi Selado',
+  2: 'O Que Vivia Aqui',
+  3: 'O Que a Torre Faz',
+  4: 'O Que Sempre Esteve Aqui',
+};
 
 // Mortalidade base: combinação de progressão + ajuste do bioma.
 export const FLOORS = BIOMA_POR_ANDAR.map((bioma, i) => {
@@ -682,7 +730,9 @@ export const FLOORS = BIOMA_POR_ANDAR.map((bioma, i) => {
   const difficulty = BASE_DIFICULDADE[i];
   const biomaBonus = BIOMA_META[bioma].mortalidadeBonus;
   const mortality  = isBoss ? floor * 3 + biomaBonus : floor * 2 + biomaBonus;
-  return { floor, nome: FLOOR_NOMES[i], tierName, bioma, isBoss, difficulty, mortality, tier };
+  const descricao  = FLOOR_DESCRICOES[i];
+  const boss       = FLOOR_BOSS[floor] ?? null;
+  return { floor, nome: FLOOR_NOMES[i], tierName, bioma, isBoss, difficulty, mortality, tier, descricao, boss };
 });
 
 // ─── EXPEDITION ECONOMY ────────────────────────────────────────────────────────

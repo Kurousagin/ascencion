@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao } from '../lib/game-data';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
@@ -45,6 +45,17 @@ export function Tower() {
   const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
   const biomaMultiplier = floorData ? calcBiomaMultiplier(group, floorData.bioma) : 1;
   const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
+
+  // Stat primário do bioma atual — guia a escolha de NPCs no modal
+  const statPrimario = biomaInfo?.statPrimario ?? 'forca';
+  const statLabel: Record<string, string> = {
+    forca: 'FOR', agilidade: 'AGI', resistencia: 'RES', inteligencia: 'INT',
+  };
+  const profissaoIdeal = biomaInfo ? BIOMA_META[floorData!.bioma].profissaoIdeal : null;
+
+  // Ordenar por stat primário descendente — melhor fit aparece primeiro
+  const eligiblesSorted = [...state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90)]
+    .sort((a, b) => (b[statPrimario as keyof typeof b] as number) - (a[statPrimario as keyof typeof a] as number));
 
   const handleToggle = (id: string) => {
     if (selectedNpcs.includes(id)) setSelectedNpcs(selectedNpcs.filter(i => i !== id));
@@ -133,21 +144,39 @@ export function Tower() {
           </div>
         )}
 
-        <div className="text-[10px] text-white/50 tracking-[0.2em] mb-1 font-inter relative z-10">
-          {isFarming ? 'MODO EXPLORAÇÃO' : 'ALVO ATUAL'}
+        {/* Capítulo */}
+        <div className="text-[9px] text-white/35 tracking-[0.25em] mb-0.5 font-inter uppercase relative z-10">
+          {isFarming ? 'MODO EXPLORAÇÃO' : `CAPÍTULO ${floorData.tier} · ${CAPITULO_NOMES[floorData.tier]}`}
         </div>
-        <div className="text-5xl font-bold text-white font-cinzel flex items-baseline gap-2 mb-2 drop-shadow-md relative z-10">
+
+        <div className="text-5xl font-bold text-white font-cinzel flex items-baseline gap-2 mb-1 drop-shadow-md relative z-10">
           {floorData.floor} <span className="text-xl text-white/70">ANDAR</span>
         </div>
         <div className="text-sm text-primary tracking-[0.2em] font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
 
         {/* Biome badge */}
         {biomaInfo && (
-          <div className="mt-1 mb-4 flex items-center gap-1.5 relative z-10">
+          <div className="mt-1 flex items-center gap-1.5 relative z-10">
             <span className="text-base leading-none">{biomaInfo.icone}</span>
             <span className="text-[10px] text-white/60 tracking-wider">{biomaInfo.label.toUpperCase()}</span>
             <span className="text-[9px] text-white/35 mx-1">·</span>
             <span className="text-[9px] text-white/50 italic">{biomaInfo.dica}</span>
+          </div>
+        )}
+
+        {/* Texto narrativo do andar */}
+        {floorData.descricao && (
+          <p className="mt-3 mb-1 text-[11px] text-white/50 italic leading-relaxed relative z-10 border-l border-white/10 pl-3">
+            {floorData.descricao}
+          </p>
+        )}
+
+        {/* Banner do Boss */}
+        {floorData.boss && !isFarming && (
+          <div className="mt-3 mb-0 px-3 py-2 rounded-sm bg-destructive/15 border border-destructive/50 relative z-10">
+            <div className="text-[9px] text-destructive/80 tracking-[0.3em] mb-0.5 font-cinzel">GUARDIÃO DO ANDAR</div>
+            <div className="text-sm font-cinzel font-bold text-destructive tracking-widest">{floorData.boss.nome}</div>
+            <div className="text-[9px] text-white/40 italic mt-0.5">{floorData.boss.epiteto}</div>
           </div>
         )}
 
@@ -249,18 +278,29 @@ export function Tower() {
               </Dialog.Close>
             </div>
 
+            {/* Legenda do stat primário do bioma */}
+            {biomaInfo && (
+              <div className="flex items-center gap-2 px-1 mb-2 text-[9px] text-white/40 tracking-wider">
+                <span>{biomaInfo.icone}</span>
+                <span>Ordenado por <span className="text-white/60 font-bold">{statLabel[statPrimario]}</span> — stat primário de {biomaInfo.label}</span>
+                {profissaoIdeal && <span className="ml-auto text-white/30">★ = {profissaoIdeal} ideal</span>}
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto space-y-2 mb-5 custom-scrollbar pr-2">
-              {eligibles.length === 0 ? (
+              {eligiblesSorted.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8 text-sm font-inter">Nenhum habitante apto para combate.</div>
               ) : (
-                eligibles.map(n => {
+                eligiblesSorted.map(n => {
                   const p = calcNpcPower(n);
                   const isSelected = selectedNpcs.includes(n.id);
                   const rarityColor = getRarityColorHex(n.raridade);
+                  const isIdeal = profissaoIdeal && getProfissao(n) === profissaoIdeal;
+                  const statVal = n[statPrimario as keyof typeof n] as number;
                   return (
                     <div
                       key={n.id}
-                      className={`flex items-stretch gap-0 border transition-all cursor-pointer rounded-sm overflow-hidden ${isSelected ? 'border-primary bg-primary/5' : 'border-card-border bg-[#0D1117] hover:border-primary/40'}`}
+                      className={`flex items-stretch gap-0 border transition-all cursor-pointer rounded-sm overflow-hidden ${isSelected ? 'border-primary bg-primary/5' : isIdeal ? 'border-success/40 bg-success/5 hover:border-success/60' : 'border-card-border bg-[#0D1117] hover:border-primary/40'}`}
                       onClick={() => handleToggle(n.id)}
                     >
                       <div className="w-1.5 shrink-0" style={{ backgroundColor: rarityColor }} />
@@ -275,24 +315,33 @@ export function Tower() {
                         </Checkbox.Root>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-baseline mb-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <span className="font-bold text-sm text-foreground">{n.nome}</span>
                               <span className="text-[10px]" style={{ color: rarityColor }}>{getRarityStars(n.raridade)}</span>
+                              {isIdeal && <span className="text-[9px] text-success" title="Profissão ideal para este bioma">★</span>}
                             </div>
+                            {/* Poder total à direita */}
                             <span className="text-primary font-bold text-sm font-cinzel">{p.toFixed(1)}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[9px] px-1.5 py-[1px] bg-secondary/20 text-secondary border border-secondary/30 rounded-sm tracking-wider uppercase">
-                              {n.habilidade}
-                            </span>
-                            {n.reforco && (
-                              <span className="text-[9px] px-1.5 py-[1px] bg-blue-500/20 text-blue-300 border border-blue-400/40 rounded-sm tracking-wider uppercase flex items-center gap-1">
-                                <Shield size={9} /> REFORÇO{n.donoNome ? ` · ${n.donoNome}` : ''}
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[9px] px-1.5 py-[1px] bg-secondary/20 text-secondary border border-secondary/30 rounded-sm tracking-wider uppercase">
+                                {n.habilidade}
                               </span>
-                            )}
+                              {n.reforco && (
+                                <span className="text-[9px] px-1.5 py-[1px] bg-blue-500/20 text-blue-300 border border-blue-400/40 rounded-sm tracking-wider uppercase flex items-center gap-1">
+                                  <Shield size={9} /> REFORÇO{n.donoNome ? ` · ${n.donoNome}` : ''}
+                                </span>
+                              )}
+                            </div>
+                            {/* Stat primário do bioma destacado */}
+                            <span className={`text-[10px] font-bold font-cinzel shrink-0 ${isIdeal ? 'text-success' : 'text-white/50'}`}>
+                              {statLabel[statPrimario]} {statVal}
+                            </span>
                           </div>
 
+                          {/* Barra de fadiga */}
                           <div className="w-full bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5">
                             <div className={`h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{width: `${100 - n.fadiga}%`}} />
                           </div>
