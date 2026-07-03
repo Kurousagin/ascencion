@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface ResumoProfissoes {
+  combatente: number;
+  batedor: number;
+  erudito: number;
+  sentinela: number;
 }

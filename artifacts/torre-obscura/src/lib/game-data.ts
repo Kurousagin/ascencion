@@ -472,3 +472,61 @@ export function calcRecompensaAndar(floor: number, tier: number): RecompensaAnda
 export function calcCustoExpedicao(qtd: number, tier: number): number {
   return qtd * (1 + tier);
 }
+
+// ─── Movimentação de recursos do armazém (funções puras, testáveis) ─────────────
+// Usadas pela aliança para debitar/creditar recursos de forma atômica. Devem ser
+// aplicadas SEMPRE contra o estado mais recente (dentro do updater do setState),
+// pois o loop de dias altera os recursos em paralelo.
+
+export interface DeltaRecursos {
+  comida: number;
+  madeira: number;
+  pedra: number;
+  ferro: number;
+}
+
+type ArmazemRecursos = GameState['recursos'];
+
+// Debita o delta do armazém. Retorna os novos recursos, ou null se NÃO houver
+// saldo suficiente para o delta inteiro (nunca debita parcialmente).
+export function debitarArmazem(atual: ArmazemRecursos, d: DeltaRecursos): ArmazemRecursos | null {
+  if (
+    atual.comida < d.comida ||
+    atual.madeira < d.madeira ||
+    atual.pedra < d.pedra ||
+    atual.ferro < d.ferro
+  ) {
+    return null;
+  }
+  return {
+    ...atual,
+    comida: atual.comida - d.comida,
+    madeira: atual.madeira - d.madeira,
+    pedra: atual.pedra - d.pedra,
+    ferro: atual.ferro - d.ferro,
+  };
+}
+
+// Credita o delta no armazém respeitando a capacidade. Indica se houve perda por
+// transbordo (mesma regra do restante do jogo).
+export function creditarArmazem(
+  atual: ArmazemRecursos,
+  d: DeltaRecursos,
+): { recursos: ArmazemRecursos; perdeu: boolean } {
+  const cap = atual.capacidadeArmazem;
+  let perdeu = false;
+  const aplica = (v: number, add: number): number => {
+    if (v + add > cap) perdeu = true;
+    return Math.min(cap, v + add);
+  };
+  return {
+    recursos: {
+      ...atual,
+      comida: aplica(atual.comida, d.comida),
+      madeira: aplica(atual.madeira, d.madeira),
+      pedra: aplica(atual.pedra, d.pedra),
+      ferro: aplica(atual.ferro, d.ferro),
+    },
+    perdeu,
+  };
+}

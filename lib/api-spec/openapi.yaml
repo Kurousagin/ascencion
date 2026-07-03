@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: alianca
+    description: Aliança assíncrona entre jogadoras (identidade, pareamento e trocas)
 paths:
   /healthz:
     get:
@@ -24,6 +26,159 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /alianca/perfil:
+    post:
+      operationId: registrarPerfil
+      tags: [alianca]
+      summary: Registrar ou atualizar perfil
+      description: >
+        Cria (no primeiro acesso) ou atualiza o perfil da jogadora a partir do
+        id do dispositivo. Pode enviar o resumo atual da cidadela para sincronizar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PerfilInput"
+      responses:
+        "200":
+          description: Perfil atual
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Perfil"
+  /alianca/{deviceId}/aliada:
+    get:
+      operationId: obterAliada
+      tags: [alianca]
+      summary: Consultar a aliada
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dados e resumo da aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Aliada"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /alianca/parear:
+    post:
+      operationId: parearAlianca
+      tags: [alianca]
+      summary: Parear com outra jogadora pelo código
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PareamentoInput"
+      responses:
+        "200":
+          description: Aliança formada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Aliada"
+        "400":
+          description: Requisição inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Código não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "409":
+          description: Já existe uma aliança
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /alianca/enviar:
+    post:
+      operationId: enviarRecursos
+      tags: [alianca]
+      summary: Enviar recursos para a aliada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnvioInput"
+      responses:
+        "200":
+          description: Envio registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvioResultado"
+        "400":
+          description: Requisição inválida ou limite excedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /alianca/{deviceId}/caixa:
+    get:
+      operationId: listarCaixa
+      tags: [alianca]
+      summary: Listar itens pendentes na caixa de entrada
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Itens pendentes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaixaResposta"
+  /alianca/receber:
+    post:
+      operationId: receberItem
+      tags: [alianca]
+      summary: Receber (aceitar) um item da caixa de entrada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecebimentoInput"
+      responses:
+        "200":
+          description: Item recebido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recebimento"
+        "404":
+          description: Item não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +188,202 @@ components:
           type: string
       required:
         - status
-
+    ErroResposta:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    Recursos:
+      type: object
+      properties:
+        comida:
+          type: integer
+        madeira:
+          type: integer
+        pedra:
+          type: integer
+        ferro:
+          type: integer
+      required:
+        - comida
+        - madeira
+        - pedra
+        - ferro
+    ResumoProfissoes:
+      type: object
+      properties:
+        combatente:
+          type: integer
+        batedor:
+          type: integer
+        erudito:
+          type: integer
+        sentinela:
+          type: integer
+      required:
+        - combatente
+        - batedor
+        - erudito
+        - sentinela
+    ResumoCidadela:
+      type: object
+      properties:
+        dia:
+          type: integer
+        populacao:
+          type: integer
+        andarAtual:
+          type: integer
+        profissoes:
+          $ref: "#/components/schemas/ResumoProfissoes"
+      required:
+        - dia
+        - populacao
+        - andarAtual
+        - profissoes
+    PerfilInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        nome:
+          type: string
+        resumo:
+          $ref: "#/components/schemas/ResumoCidadela"
+      required:
+        - deviceId
+    Perfil:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        nome:
+          type: string
+        codigoAlianca:
+          type: string
+        temAliada:
+          type: boolean
+        limiteEnvioDiario:
+          type: integer
+        enviadoHoje:
+          type: integer
+        taxaTorre:
+          type: number
+      required:
+        - deviceId
+        - nome
+        - codigoAlianca
+        - temAliada
+        - limiteEnvioDiario
+        - enviadoHoje
+        - taxaTorre
+    Aliada:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        nome:
+          type: string
+        codigoAlianca:
+          type: string
+        resumo:
+          oneOf:
+            - $ref: "#/components/schemas/ResumoCidadela"
+            - type: "null"
+        atualizadoEm:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - deviceId
+        - nome
+        - codigoAlianca
+        - resumo
+        - atualizadoEm
+    PareamentoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        codigo:
+          type: string
+      required:
+        - deviceId
+        - codigo
+    EnvioInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        recursos:
+          $ref: "#/components/schemas/Recursos"
+      required:
+        - deviceId
+        - recursos
+    EnvioResultado:
+      type: object
+      properties:
+        enviado:
+          $ref: "#/components/schemas/Recursos"
+        recebidoPelaAliada:
+          $ref: "#/components/schemas/Recursos"
+        taxaTorre:
+          type: number
+        restanteHoje:
+          type: integer
+      required:
+        - enviado
+        - recebidoPelaAliada
+        - taxaTorre
+        - restanteHoje
+    Exchange:
+      type: object
+      properties:
+        id:
+          type: integer
+        tipo:
+          type: string
+        remetenteNome:
+          type: string
+        recursos:
+          $ref: "#/components/schemas/Recursos"
+        status:
+          type: string
+        criadoEm:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tipo
+        - remetenteNome
+        - recursos
+        - status
+        - criadoEm
+    CaixaResposta:
+      type: array
+      items:
+        $ref: "#/components/schemas/Exchange"
+    RecebimentoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        exchangeId:
+          type: integer
+      required:
+        - deviceId
+        - exchangeId
+    Recebimento:
+      type: object
+      properties:
+        id:
+          type: integer
+        remetenteNome:
+          type: string
+        recursos:
+          $ref: "#/components/schemas/Recursos"
+      required:
+        - id
+        - remetenteNome
+        - recursos

@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { Recursos } from './recursos';
 
-export interface HealthStatus {
-  status: string;
+export interface EnvioInput {
+  deviceId: string;
+  recursos: Recursos;
 }

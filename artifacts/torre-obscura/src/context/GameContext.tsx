@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import {
   GameState, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcCustoInvocacao,
   getProfissao, aceitaTrabalho, EdificioTipo,
+  debitarArmazem, creditarArmazem,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -17,7 +19,28 @@ interface GameContextType {
   sendExpedition: (npcIds: string[]) => void;
   invocarMorador: () => void;
   assignPosto: (npcId: string, tipo: EdificioTipo | null) => void;
+  // Aliança: movimentação de recursos no armazém (a rede fica no AllianceContext).
+  debitarRecursos: (r: Recursos) => boolean;
+  estornarRecursos: (r: Recursos) => void;
+  creditarRecursos: (r: Recursos, remetente: string) => void;
 }
+
+export interface Recursos {
+  comida: number;
+  madeira: number;
+  pedra: number;
+  ferro: number;
+}
+
+const RES_LABEL: Record<keyof Recursos, string> = {
+  comida: 'comida', madeira: 'madeira', pedra: 'pedra', ferro: 'ferro',
+};
+
+const resumoRecursos = (r: Recursos, sinal: '+' | '-') =>
+  (Object.keys(RES_LABEL) as (keyof Recursos)[])
+    .filter(k => r[k] > 0)
+    .map(k => `${sinal}${r[k]} ${RES_LABEL[k]}`)
+    .join(', ');
 
 // Time: at 1x, one real-world day equals five in-game days.
 // (24h / 5 game days = 4.8h of real time per game day at 1x; 2x and 5x accelerate.)
@@ -366,6 +389,62 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  // Reserva (debita) recursos do armazém para enviar à aliada. A validação e a
+  // subtração acontecem ATOMICAMENTE contra o estado mais recente (`prev`), dentro
+  // de flushSync, para que o resultado booleano seja confiável mesmo com o loop de
+  // dias alterando recursos em paralelo. Retorna false (sem alterar nada) se não
+  // houver saldo suficiente. Deve ser chamada ANTES do envio à rede, com estorno
+  // em caso de falha — assim nunca há envio remoto sem débito local correspondente.
+  const debitarRecursos = (r: Recursos): boolean => {
+    let ok = false;
+    flushSync(() => {
+      setState(prev => {
+        if (!prev) return prev;
+        const debitado = debitarArmazem(prev.recursos, r);
+        if (!debitado) return prev; // saldo insuficiente no estado atual: nada muda
+        ok = true;
+        const s = JSON.parse(JSON.stringify(prev)) as GameState;
+        s.recursos = debitado;
+        addLog(s, 'info', `ENVIO À ALIADA: ${resumoRecursos(r, '-')}.`);
+        s.lastTimestamp = Date.now();
+        localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+        return s;
+      });
+    });
+    return ok;
+  };
+
+  // Estorna (devolve) recursos ao armazém quando um envio falha na rede após a
+  // reserva. Respeita a capacidade (transbordo se perde, caso raro).
+  const estornarRecursos = (r: Recursos) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const { recursos } = creditarArmazem(s.recursos, r);
+      s.recursos = recursos;
+      addLog(s, 'alerta', `ENVIO FALHOU - ${resumoRecursos(r, '+')} devolvidos ao armazém.`);
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
+  // Credita recursos recebidos da aliada, respeitando a capacidade do armazém
+  // (excedente se perde, como já ocorre no restante do jogo).
+  const creditarRecursos = (r: Recursos, remetente: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const { recursos, perdeu } = creditarArmazem(s.recursos, r);
+      s.recursos = recursos;
+      addLog(s, 'descoberta', `RECEBIDO DE ${remetente.toUpperCase()}: ${resumoRecursos(r, '+')}.`);
+      if (perdeu) addLog(s, 'alerta', 'ARMAZÉM CHEIO - parte do envio da aliada foi perdida.');
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -394,6 +473,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       sendExpedition,
       invocarMorador,
       assignPosto,
+      debitarRecursos,
+      estornarRecursos,
+      creditarRecursos,
     }}>
       {children}
     </GameContext.Provider>

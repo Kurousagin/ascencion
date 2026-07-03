@@ -1,0 +1,166 @@
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
+import {
+  registrarPerfil, obterAliada, parearAlianca, enviarRecursos, listarCaixa, receberItem,
+  type Perfil, type Aliada, type Exchange, type ResumoCidadela,
+} from '@workspace/api-client-react';
+import { useGame, Recursos } from './GameContext';
+import { getProfissao, GameState } from '../lib/game-data';
+import { getDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
+
+interface AllianceContextType {
+  perfil: Perfil | null;
+  aliada: Aliada | null;
+  caixa: Exchange[];
+  online: boolean;
+  parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
+  enviar: (r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
+  receber: (exchangeId: number) => Promise<{ ok: boolean; erro?: string }>;
+  renomear: (nome: string) => Promise<void>;
+  refresh: () => void;
+}
+
+const AllianceContext = createContext<AllianceContextType | null>(null);
+
+export const useAlliance = () => {
+  const ctx = useContext(AllianceContext);
+  if (!ctx) throw new Error('useAlliance must be used within AllianceProvider');
+  return ctx;
+};
+
+function resumoDoEstado(state: GameState): ResumoCidadela {
+  const vivos = state.npcs.filter(n => n.vivo);
+  const profissoes = { combatente: 0, batedor: 0, erudito: 0, sentinela: 0 };
+  vivos.forEach(n => { profissoes[getProfissao(n)]++; });
+  return {
+    dia: state.dia,
+    populacao: vivos.length,
+    andarAtual: state.andarAtual,
+    profissoes,
+  };
+}
+
+function msgErro(e: unknown): string {
+  const status = (e as { status?: number })?.status;
+  const data = (e as { data?: { error?: string } })?.data;
+  if (data?.error) return data.error;
+  if (status === 404) return 'Não encontrado.';
+  return 'Falha de conexão com a torre. Tente novamente.';
+}
+
+const SYNC_MS = 20_000;   // reenvia o resumo da própria cidadela
+const POLL_MS = 15_000;   // consulta aliada + caixa de entrada
+
+export const AllianceProvider = ({ children }: { children: ReactNode }) => {
+  const { state, creditarRecursos } = useGame();
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [aliada, setAliada] = useState<Aliada | null>(null);
+  const [caixa, setCaixa] = useState<Exchange[]>([]);
+  const [online, setOnline] = useState(false);
+
+  const deviceId = useRef(getDeviceId());
+  // Mantém o estado do jogo acessível aos timers sem recriá-los.
+  const stateRef = useRef<GameState | null>(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  const sincronizarPerfil = useCallback(async () => {
+    const s = stateRef.current;
+    try {
+      const p = await registrarPerfil({
+        deviceId: deviceId.current,
+        nome: getNomeLocal() ?? undefined,
+        resumo: s ? resumoDoEstado(s) : undefined,
+      });
+      setPerfil(p);
+      setOnline(true);
+      if (!getNomeLocal()) setNomeLocal(p.nome);
+    } catch {
+      setOnline(false);
+    }
+  }, []);
+
+  const puxarAliadaECaixa = useCallback(async () => {
+    try {
+      const a = await obterAliada(deviceId.current);
+      setAliada(a);
+    } catch (e) {
+      if ((e as { status?: number })?.status === 404) setAliada(null);
+    }
+    try {
+      const c = await listarCaixa(deviceId.current);
+      setCaixa(c);
+    } catch {
+      /* mantém a caixa anterior em caso de falha momentânea */
+    }
+  }, []);
+
+  const refresh = useCallback(() => {
+    void sincronizarPerfil();
+    void puxarAliadaECaixa();
+  }, [sincronizarPerfil, puxarAliadaECaixa]);
+
+  // Registro inicial + timers de sincronização e polling.
+  // Também atualiza ao voltar o foco da aba: navegadores estrangulam
+  // setInterval em abas em segundo plano, então o polling sozinho não basta.
+  useEffect(() => {
+    refresh();
+    const t1 = setInterval(() => { void sincronizarPerfil(); }, SYNC_MS);
+    const t2 = setInterval(() => { void puxarAliadaECaixa(); }, POLL_MS);
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t1);
+      clearInterval(t2);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [sincronizarPerfil, puxarAliadaECaixa, refresh]);
+
+  const parear = useCallback(async (codigo: string) => {
+    try {
+      const a = await parearAlianca({ deviceId: deviceId.current, codigo: codigo.trim().toUpperCase() });
+      setAliada(a);
+      await sincronizarPerfil();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: msgErro(e) };
+    }
+  }, [sincronizarPerfil]);
+
+  const enviar = useCallback(async (r: Recursos) => {
+    try {
+      await enviarRecursos({ deviceId: deviceId.current, recursos: r });
+      await sincronizarPerfil();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: msgErro(e) };
+    }
+  }, [sincronizarPerfil]);
+
+  const receber = useCallback(async (exchangeId: number) => {
+    try {
+      const item = await receberItem({ deviceId: deviceId.current, exchangeId });
+      creditarRecursos(item.recursos, item.remetenteNome);
+      setCaixa(prev => prev.filter(i => i.id !== exchangeId));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: msgErro(e) };
+    }
+  }, [creditarRecursos]);
+
+  const renomear = useCallback(async (nome: string) => {
+    const limpo = nome.trim();
+    if (!limpo) return;
+    setNomeLocal(limpo);
+    try {
+      const p = await registrarPerfil({ deviceId: deviceId.current, nome: limpo });
+      setPerfil(p);
+    } catch {
+      /* será reenviado na próxima sincronização */
+    }
+  }, []);
+
+  return (
+    <AllianceContext.Provider value={{ perfil, aliada, caixa, online, parear, enviar, receber, renomear, refresh }}>
+      {children}
+    </AllianceContext.Provider>
+  );
+};
