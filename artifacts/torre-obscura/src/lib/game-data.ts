@@ -254,6 +254,22 @@ export function calcCustoTreinamento(treinamentos: number): { madeira: number; f
   };
 }
 
+// Seleciona o melhor instrutor disponível para o treinamento.
+// Critérios: vivo, presente na cidadela (não em expedição/guerra), não é o próprio
+// treinando. Ordenado por Força decrescente — o mais forte treina os outros.
+// Retorna null se não houver ninguém apto.
+export function calcInstrutor(treineeId: string, npcs: NPC[]): NPC | null {
+  const candidatos = npcs.filter(
+    n =>
+      n.vivo &&
+      !n.emExpedicao &&
+      !n.emGuerra &&
+      n.id !== treineeId,
+  );
+  if (candidatos.length === 0) return null;
+  return candidatos.reduce((best, n) => (n.forca > best.forca ? n : best));
+}
+
 // Retorna true se o NPC pode ser treinado agora.
 export function podeTreinarNpc(
   npc: NPC,

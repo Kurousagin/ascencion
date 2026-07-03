@@ -8,7 +8,7 @@ import {
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA,
-  podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade,
+  podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
 } from '../lib/game-data';
 
 interface GameContextType {
@@ -719,11 +719,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const custo = calcCustoTreinamento(treinamentos);
     if (s.recursos.madeira < custo.madeira || s.recursos.ferro < custo.ferro) return;
 
-    // Verifica bônus de aliado: NPC emprestado, vivo, profissão combatente, na cidadela.
-    const aliado = s.npcs.find(
-      n => n.emprestado && n.vivo && !n.emExpedicao && getProfissao(n) === 'combatente'
-    );
-    const ganho = aliado ? 2 : 1;
+    // O instrutor é o NPC com maior Força disponível na cidadela (excluindo o treinando).
+    // Se o instrutor for mais forte que o aprendiz → +2 FOR; caso contrário → +1.
+    const instrutor = calcInstrutor(npcId, s.npcs);
+    const ganho = (instrutor && instrutor.forca > npc.forca) ? 2 : 1;
 
     s.recursos.madeira -= custo.madeira;
     s.recursos.ferro   -= custo.ferro;
@@ -732,9 +731,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     npc.treinamentos = treinamentos + 1;
     npc.raridade = recalcRaridade(npc);
 
-    const aliadoStr = aliado ? ` (treinamento conjunto com ${aliado.nome} +1 bônus)` : '';
+    const instrutorStr = instrutor
+      ? ` instruído por ${instrutor.nome} (F:${instrutor.forca})`
+      : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} FOR permanente${aliadoStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} FOR permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     saveState(s);
   };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, calcInstrutor } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc } = useGame();
@@ -266,10 +266,9 @@ export function People() {
                 const treinamentos = npc.treinamentos ?? 0;
                 const custo = calcCustoTreinamento(treinamentos);
                 const podeT = podeTreinarNpc(npc, quartelNivel, state.andarAtual);
-                // Aliado combatente presente → bônus +1 extra
-                const aliado = state.npcs.find(
-                  n => n.emprestado && n.vivo && !n.emExpedicao && getProfissao(n) === 'combatente'
-                );
+                // Instrutor = NPC com maior Força disponível (excluindo o próprio treinando)
+                const instrutor = calcInstrutor(npc.id, state.npcs);
+                const ganho = (instrutor && instrutor.forca > npc.forca) ? 2 : 1;
 
                 // Motivo de bloqueio (para exibir dica)
                 let bloqueio: string | null = null;
@@ -307,12 +306,26 @@ export function People() {
                             </span>
                           </div>
                           <span className="text-[9px] text-primary/80 font-bold">
-                            +{aliado ? 2 : 1} FOR
+                            +{ganho} FOR
                           </span>
                         </div>
-                        {aliado && (
-                          <div className="text-[9px] text-blue-300 bg-blue-500/10 border border-blue-400/30 px-2 py-1 rounded-sm mb-2 flex items-center gap-1">
-                            <UserPlus size={9} /> {aliado.nome} (aliado) instrui o grupo — +2 FOR nesta sessão
+                        {instrutor ? (
+                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${
+                            ganho === 2
+                              ? 'text-success bg-success/10 border-success/30'
+                              : 'text-secondary bg-white/5 border-white/10'
+                          }`}>
+                            <Swords size={9} />
+                            Instrutor: <span className="font-bold ml-1">{instrutor.nome}</span>
+                            <span className="ml-1 opacity-70">(F:{instrutor.forca})</span>
+                            {ganho === 2
+                              ? <span className="ml-auto font-bold text-success">+2 FOR ↑</span>
+                              : <span className="ml-auto opacity-60">+1 FOR</span>
+                            }
+                          </div>
+                        ) : (
+                          <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                            Sem instrutor disponível — treinamento solo (+1 FOR)
                           </div>
                         )}
                         <button
