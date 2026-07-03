@@ -45,6 +45,8 @@ export interface Perfil {
   nome: string;
   codigoAlianca: string;
   temAliada: boolean;
+  numAliadas: number;
+  maxAliadas: number;
   limiteEnvioDiario: number;
   enviadoHoje: number;
   taxaTorre: number;
@@ -59,6 +61,17 @@ export interface Aliada {
   atualizadoEm: string | null;
 }
 
+export type AliadasResposta = Aliada[];
+
+export interface DesfazerInput {
+  deviceId: string;
+  aliadaDeviceId: string;
+}
+
+export interface DesfazerResultado {
+  ok: boolean;
+}
+
 export interface PareamentoInput {
   deviceId: string;
   codigo: string;
@@ -66,6 +79,7 @@ export interface PareamentoInput {
 
 export interface EnvioInput {
   deviceId: string;
+  aliadaDeviceId: string;
   recursos: Recursos;
 }
 
@@ -128,6 +142,7 @@ export interface Recebimento {
 
 export interface EmprestimoInput {
   deviceId: string;
+  aliadaDeviceId: string;
   morador: Morador;
   prazoDias: number;
 }
@@ -153,6 +168,7 @@ export interface DevolucaoResultado {
 
 export interface ReforcoInput {
   deviceId: string;
+  aliadaDeviceId: string;
   morador: Morador;
 }
 

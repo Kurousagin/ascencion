@@ -11,6 +11,8 @@ export interface Perfil {
   nome: string;
   codigoAlianca: string;
   temAliada: boolean;
+  numAliadas: number;
+  maxAliadas: number;
   limiteEnvioDiario: number;
   enviadoHoje: number;
   taxaTorre: number;

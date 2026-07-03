@@ -5,11 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { Morador } from './morador';
 
-export interface EmprestimoInput {
+export interface DesfazerInput {
   deviceId: string;
   aliadaDeviceId: string;
-  morador: Morador;
-  prazoDias: number;
 }

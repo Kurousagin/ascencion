@@ -42,6 +42,8 @@ export const RegistrarPerfilResponse = zod.object({
   "nome": zod.string(),
   "codigoAlianca": zod.string(),
   "temAliada": zod.boolean(),
+  "numAliadas": zod.number(),
+  "maxAliadas": zod.number(),
   "limiteEnvioDiario": zod.number(),
   "enviadoHoje": zod.number(),
   "taxaTorre": zod.number()
@@ -49,13 +51,13 @@ export const RegistrarPerfilResponse = zod.object({
 
 
 /**
- * @summary Consultar a aliada
+ * @summary Listar as aliadas da jogadora
  */
-export const ObterAliadaParams = zod.object({
+export const ListarAliadasParams = zod.object({
   "deviceId": zod.coerce.string()
 })
 
-export const ObterAliadaResponse = zod.object({
+export const ListarAliadasResponseItem = zod.object({
   "deviceId": zod.string(),
   "nome": zod.string(),
   "codigoAlianca": zod.string(),
@@ -71,6 +73,21 @@ export const ObterAliadaResponse = zod.object({
 })
 }),zod.null()]),
   "atualizadoEm": zod.coerce.date().nullable()
+})
+export const ListarAliadasResponse = zod.array(ListarAliadasResponseItem)
+
+
+/**
+ * Remove as duas direções do vínculo de aliança entre a jogadora e a aliada indicada. Trocas já em trânsito (empréstimos/reforços) seguem seu curso normalmente, pois são resolvidas por id de jogadora.
+ * @summary Desfazer a aliança com uma aliada específica
+ */
+export const DesfazerAliancaBody = zod.object({
+  "deviceId": zod.string(),
+  "aliadaDeviceId": zod.string()
+})
+
+export const DesfazerAliancaResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 
@@ -106,6 +123,7 @@ export const ParearAliancaResponse = zod.object({
  */
 export const EnviarRecursosBody = zod.object({
   "deviceId": zod.string(),
+  "aliadaDeviceId": zod.string(),
   "recursos": zod.object({
   "comida": zod.number(),
   "madeira": zod.number(),
@@ -138,6 +156,7 @@ export const EnviarRecursosResponse = zod.object({
  */
 export const EmprestarMoradorBody = zod.object({
   "deviceId": zod.string(),
+  "aliadaDeviceId": zod.string(),
   "morador": zod.object({
   "id": zod.string(),
   "nome": zod.string(),
@@ -205,6 +224,7 @@ export const DevolverMoradorResponse = zod.object({
  */
 export const ReforcarMoradorBody = zod.object({
   "deviceId": zod.string(),
+  "aliadaDeviceId": zod.string(),
   "morador": zod.object({
   "id": zod.string(),
   "nome": zod.string(),

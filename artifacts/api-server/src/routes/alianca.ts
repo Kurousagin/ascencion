@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -12,8 +12,10 @@ import {
 import {
   RegistrarPerfilBody,
   RegistrarPerfilResponse,
-  ObterAliadaParams,
-  ObterAliadaResponse,
+  ListarAliadasParams,
+  ListarAliadasResponse,
+  DesfazerAliancaBody,
+  DesfazerAliancaResponse,
   ParearAliancaBody,
   ParearAliancaResponse,
   EnviarRecursosBody,
@@ -45,6 +47,9 @@ const LIMITE_EMPRESTIMOS = 2;
 // Reforço de expedição: teto de reforços simultâneos ainda não devolvidos
 // (aguardando recebimento ou já em uso na aliada).
 const LIMITE_REFORCOS = 2;
+
+// Teto de aliadas simultâneas por jogadora.
+const MAX_ALIADAS = 3;
 
 // Código de aliança: 6 caracteres, sem caracteres ambíguos (0/O, 1/I, etc.).
 const ALFABETO_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -87,13 +92,34 @@ async function gerarCodigoUnico(): Promise<string> {
   return gerarCodigo() + gerarCodigo();
 }
 
-async function temAliada(playerId: number): Promise<boolean> {
+async function contarAliadas(playerId: number): Promise<number> {
+  const linhas = await db
+    .select({ id: alliancesTable.id })
+    .from(alliancesTable)
+    .where(eq(alliancesTable.playerId, playerId));
+  return linhas.length;
+}
+
+// Confirma que existe vínculo de aliança entre `playerId` e a aliada de deviceId
+// `aliadaDeviceId`. Retorna a aliada (linha de players) quando aliada, ou null.
+async function resolverAliada(playerId: number, aliadaDeviceId: string) {
+  const [aliada] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, aliadaDeviceId))
+    .limit(1);
+  if (!aliada) return null;
   const [link] = await db
     .select({ id: alliancesTable.id })
     .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, playerId))
+    .where(
+      and(
+        eq(alliancesTable.playerId, playerId),
+        eq(alliancesTable.allyId, aliada.id),
+      ),
+    )
     .limit(1);
-  return !!link;
+  return link ? aliada : null;
 }
 
 // Mapeia um registro de troca para o formato da caixa de entrada.
@@ -154,11 +180,14 @@ router.post("/alianca/perfil", async (req, res): Promise<void> => {
     }
   }
 
+  const numAliadas = await contarAliadas(player.id);
   const data = RegistrarPerfilResponse.parse({
     deviceId: player.deviceId,
     nome: player.nome,
     codigoAlianca: player.codigoAlianca,
-    temAliada: await temAliada(player.id),
+    temAliada: numAliadas > 0,
+    numAliadas,
+    maxAliadas: MAX_ALIADAS,
     limiteEnvioDiario: LIMITE_ENVIO_DIARIO,
     enviadoHoje: player.dataEnvio === hojeStr() ? player.enviadoHoje : 0,
     taxaTorre: TAXA_TORRE,
@@ -166,9 +195,9 @@ router.post("/alianca/perfil", async (req, res): Promise<void> => {
   res.json(data);
 });
 
-// ─── GET /alianca/:deviceId/aliada ─────────────────────────────────────────────
-router.get("/alianca/:deviceId/aliada", async (req, res): Promise<void> => {
-  const parsed = ObterAliadaParams.safeParse(req.params);
+// ─── GET /alianca/:deviceId/aliadas ────────────────────────────────────────────
+router.get("/alianca/:deviceId/aliadas", async (req, res): Promise<void> => {
+  const parsed = ListarAliadasParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -179,35 +208,86 @@ router.get("/alianca/:deviceId/aliada", async (req, res): Promise<void> => {
     .where(eq(playersTable.deviceId, parsed.data.deviceId))
     .limit(1);
   if (!player) {
-    res.status(404).json({ error: "Perfil não encontrado" });
+    res.json(ListarAliadasResponse.parse([]));
     return;
   }
-  const [link] = await db
-    .select()
+  const links = await db
+    .select({ allyId: alliancesTable.allyId })
     .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
+    .where(eq(alliancesTable.playerId, player.id));
+  if (links.length === 0) {
+    res.json(ListarAliadasResponse.parse([]));
+    return;
+  }
+  const aliadas = await db
+    .select()
+    .from(playersTable)
+    .where(inArray(playersTable.id, links.map((l) => l.allyId)));
+
+  const data = ListarAliadasResponse.parse(
+    aliadas.map((a) => ({
+      deviceId: a.deviceId,
+      nome: a.nome,
+      codigoAlianca: a.codigoAlianca,
+      resumo: a.resumo ?? null,
+      atualizadoEm: a.updatedAt,
+    })),
+  );
+  res.json(data);
+});
+
+// ─── POST /alianca/desfazer ────────────────────────────────────────────────────
+router.post("/alianca/desfazer", async (req, res): Promise<void> => {
+  const parsed = DesfazerAliancaBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { deviceId, aliadaDeviceId } = parsed.data;
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
     .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Sem aliada" });
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
     return;
   }
   const [aliada] = await db
     .select()
     .from(playersTable)
-    .where(eq(playersTable.id, link.allyId))
+    .where(eq(playersTable.deviceId, aliadaDeviceId))
     .limit(1);
   if (!aliada) {
-    res.status(404).json({ error: "Sem aliada" });
+    res.status(404).json({ error: "Aliada não encontrada." });
     return;
   }
-  const data = ObterAliadaResponse.parse({
-    deviceId: aliada.deviceId,
-    nome: aliada.nome,
-    codigoAlianca: aliada.codigoAlianca,
-    resumo: aliada.resumo ?? null,
-    atualizadoEm: aliada.updatedAt,
-  });
-  res.json(data);
+
+  // Remove as duas direções do vínculo. Trocas em trânsito seguem seu curso.
+  const removidos = await db
+    .delete(alliancesTable)
+    .where(
+      or(
+        and(
+          eq(alliancesTable.playerId, player.id),
+          eq(alliancesTable.allyId, aliada.id),
+        ),
+        and(
+          eq(alliancesTable.playerId, aliada.id),
+          eq(alliancesTable.allyId, player.id),
+        ),
+      ),
+    )
+    .returning({ id: alliancesTable.id });
+
+  if (removidos.length === 0) {
+    res.status(404).json({ error: "Vocês não são aliadas." });
+    return;
+  }
+  req.log.info({ a: player.id, b: aliada.id }, "Aliança desfeita");
+
+  res.json(DesfazerAliancaResponse.parse({ ok: true }));
 });
 
 // ─── POST /alianca/parear ──────────────────────────────────────────────────────
@@ -242,17 +322,57 @@ router.post("/alianca/parear", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Você não pode se aliar a si mesma." });
     return;
   }
-  if ((await temAliada(player.id)) || (await temAliada(alvo.id))) {
-    res.status(409).json({ error: "Uma das jogadoras já possui uma aliança." });
-    return;
-  }
 
-  await db.transaction(async (tx) => {
+  // Pareamento atômico: uma transação serializa duplicatas e o teto por
+  // jogadora. Travamos as duas linhas de players (em ordem determinística de id,
+  // para evitar deadlocks) antes de recontar e inserir. O par único no banco
+  // é a última linha de defesa (violação → 409 tratado abaixo).
+  const idsOrdenados = [player.id, alvo.id].sort((a, b) => a - b);
+  const resultado = await db.transaction(async (tx) => {
+    await tx
+      .select({ id: playersTable.id })
+      .from(playersTable)
+      .where(inArray(playersTable.id, idsOrdenados))
+      .for("update");
+
+    // Todos os vínculos das duas jogadoras (basta uma direção por par).
+    const vinculos = await tx
+      .select({ playerId: alliancesTable.playerId, allyId: alliancesTable.allyId })
+      .from(alliancesTable)
+      .where(inArray(alliancesTable.playerId, [player.id, alvo.id]));
+
+    if (vinculos.some((v) => v.playerId === player.id && v.allyId === alvo.id)) {
+      return { erro: "dup" as const };
+    }
+
+    const nPlayer = vinculos.filter((v) => v.playerId === player.id).length;
+    const nAlvo = vinculos.filter((v) => v.playerId === alvo.id).length;
+    if (nPlayer >= MAX_ALIADAS) return { erro: "maxSelf" as const };
+    if (nAlvo >= MAX_ALIADAS) return { erro: "maxAlvo" as const };
+
     await tx.insert(alliancesTable).values([
       { playerId: player.id, allyId: alvo.id },
       { playerId: alvo.id, allyId: player.id },
     ]);
+    return { erro: null };
+  }).catch((e: unknown) => {
+    // Violação do par único (corrida com outra requisição de pareamento).
+    if ((e as { code?: string })?.code === "23505") return { erro: "dup" as const };
+    throw e;
   });
+
+  if (resultado.erro === "dup") {
+    res.status(409).json({ error: "Vocês já são aliadas." });
+    return;
+  }
+  if (resultado.erro === "maxSelf") {
+    res.status(409).json({ error: `Você já atingiu o limite de ${MAX_ALIADAS} aliadas.` });
+    return;
+  }
+  if (resultado.erro === "maxAlvo") {
+    res.status(409).json({ error: `${alvo.nome} já atingiu o limite de ${MAX_ALIADAS} aliadas.` });
+    return;
+  }
   req.log.info({ a: player.id, b: alvo.id }, "Aliança formada");
 
   const data = ParearAliancaResponse.parse({
@@ -272,7 +392,7 @@ router.post("/alianca/enviar", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { deviceId, recursos } = parsed.data;
+  const { deviceId, aliadaDeviceId, recursos } = parsed.data;
 
   const envio: ConteudoRecursos = {
     comida: Math.max(0, Math.floor(recursos.comida)),
@@ -295,13 +415,9 @@ router.post("/alianca/enviar", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Perfil não encontrado." });
     return;
   }
-  const [link] = await db
-    .select()
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
-    .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Você ainda não tem uma aliada." });
+  const aliada = await resolverAliada(player.id, aliadaDeviceId);
+  if (!aliada) {
+    res.status(404).json({ error: "Vocês não são aliadas." });
     return;
   }
 
@@ -326,7 +442,7 @@ router.post("/alianca/enviar", async (req, res): Promise<void> => {
     await tx.insert(exchangesTable).values({
       tipo: "recursos",
       fromPlayerId: player.id,
-      toPlayerId: link.allyId,
+      toPlayerId: aliada.id,
       remetenteNome: player.nome,
       conteudo: recebido,
     });
@@ -431,7 +547,7 @@ router.post("/alianca/emprestar", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { deviceId, morador, prazoDias } = parsed.data;
+  const { deviceId, aliadaDeviceId, morador, prazoDias } = parsed.data;
 
   const prazo = Math.floor(prazoDias);
   if (prazo < PRAZO_MIN_DIAS || prazo > PRAZO_MAX_DIAS) {
@@ -450,13 +566,9 @@ router.post("/alianca/emprestar", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Perfil não encontrado." });
     return;
   }
-  const [link] = await db
-    .select()
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
-    .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Você ainda não tem uma aliada." });
+  const aliada = await resolverAliada(player.id, aliadaDeviceId);
+  if (!aliada) {
+    res.status(404).json({ error: "Vocês não são aliadas." });
     return;
   }
 
@@ -484,14 +596,14 @@ router.post("/alianca/emprestar", async (req, res): Promise<void> => {
     .values({
       tipo: "emprestimo",
       fromPlayerId: player.id,
-      toPlayerId: link.allyId,
+      toPlayerId: aliada.id,
       remetenteNome: player.nome,
       morador: morador as MoradorPayload,
       prazoDias: prazo,
     })
     .returning();
 
-  req.log.info({ from: player.id, to: link.allyId, prazo }, "Morador emprestado");
+  req.log.info({ from: player.id, to: aliada.id, prazo }, "Morador emprestado");
 
   const data = EmprestarMoradorResponse.parse({
     id: criado.id,
@@ -511,7 +623,7 @@ router.post("/alianca/reforcar", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { deviceId, morador } = parsed.data;
+  const { deviceId, aliadaDeviceId, morador } = parsed.data;
 
   const [player] = await db
     .select()
@@ -522,13 +634,9 @@ router.post("/alianca/reforcar", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Perfil não encontrado." });
     return;
   }
-  const [link] = await db
-    .select()
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id))
-    .limit(1);
-  if (!link) {
-    res.status(404).json({ error: "Você ainda não tem uma aliada." });
+  const aliada = await resolverAliada(player.id, aliadaDeviceId);
+  if (!aliada) {
+    res.status(404).json({ error: "Vocês não são aliadas." });
     return;
   }
 
@@ -556,13 +664,13 @@ router.post("/alianca/reforcar", async (req, res): Promise<void> => {
     .values({
       tipo: "reforco",
       fromPlayerId: player.id,
-      toPlayerId: link.allyId,
+      toPlayerId: aliada.id,
       remetenteNome: player.nome,
       morador: morador as MoradorPayload,
     })
     .returning();
 
-  req.log.info({ from: player.id, to: link.allyId }, "Reforço enviado");
+  req.log.info({ from: player.id, to: aliada.id }, "Reforço enviado");
 
   const data = ReforcarMoradorResponse.parse({
     id: criado.id,

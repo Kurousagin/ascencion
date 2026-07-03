@@ -7,7 +7,10 @@
  */
 
 export * from './aliada';
+export * from './aliadasResposta';
 export * from './caixaResposta';
+export * from './desfazerInput';
+export * from './desfazerResultado';
 export * from './devolucaoInput';
 export * from './devolucaoResultado';
 export * from './emprestimoInput';

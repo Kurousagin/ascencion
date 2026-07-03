@@ -47,11 +47,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Perfil"
-  /alianca/{deviceId}/aliada:
+  /alianca/{deviceId}/aliadas:
     get:
-      operationId: obterAliada
+      operationId: listarAliadas
       tags: [alianca]
-      summary: Consultar a aliada
+      summary: Listar as aliadas da jogadora
       parameters:
         - name: deviceId
           in: path
@@ -60,13 +60,35 @@ paths:
             type: string
       responses:
         "200":
-          description: Dados e resumo da aliada
+          description: Lista de aliadas (vazia se não houver nenhuma)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Aliada"
+                $ref: "#/components/schemas/AliadasResposta"
+  /alianca/desfazer:
+    post:
+      operationId: desfazerAlianca
+      tags: [alianca]
+      summary: Desfazer a aliança com uma aliada específica
+      description: >
+        Remove as duas direções do vínculo de aliança entre a jogadora e a
+        aliada indicada. Trocas já em trânsito (empréstimos/reforços) seguem
+        seu curso normalmente, pois são resolvidas por id de jogadora.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesfazerInput"
+      responses:
+        "200":
+          description: Aliança desfeita
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesfazerResultado"
         "404":
-          description: Sem aliada
+          description: Aliança não encontrada
           content:
             application/json:
               schema:
@@ -362,6 +384,10 @@ components:
           type: string
         temAliada:
           type: boolean
+        numAliadas:
+          type: integer
+        maxAliadas:
+          type: integer
         limiteEnvioDiario:
           type: integer
         enviadoHoje:
@@ -373,9 +399,32 @@ components:
         - nome
         - codigoAlianca
         - temAliada
+        - numAliadas
+        - maxAliadas
         - limiteEnvioDiario
         - enviadoHoje
         - taxaTorre
+    AliadasResposta:
+      type: array
+      items:
+        $ref: "#/components/schemas/Aliada"
+    DesfazerInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        aliadaDeviceId:
+          type: string
+      required:
+        - deviceId
+        - aliadaDeviceId
+    DesfazerResultado:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
     Aliada:
       type: object
       properties:
@@ -413,10 +462,13 @@ components:
       properties:
         deviceId:
           type: string
+        aliadaDeviceId:
+          type: string
         recursos:
           $ref: "#/components/schemas/Recursos"
       required:
         - deviceId
+        - aliadaDeviceId
         - recursos
     EnvioResultado:
       type: object
@@ -563,12 +615,15 @@ components:
       properties:
         deviceId:
           type: string
+        aliadaDeviceId:
+          type: string
         morador:
           $ref: "#/components/schemas/Morador"
         prazoDias:
           type: integer
       required:
         - deviceId
+        - aliadaDeviceId
         - morador
         - prazoDias
     EmprestimoResultado:
@@ -618,10 +673,13 @@ components:
       properties:
         deviceId:
           type: string
+        aliadaDeviceId:
+          type: string
         morador:
           $ref: "#/components/schemas/Morador"
       required:
         - deviceId
+        - aliadaDeviceId
         - morador
     ReforcoResultado:
       type: object

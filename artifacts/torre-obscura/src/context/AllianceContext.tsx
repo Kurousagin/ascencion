@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 import {
-  registrarPerfil, obterAliada, parearAlianca, enviarRecursos, listarCaixa, receberItem,
+  registrarPerfil, listarAliadas, parearAlianca, desfazerAlianca,
+  enviarRecursos, listarCaixa, receberItem,
   emprestarMorador, reforcarMorador, devolverMorador,
   type Perfil, type Aliada, type Exchange, type ResumoCidadela,
 } from '@workspace/api-client-react';
@@ -42,14 +43,15 @@ function salvarHistoricoStorage(h: EmprestimoRegistro[]): void {
 
 interface AllianceContextType {
   perfil: Perfil | null;
-  aliada: Aliada | null;
+  aliadas: Aliada[];
   caixa: Exchange[];
   online: boolean;
   historico: EmprestimoRegistro[];
   parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
-  enviar: (r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
-  emprestar: (npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
-  reforcar: (npcId: string) => Promise<{ ok: boolean; erro?: string }>;
+  desfazer: (aliadaDeviceId: string) => Promise<{ ok: boolean; erro?: string }>;
+  enviar: (aliadaDeviceId: string, r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
+  emprestar: (aliadaDeviceId: string, npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
+  reforcar: (aliadaDeviceId: string, npcId: string) => Promise<{ ok: boolean; erro?: string }>;
   receber: (exchangeId: number) => Promise<{ ok: boolean; erro?: string }>;
   renomear: (nome: string) => Promise<void>;
   refresh: () => void;
@@ -93,16 +95,20 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   } = useGame();
 
   const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [aliada, setAliada] = useState<Aliada | null>(null);
+  const [aliadas, setAliadas] = useState<Aliada[]>([]);
   const [caixa, setCaixa] = useState<Exchange[]>([]);
   const [online, setOnline] = useState(false);
   const [historico, setHistorico] = useState<EmprestimoRegistro[]>(carregarHistorico);
 
   const deviceId = useRef(getDeviceId());
   const stateRef = useRef<GameState | null>(state);
-  const aliadaRef = useRef<Aliada | null>(aliada);
+  const aliadasRef = useRef<Aliada[]>(aliadas);
   useEffect(() => { stateRef.current = state; }, [state]);
-  useEffect(() => { aliadaRef.current = aliada; }, [aliada]);
+  useEffect(() => { aliadasRef.current = aliadas; }, [aliadas]);
+
+  const nomeAliada = useCallback((aliadaDeviceId: string) => {
+    return aliadasRef.current.find(a => a.deviceId === aliadaDeviceId)?.nome ?? '—';
+  }, []);
 
   // ─── Helpers de histórico ───────────────────────────────────────────────────
 
@@ -147,13 +153,11 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const puxarAliadaECaixa = useCallback(async () => {
+  const puxarAliadasECaixa = useCallback(async () => {
     try {
-      const a = await obterAliada(deviceId.current);
-      setAliada(a);
-    } catch (e) {
-      if ((e as { status?: number })?.status === 404) setAliada(null);
-    }
+      const as = await listarAliadas(deviceId.current);
+      setAliadas(as);
+    } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current);
       setCaixa(c);
@@ -162,13 +166,13 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
 
   const refresh = useCallback(() => {
     void sincronizarPerfil();
-    void puxarAliadaECaixa();
-  }, [sincronizarPerfil, puxarAliadaECaixa]);
+    void puxarAliadasECaixa();
+  }, [sincronizarPerfil, puxarAliadasECaixa]);
 
   useEffect(() => {
     refresh();
     const t1 = setInterval(() => { void sincronizarPerfil(); }, SYNC_MS);
-    const t2 = setInterval(() => { void puxarAliadaECaixa(); }, POLL_MS);
+    const t2 = setInterval(() => { void puxarAliadasECaixa(); }, POLL_MS);
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -176,13 +180,25 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       clearInterval(t2);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [sincronizarPerfil, puxarAliadaECaixa, refresh]);
+  }, [sincronizarPerfil, puxarAliadasECaixa, refresh]);
 
   // ─── Parear ────────────────────────────────────────────────────────────────
   const parear = useCallback(async (codigo: string) => {
     try {
       const a = await parearAlianca({ deviceId: deviceId.current, codigo: codigo.trim().toUpperCase() });
-      setAliada(a);
+      setAliadas(prev => (prev.some(x => x.deviceId === a.deviceId) ? prev : [...prev, a]));
+      await sincronizarPerfil();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: msgErro(e) };
+    }
+  }, [sincronizarPerfil]);
+
+  // ─── Desfazer aliança ────────────────────────────────────────────────────────
+  const desfazer = useCallback(async (aliadaDeviceId: string) => {
+    try {
+      await desfazerAlianca({ deviceId: deviceId.current, aliadaDeviceId });
+      setAliadas(prev => prev.filter(a => a.deviceId !== aliadaDeviceId));
       await sincronizarPerfil();
       return { ok: true };
     } catch (e) {
@@ -191,9 +207,9 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   }, [sincronizarPerfil]);
 
   // ─── Enviar recursos ───────────────────────────────────────────────────────
-  const enviar = useCallback(async (r: Recursos) => {
+  const enviar = useCallback(async (aliadaDeviceId: string, r: Recursos) => {
     try {
-      await enviarRecursos({ deviceId: deviceId.current, recursos: r });
+      await enviarRecursos({ deviceId: deviceId.current, aliadaDeviceId, recursos: r });
       await sincronizarPerfil();
       return { ok: true };
     } catch (e) {
@@ -202,13 +218,14 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   }, [sincronizarPerfil]);
 
   // ─── Emprestar morador ─────────────────────────────────────────────────────
-  const emprestar = useCallback(async (npcId: string, prazoDias: number) => {
+  const emprestar = useCallback(async (aliadaDeviceId: string, npcId: string, prazoDias: number) => {
     const removido = removerParaEmprestimo(npcId);
     if (!removido) return { ok: false, erro: 'Morador indisponível para empréstimo.' };
 
     try {
       await emprestarMorador({
         deviceId: deviceId.current,
+        aliadaDeviceId,
         morador: moradorBase(removido),
         prazoDias,
       });
@@ -228,20 +245,20 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       estado: 'em_curso',
       diaEnvio: stateRef.current?.dia ?? 0,
       prazoDias,
-      aliadaNome: aliadaRef.current?.nome ?? '—',
+      aliadaNome: nomeAliada(aliadaDeviceId),
     });
 
-    try { await puxarAliadaECaixa(); } catch { /* poll vai corrigir */ }
+    try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa, adicionarRegistro]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
 
   // ─── Enviar reforço (fase 3) ──────────────────────────────────────────────
-  const reforcar = useCallback(async (npcId: string) => {
+  const reforcar = useCallback(async (aliadaDeviceId: string, npcId: string) => {
     const removido = removerParaEmprestimo(npcId);
     if (!removido) return { ok: false, erro: 'Morador indisponível para reforço.' };
 
     try {
-      await reforcarMorador({ deviceId: deviceId.current, morador: moradorBase(removido) });
+      await reforcarMorador({ deviceId: deviceId.current, aliadaDeviceId, morador: moradorBase(removido) });
     } catch (e) {
       restaurarMorador(removido);
       return { ok: false, erro: msgErro(e) };
@@ -257,12 +274,12 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       estado: 'em_curso',
       diaEnvio: stateRef.current?.dia ?? 0,
       prazoDias: 0,
-      aliadaNome: aliadaRef.current?.nome ?? '—',
+      aliadaNome: nomeAliada(aliadaDeviceId),
     });
 
-    try { await puxarAliadaECaixa(); } catch { /* poll vai corrigir */ }
+    try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadaECaixa, adicionarRegistro]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
 
   // ─── Receber item ──────────────────────────────────────────────────────────
   const receber = useCallback(async (exchangeId: number) => {
@@ -336,8 +353,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AllianceContext.Provider value={{
-      perfil, aliada, caixa, online, historico,
-      parear, enviar, emprestar, reforcar, receber, renomear, refresh,
+      perfil, aliadas, caixa, online, historico,
+      parear, desfazer, enviar, emprestar, reforcar, receber, renomear, refresh,
     }}>
       {children}
     </AllianceContext.Provider>

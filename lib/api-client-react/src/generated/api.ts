@@ -21,7 +21,10 @@ import type {
 
 import type {
   Aliada,
+  AliadasResposta,
   CaixaResposta,
+  DesfazerInput,
+  DesfazerResultado,
   DevolucaoInput,
   DevolucaoResultado,
   EmprestimoInput,
@@ -215,20 +218,20 @@ export const useRegistrarPerfil = <TError = ErrorType<unknown>,
       return useMutation(getRegistrarPerfilMutationOptions(options));
     }
 
-export const getObterAliadaUrl = (deviceId: string,) => {
+export const getListarAliadasUrl = (deviceId: string,) => {
 
 
 
 
-  return `/api/alianca/${deviceId}/aliada`
+  return `/api/alianca/${deviceId}/aliadas`
 }
 
 /**
- * @summary Consultar a aliada
+ * @summary Listar as aliadas da jogadora
  */
-export const obterAliada = async (deviceId: string, options?: RequestInit): Promise<Aliada> => {
+export const listarAliadas = async (deviceId: string, options?: RequestInit): Promise<AliadasResposta> => {
 
-  return customFetch<Aliada>(getObterAliadaUrl(deviceId),
+  return customFetch<AliadasResposta>(getListarAliadasUrl(deviceId),
   {
     ...options,
     method: 'GET'
@@ -241,45 +244,45 @@ export const obterAliada = async (deviceId: string, options?: RequestInit): Prom
 
 
 
-export const getObterAliadaQueryKey = (deviceId: string,) => {
+export const getListarAliadasQueryKey = (deviceId: string,) => {
     return [
-    `/api/alianca/${deviceId}/aliada`
+    `/api/alianca/${deviceId}/aliadas`
     ] as const;
     }
 
 
-export const getObterAliadaQueryOptions = <TData = Awaited<ReturnType<typeof obterAliada>>, TError = ErrorType<ErroResposta>>(deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof obterAliada>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListarAliadasQueryOptions = <TData = Awaited<ReturnType<typeof listarAliadas>>, TError = ErrorType<unknown>>(deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listarAliadas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getObterAliadaQueryKey(deviceId);
+  const queryKey =  queryOptions?.queryKey ?? getListarAliadasQueryKey(deviceId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof obterAliada>>> = ({ signal }) => obterAliada(deviceId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarAliadas>>> = ({ signal }) => listarAliadas(deviceId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof obterAliada>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarAliadas>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ObterAliadaQueryResult = NonNullable<Awaited<ReturnType<typeof obterAliada>>>
-export type ObterAliadaQueryError = ErrorType<ErroResposta>
+export type ListarAliadasQueryResult = NonNullable<Awaited<ReturnType<typeof listarAliadas>>>
+export type ListarAliadasQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Consultar a aliada
+ * @summary Listar as aliadas da jogadora
  */
 
-export function useObterAliada<TData = Awaited<ReturnType<typeof obterAliada>>, TError = ErrorType<ErroResposta>>(
- deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof obterAliada>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListarAliadas<TData = Awaited<ReturnType<typeof listarAliadas>>, TError = ErrorType<unknown>>(
+ deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listarAliadas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getObterAliadaQueryOptions(deviceId,options)
+  const queryOptions = getListarAliadasQueryOptions(deviceId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -291,6 +294,77 @@ export function useObterAliada<TData = Awaited<ReturnType<typeof obterAliada>>, 
 
 
 
+
+export const getDesfazerAliancaUrl = () => {
+
+
+
+
+  return `/api/alianca/desfazer`
+}
+
+/**
+ * Remove as duas direções do vínculo de aliança entre a jogadora e a aliada indicada. Trocas já em trânsito (empréstimos/reforços) seguem seu curso normalmente, pois são resolvidas por id de jogadora.
+ * @summary Desfazer a aliança com uma aliada específica
+ */
+export const desfazerAlianca = async (desfazerInput: DesfazerInput, options?: RequestInit): Promise<DesfazerResultado> => {
+
+  return customFetch<DesfazerResultado>(getDesfazerAliancaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(desfazerInput)
+  }
+);}
+
+
+
+
+export const getDesfazerAliancaMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desfazerAlianca>>, TError,{data: BodyType<DesfazerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desfazerAlianca>>, TError,{data: BodyType<DesfazerInput>}, TContext> => {
+
+const mutationKey = ['desfazerAlianca'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desfazerAlianca>>, {data: BodyType<DesfazerInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  desfazerAlianca(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesfazerAliancaMutationResult = NonNullable<Awaited<ReturnType<typeof desfazerAlianca>>>
+    export type DesfazerAliancaMutationBody = BodyType<DesfazerInput>
+    export type DesfazerAliancaMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Desfazer a aliança com uma aliada específica
+ */
+export const useDesfazerAlianca = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desfazerAlianca>>, TError,{data: BodyType<DesfazerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof desfazerAlianca>>,
+        TError,
+        {data: BodyType<DesfazerInput>},
+        TContext
+      > => {
+      return useMutation(getDesfazerAliancaMutationOptions(options));
+    }
 
 export const getParearAliancaUrl = () => {
 

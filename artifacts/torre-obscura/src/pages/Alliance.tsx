@@ -5,7 +5,7 @@ import { PROFISSOES, ProfissaoId, getProfissao, podeEmprestar } from '../lib/gam
 import {
   Handshake, Copy, Check, Send, Inbox, Users, Wheat, Trees, Mountain, Zap,
   Wifi, WifiOff, Pencil, CalendarDays, Building2, UserPlus, Clock, Skull, Undo2, Shield,
-  History, ArrowRightLeft,
+  History, ArrowRightLeft, Link2Off, X, ChevronDown,
 } from 'lucide-react';
 
 const PRAZOS_DIAS = [5, 10, 20];
@@ -18,11 +18,9 @@ const RES_META: { key: ResKey; label: string; icon: any }[] = [
   { key: 'ferro', label: 'Ferro', icon: Zap },
 ];
 
-const OPCOES_DIAS = [3, 7, 14] as const;
-
 export function Alliance() {
   const { state, debitarRecursos, estornarRecursos } = useGame();
-  const { perfil, aliada, caixa, online, historico, parear, enviar, emprestar, reforcar, receber, refresh } = useAlliance();
+  const { perfil, aliadas, caixa, online, historico, parear, desfazer, enviar, emprestar, reforcar, receber, refresh } = useAlliance();
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -31,11 +29,15 @@ export function Alliance() {
   const [copiado, setCopiado] = useState(false);
   const [pareando, setPareando] = useState(false);
 
+  // ── Aliada-alvo das ações (envio/empréstimo/reforço) ──
+  const [alvo, setAlvo] = useState<string>('');
+  const [desfazendo, setDesfazendo] = useState<string | null>(null);
+  const [confirmarDesfazer, setConfirmarDesfazer] = useState<string | null>(null);
+
   // ── Estado do envio de recursos ──
   const [envio, setEnvio] = useState<Record<ResKey, string>>({ comida: '', madeira: '', pedra: '', ferro: '' });
   const [enviando, setEnviando] = useState(false);
 
-  // ── Estado do empréstimo de moradores ──
   // ── Estado do recebimento da caixa ──
   const [recebendoId, setRecebendoId] = useState<number | null>(null);
   const [emprestimoNpcId, setEmprestimoNpcId] = useState('');
@@ -48,6 +50,19 @@ export function Alliance() {
 
   // ── Mensagens de feedback ──
   const [msg, setMsg] = useState<{ tipo: 'erro' | 'ok'; texto: string } | null>(null);
+
+  // Mantém a aliada-alvo válida conforme a lista muda.
+  useEffect(() => {
+    if (aliadas.length === 0) { if (alvo) setAlvo(''); return; }
+    if (!aliadas.some(a => a.deviceId === alvo)) setAlvo(aliadas[0].deviceId);
+  }, [aliadas, alvo]);
+
+  const aliadaAlvo = aliadas.find(a => a.deviceId === alvo) ?? null;
+  const nomeAlvo = aliadaAlvo?.nome ?? '—';
+
+  const numAliadas = perfil?.numAliadas ?? aliadas.length;
+  const maxAliadas = perfil?.maxAliadas ?? 3;
+  const cheio = numAliadas >= maxAliadas;
 
   const restanteHoje = perfil ? Math.max(0, perfil.limiteEnvioDiario - perfil.enviadoHoje) : 0;
 
@@ -70,6 +85,16 @@ export function Alliance() {
     else setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao parear.' });
   };
 
+  const handleDesfazer = async (deviceId: string) => {
+    setDesfazendo(deviceId);
+    setMsg(null);
+    const r = await desfazer(deviceId);
+    setDesfazendo(null);
+    setConfirmarDesfazer(null);
+    if (r.ok) setMsg({ tipo: 'ok', texto: 'Aliança desfeita.' });
+    else setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao desfazer.' });
+  };
+
   const envioNums = (): Record<ResKey, number> => ({
     comida: Math.max(0, Math.floor(Number(envio.comida) || 0)),
     madeira: Math.max(0, Math.floor(Number(envio.madeira) || 0)),
@@ -81,19 +106,19 @@ export function Alliance() {
     const n = envioNums();
     return (['comida', 'madeira', 'pedra', 'ferro'] as ResKey[]).every(k => state.recursos[k] >= n[k]);
   };
-  const podeEnviar = !enviando && totalEnvio() > 0 && totalEnvio() <= restanteHoje && saldoSuficiente();
+  const podeEnviar = !enviando && !!alvo && totalEnvio() > 0 && totalEnvio() <= restanteHoje && saldoSuficiente();
 
   const handleEnviar = async () => {
     const n = envioNums();
-    if (totalEnvio() <= 0) return;
+    if (totalEnvio() <= 0 || !alvo) return;
     const reservado = debitarRecursos(n);
     if (!reservado) { setMsg({ tipo: 'erro', texto: 'Recursos insuficientes no armazém.' }); return; }
     setEnviando(true);
     setMsg(null);
-    const r = await enviar(n);
+    const r = await enviar(alvo, n);
     if (r.ok) {
       setEnvio({ comida: '', madeira: '', pedra: '', ferro: '' });
-      setMsg({ tipo: 'ok', texto: 'Recursos enviados à aliada.' });
+      setMsg({ tipo: 'ok', texto: `Recursos enviados a ${nomeAlvo}.` });
     } else {
       estornarRecursos(n);
       setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao enviar.' });
@@ -113,32 +138,34 @@ export function Alliance() {
   const elegiveis = state.npcs.filter(podeEmprestar);
 
   const handleEmprestar = async () => {
-    if (!emprestimoNpcId) return;
+    if (!emprestimoNpcId || !alvo) return;
     setEmprestando(true);
     setMsg(null);
-    const r = await emprestar(emprestimoNpcId, emprestimoPrazo);
+    const r = await emprestar(alvo, emprestimoNpcId, emprestimoPrazo);
     setEmprestando(false);
     if (r.ok) {
       setEmprestimoNpcId('');
-      setMsg({ tipo: 'ok', texto: 'Morador emprestado à aliada.' });
+      setMsg({ tipo: 'ok', texto: `Morador emprestado a ${nomeAlvo}.` });
     } else {
       setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao emprestar.' });
     }
   };
 
   const handleReforcar = async () => {
-    if (!reforcoNpcId) return;
+    if (!reforcoNpcId || !alvo) return;
     setReforcando(true);
     setMsg(null);
-    const r = await reforcar(reforcoNpcId);
+    const r = await reforcar(alvo, reforcoNpcId);
     setReforcando(false);
     if (r.ok) {
       setReforcoNpcId('');
-      setMsg({ tipo: 'ok', texto: 'Reforço enviado! Ele entra na próxima expedição da aliada.' });
+      setMsg({ tipo: 'ok', texto: `Reforço enviado! Ele entra na próxima expedição de ${nomeAlvo}.` });
     } else {
       setMsg({ tipo: 'erro', texto: r.erro ?? 'Falha ao enviar reforço.' });
     }
   };
+
+  const temAliadas = aliadas.length > 0;
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
@@ -166,7 +193,7 @@ export function Alliance() {
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4">SEU CÓDIGO DE ALIANÇA</h3>
         <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 rounded-sm p-4">
           <p className="text-[10px] text-secondary/80 mb-3 leading-relaxed">
-            Compartilhe este código com sua aliada para unir as duas cidadelas.
+            Compartilhe este código com suas aliadas para unir as cidadelas.
           </p>
           <div className="flex items-center gap-3">
             <div className="flex-1 text-center font-cinzel font-bold text-2xl tracking-[0.3em] text-primary bg-background/60 border border-primary/20 rounded-sm py-3 select-all">
@@ -189,63 +216,133 @@ export function Alliance() {
         </div>
       </section>
 
-      {/* Sem aliada: parear */}
-      {!aliada && (
+      {/* Unir-se a uma aliada (parear) */}
+      <section>
+        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+          <Handshake size={13} /> UNIR-SE A UMA ALIADA
+          <span className="ml-auto text-[10px] text-secondary normal-case tracking-normal">
+            {numAliadas}/{maxAliadas} aliadas
+          </span>
+        </h3>
+        <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
+          {cheio ? (
+            <p className="text-[11px] text-warning leading-relaxed">
+              Você atingiu o limite de {maxAliadas} aliadas. Desfaça uma aliança para formar outra.
+            </p>
+          ) : (
+            <>
+              <p className="text-[10px] text-secondary/80 leading-relaxed">
+                Digite o código de uma aliada para formar uma aliança. Vocês poderão trocar recursos e moradores.
+              </p>
+              <input
+                value={codigo}
+                onChange={e => setCodigo(e.target.value.toUpperCase())}
+                maxLength={12}
+                placeholder="CÓDIGO"
+                className="w-full bg-background/60 border border-primary/20 rounded-sm py-3 px-3 text-center font-cinzel font-bold tracking-[0.3em] text-primary placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/60"
+              />
+              <button
+                onClick={handleParear}
+                disabled={pareando || !codigo.trim()}
+                className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Handshake size={14} /> {pareando ? 'FORMANDO...' : 'FORMAR ALIANÇA'}
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Lista de aliadas */}
+      {temAliadas && (
         <section>
           <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
-            <Handshake size={13} /> UNIR-SE A UMA ALIADA
+            <Users size={13} /> SUAS ALIADAS
           </h3>
-          <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
-            <p className="text-[10px] text-secondary/80 leading-relaxed">
-              Digite o código da sua aliada para formar uma aliança. Vocês poderão trocar recursos e moradores.
-            </p>
-            <input
-              value={codigo}
-              onChange={e => setCodigo(e.target.value.toUpperCase())}
-              maxLength={12}
-              placeholder="CÓDIGO"
-              className="w-full bg-background/60 border border-primary/20 rounded-sm py-3 px-3 text-center font-cinzel font-bold tracking-[0.3em] text-primary placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/60"
-            />
-            <button
-              onClick={handleParear}
-              disabled={pareando || !codigo.trim()}
-              className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Handshake size={14} /> {pareando ? 'FORMANDO...' : 'FORMAR ALIANÇA'}
-            </button>
+          <div className="space-y-3">
+            {aliadas.map(aliada => (
+              <div key={aliada.deviceId} className="bg-gradient-to-b from-[#231A2E] to-[#161B22] border border-primary/30 rounded-sm p-4 relative overflow-hidden">
+                <Handshake className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
+                <div className="flex items-start justify-between gap-2 relative z-10">
+                  <div className="font-cinzel font-bold text-lg text-foreground">{aliada.nome}</div>
+                  {confirmarDesfazer === aliada.deviceId ? (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleDesfazer(aliada.deviceId)}
+                        disabled={desfazendo === aliada.deviceId}
+                        className="min-h-[32px] px-2.5 text-[10px] font-bold rounded-sm border border-destructive text-destructive hover:bg-destructive hover:text-background transition-all active:scale-95 disabled:opacity-40 touch-manipulation"
+                      >
+                        {desfazendo === aliada.deviceId ? '...' : 'CONFIRMAR'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmarDesfazer(null)}
+                        disabled={desfazendo === aliada.deviceId}
+                        className="min-h-[32px] w-8 flex items-center justify-center rounded-sm border border-card-border text-muted-foreground hover:text-foreground transition-all active:scale-95 touch-manipulation"
+                        aria-label="Cancelar"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmarDesfazer(aliada.deviceId)}
+                      className="min-h-[32px] px-2.5 flex items-center gap-1 text-[10px] font-bold rounded-sm border border-destructive/40 text-destructive/80 hover:border-destructive hover:text-destructive transition-all active:scale-95 touch-manipulation shrink-0"
+                    >
+                      <Link2Off size={12} /> DESFAZER
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-4 flex-wrap mt-3 text-[11px] relative z-10">
+                  <span className="flex items-center gap-1 text-secondary"><CalendarDays size={12} className="text-primary/70" /> Dia <span className="text-foreground font-bold">{aliada.resumo?.dia ?? '—'}</span></span>
+                  <span className="flex items-center gap-1 text-secondary"><Users size={12} className="text-primary/70" /> Pop. <span className="text-foreground font-bold">{aliada.resumo?.populacao ?? '—'}</span></span>
+                  <span className="flex items-center gap-1 text-secondary"><Building2 size={12} className="text-primary/70" /> Andar <span className="text-foreground font-bold">{aliada.resumo?.andarAtual ?? '—'}</span></span>
+                </div>
+                {aliada.resumo && (
+                  <div className="flex gap-2 flex-wrap mt-3 relative z-10">
+                    {(Object.keys(aliada.resumo.profissoes) as ProfissaoId[]).map(p => (
+                      <span key={p} className={`text-[10px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background/40 border-card-border text-muted-foreground'}`}>
+                        {PROFISSOES[p].nome} <span className="font-bold">{aliada.resumo!.profissoes[p]}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {confirmarDesfazer === aliada.deviceId && (
+                  <p className="text-[10px] text-destructive/90 mt-3 relative z-10">
+                    Desfazer encerra a troca de recursos e moradores com {aliada.nome}. Empréstimos já em curso ainda retornam normalmente.
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
+          <p className="text-[9px] text-muted-foreground mt-3">
+            Resumos sincronizados periodicamente — não é tempo real.
+          </p>
         </section>
       )}
 
-      {/* Com aliada: resumo + envio de recursos + empréstimo de moradores */}
-      {aliada && (
+      {/* Ações com aliada: seletor de alvo + envio/reforço/empréstimo */}
+      {temAliadas && (
         <>
-          {/* Resumo da aliada */}
+          {/* Seletor de aliada-alvo */}
           <section>
             <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
-              <Users size={13} /> SUA ALIADA
+              <ArrowRightLeft size={13} /> AÇÕES — ESCOLHA A ALIADA
             </h3>
-            <div className="bg-gradient-to-b from-[#231A2E] to-[#161B22] border border-primary/30 rounded-sm p-4 relative overflow-hidden">
-              <Handshake className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
-              <div className="font-cinzel font-bold text-lg text-foreground relative z-10">{aliada.nome}</div>
-              <div className="flex gap-4 flex-wrap mt-3 text-[11px] relative z-10">
-                <span className="flex items-center gap-1 text-secondary"><CalendarDays size={12} className="text-primary/70" /> Dia <span className="text-foreground font-bold">{aliada.resumo?.dia ?? '—'}</span></span>
-                <span className="flex items-center gap-1 text-secondary"><Users size={12} className="text-primary/70" /> Pop. <span className="text-foreground font-bold">{aliada.resumo?.populacao ?? '—'}</span></span>
-                <span className="flex items-center gap-1 text-secondary"><Building2 size={12} className="text-primary/70" /> Andar <span className="text-foreground font-bold">{aliada.resumo?.andarAtual ?? '—'}</span></span>
-              </div>
-              {aliada.resumo && (
-                <div className="flex gap-2 flex-wrap mt-3 relative z-10">
-                  {(Object.keys(aliada.resumo.profissoes) as ProfissaoId[]).map(p => (
-                    <span key={p} className={`text-[10px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background/40 border-card-border text-muted-foreground'}`}>
-                      {PROFISSOES[p].nome} <span className="font-bold">{aliada.resumo!.profissoes[p]}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <p className="text-[9px] text-muted-foreground mt-3 relative z-10">
-                Resumo sincronizado periodicamente — não é tempo real.
-              </p>
+            <div className="relative">
+              <select
+                value={alvo}
+                onChange={e => setAlvo(e.target.value)}
+                className="w-full appearance-none bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 rounded-sm py-3 pl-4 pr-10 text-sm font-bold text-foreground focus:outline-none focus:border-primary/60"
+              >
+                {aliadas.map(a => (
+                  <option key={a.deviceId} value={a.deviceId}>{a.nome}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none" />
             </div>
+            <p className="text-[9px] text-muted-foreground mt-2">
+              Recursos, reforços e empréstimos abaixo vão para <span className="text-primary font-bold">{nomeAlvo}</span>.
+            </p>
           </section>
 
           {/* Enviar recursos */}
@@ -277,13 +374,13 @@ export function Alliance() {
                 <span>Restante hoje: <span className={`font-bold ${restanteHoje > 0 ? 'text-primary' : 'text-destructive'}`}>{restanteHoje}</span></span>
                 <span>Taxa da torre: <span className="text-warning font-bold">{perfil ? Math.round(perfil.taxaTorre * 100) : 15}%</span></span>
               </div>
-              <p className="text-[9px] text-muted-foreground -mt-1">Parte se perde no caminho. Enviando: {totalEnvio()} recurso(s).</p>
+              <p className="text-[9px] text-muted-foreground -mt-1">O limite diário é somado entre todas as aliadas. Parte se perde no caminho. Enviando: {totalEnvio()} recurso(s).</p>
               <button
                 onClick={handleEnviar}
                 disabled={!podeEnviar}
                 className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Send size={14} /> {enviando ? 'ENVIANDO...' : 'ENVIAR À ALIADA'}
+                <Send size={14} /> {enviando ? 'ENVIANDO...' : `ENVIAR A ${nomeAlvo.toUpperCase()}`}
               </button>
             </div>
           </section>
@@ -393,7 +490,7 @@ export function Alliance() {
                     disabled={emprestando || !emprestimoNpcId}
                     className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <UserPlus size={14} /> {emprestando ? 'ENVIANDO...' : 'EMPRESTAR À ALIADA'}
+                    <UserPlus size={14} /> {emprestando ? 'ENVIANDO...' : `EMPRESTAR A ${nomeAlvo.toUpperCase()}`}
                   </button>
                 </>
               )}
@@ -503,9 +600,8 @@ export function Alliance() {
             <History size={13} /> MORADORES ENVIADOS
           </h3>
           <div className="space-y-2">
-            {historico.map(reg => {
+            {historico.map((reg: EmprestimoRegistro) => {
               const emCurso = reg.estado === 'em_curso';
-              const retornou = reg.estado === 'retornou';
               const caiu = reg.estado === 'caiu';
               const prof = PROFISSOES[reg.profissao as ProfissaoId]?.nome ?? reg.profissao;
               return (

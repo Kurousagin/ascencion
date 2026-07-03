@@ -9,5 +9,6 @@ import type { Recursos } from './recursos';
 
 export interface EnvioInput {
   deviceId: string;
+  aliadaDeviceId: string;
   recursos: Recursos;
 }

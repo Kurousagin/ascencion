@@ -9,5 +9,6 @@ import type { Morador } from './morador';
 
 export interface ReforcoInput {
   deviceId: string;
+  aliadaDeviceId: string;
   morador: Morador;
 }
