@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES } from '../lib/game-data';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
@@ -328,7 +328,10 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             return (
               <div key={f.floor} className="flex gap-1 items-stretch">
                 <button
-                  onClick={() => setFarmAndar(isSelected ? null : f.floor)}
+                  onClick={() => {
+                    setFarmAndar(f.floor);
+                    setModalOpen(true);
+                  }}
                   className={`flex-1 flex justify-between items-center p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
                     isSelected
                       ? 'bg-secondary/10 border-secondary text-foreground'
@@ -977,9 +980,13 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
             <Skull size={10} /> BAIXAS
           </div>
           <div className="flex flex-col gap-1">
-            {mortos.map((m, i) => (
+          {mortos.map((m, i) => (
               <div key={i} className="text-[11px] text-destructive/80 flex items-center gap-2">
-                <Skull size={9} className="shrink-0 opacity-60" /> {m.nome}
+                <Skull size={9} className="shrink-0 opacity-60" />
+                <span>
+                  {m.nome}
+                  <span className="text-destructive/50"> — {PROFISSOES[m.profissao].nome} · {HABILIDADES[m.habilidade].nome}</span>
+                </span>
               </div>
             ))}
           </div>

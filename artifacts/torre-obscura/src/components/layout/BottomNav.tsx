@@ -3,6 +3,9 @@ import { Eye, Building2, Landmark, Users, ScrollText, Handshake, Swords } from '
 interface BottomNavProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
+  // Contagem de pendências por aba (ex.: { alianca: 2 } = 2 itens não vistos
+  // na caixa de aliança). Ausente ou 0 = sem badge.
+  badges?: Partial<Record<string, number>>;
 }
 
 const tabs = [
@@ -15,7 +18,7 @@ const tabs = [
   { id: 'log',      label: 'LOG',      icon: ScrollText },
 ];
 
-export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
+export function BottomNav({ currentTab, onTabChange, badges }: BottomNavProps) {
   return (
     <nav
       className="
@@ -52,11 +55,18 @@ export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
             {active && (
               <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary rounded-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
             )}
-            <Icon
-              size={20}
-              strokeWidth={active ? 2.2 : 1.8}
-              className={`mb-[3px] transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
-            />
+            <span className="relative">
+              <Icon
+                size={20}
+                strokeWidth={active ? 2.2 : 1.8}
+                className={`mb-[3px] transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
+              />
+              {!!badges?.[t.id] && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-destructive text-destructive-foreground text-[8px] font-bold flex items-center justify-center border border-background animate-pulse leading-none">
+                  {badges[t.id]! > 9 ? '9+' : badges[t.id]}
+                </span>
+              )}
+            </span>
             <span className={`text-[9px] font-bold tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
               {t.label}
             </span>

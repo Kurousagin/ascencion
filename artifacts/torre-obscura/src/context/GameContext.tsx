@@ -4,7 +4,7 @@ import {
   GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcBiomaMultiplier, autoExplorar,
-  getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase,
+  getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase, ProfissaoId, HabilidadeId,
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, GuerraPendente, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA, gerarRivalAgressor, chanceBotWar,
@@ -31,7 +31,7 @@ export interface ExpeditionResult {
   poder: number;
   dificuldade: number;
   loot: { comida: number; madeira: number; pedra: number; ferro: number };
-  mortos: Array<{ nome: string }>;
+  mortos: Array<{ nome: string; profissao: ProfissaoId; habilidade: HabilidadeId; raridade: Raridade }>;
   resgatado: { nome: string; raridade: Raridade } | null;
   habitanteDescoberto?: string;                    // nome do habitante descoberto neste andar
   bossEco?: { titulo: string; texto: string };     // lore do capítulo desbloqueado ao derrotar boss
@@ -101,7 +101,7 @@ const resumoRecursos = (r: Recursos, sinal: '+' | '-') =>
 
 // Time: at 1x, one real-world day equals five in-game days.
 // (24h / 5 game days = 4.8h of real time per game day at 1x; 2x and 5x accelerate.)
-const MS_PER_GAME_DAY_BASE = 86_400_000 / 5;
+const MS_PER_GAME_DAY_BASE =  2 * 60 * 60 * 1000;
 const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -840,7 +840,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
-          resultVitoria.mortos.push({ nome: n.nome });
+          resultVitoria.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -894,7 +894,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
-          resultFalha.mortos.push({ nome: n.nome });
+          resultFalha.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);

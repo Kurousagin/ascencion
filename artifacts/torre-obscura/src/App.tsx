@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
-import { AllianceProvider } from './context/AllianceContext';
+import { AllianceProvider, useAlliance } from './context/AllianceContext';
 import { WarProvider } from './context/WarContext';
 import { BottomNav } from './components/layout/BottomNav';
 import { TitleScreen } from './pages/TitleScreen';
@@ -45,6 +45,7 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
 // permitindo que dissolveAll() seja chamado antes de startNewGame().
 function MainGameInner() {
   const { state } = useGame();
+  const { caixa } = useAlliance();
   const [tab, setTab] = useState('obs');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
@@ -117,7 +118,7 @@ function MainGameInner() {
         </div>
 
         <div className="relative z-50 flex-shrink-0">
-          <BottomNav currentTab={tab} onTabChange={setTab} />
+          <BottomNav currentTab={tab} onTabChange={setTab} badges={{ alianca: caixa.length }} />
         </div>
       </div>
     </WarProvider>

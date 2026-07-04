@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, type PassivaId } from '../lib/game-data';
-
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -145,7 +144,7 @@ export function People() {
                     {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
                   </span>
                   <span className="text-[9px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
-                    {getHabIcon(npc.habilidade)} {npc.habilidade}
+                    {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                   </span>
                   {npc.posto && (
                     <span className="text-[9px] px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
@@ -548,13 +547,23 @@ export function People() {
           </button>
           {mostrarMortos && (
             <div className="space-y-2 mt-2">
-              {state.npcs.filter(n => !n.vivo).map(npc => (
+{state.npcs.filter(n => !n.vivo).map(npc => (
                 <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-55 grayscale flex justify-between items-center rounded-sm">
                   <div className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[10px] font-cinzel">✕</div>
-                    <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm">{npc.nome}</span>
+                    <div>
+                      <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm">{npc.nome}</span>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
+                          {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
+                        </span>
+                        <span className="text-[8px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                          {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[9px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm">FALECIDO</span>
+                  <span className="text-[9px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm shrink-0 self-start">FALECIDO</span>
                 </div>
               ))}
             </div>
