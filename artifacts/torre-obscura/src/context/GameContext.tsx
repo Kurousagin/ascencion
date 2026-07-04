@@ -185,6 +185,39 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    // 2.5 Superlotação — penalidades quando moradores próprios excedem capPopulacao.
+    // Moradores emprestados e reforços de aliança não contam contra o limite (são hóspedes).
+    const vivosProprios = vivos.filter(n => !n.emprestado && !n.reforco);
+    const excedente = Math.max(0, vivosProprios.length - ef.capPopulacao);
+    if (excedente > 0) {
+      // Extra consumo de comida: 1,5 por excedente/dia (além do consumo normal)
+      const extraComida = excedente * 1.5;
+      draft.recursos.comida = Math.max(0, draft.recursos.comida - extraComida);
+
+      // Decaimento de moral: -1 por NPC excedente, máx -5/dia
+      draft.moral -= Math.min(5, excedente);
+
+      // Decaimento de sanidade e lealdade: condições precárias afetam todos
+      const sanPenalty  = Math.min(6, excedente * 2); // 1 exc = -2, 3 = -6
+      const lealPenalty = Math.min(4, excedente);     // 1 exc = -1, 4+ = -4
+      vivos.forEach(n => { n.sanidade -= sanPenalty; n.lealdade -= lealPenalty; });
+
+      // Fadiga: superlotação reduz a recuperação diária em step 4 (via `excedente`).
+      // Não adicionamos fadiga aqui para não ser cancelado imediatamente pela recovery.
+
+      // Log diário — nível de gravidade cresce com excedente
+      if (excedente >= 4) {
+        addLog(draft, 'alerta',
+          `SUPERLOTAÇÃO SEVERA (+${excedente}): -${sanPenalty} Sanidade, -${lealPenalty} Lealdade, -${Math.min(5, excedente)} Moral. Construa Alojamento urgente!`);
+      } else if (excedente >= 2) {
+        addLog(draft, 'alerta',
+          `SUPERLOTAÇÃO CRÍTICA (+${excedente}): condições precárias corroem sanidade e lealdade.`);
+      } else {
+        addLog(draft, 'alerta',
+          `SUPERLOTAÇÃO (+${excedente}): espaço insuficiente. Amplie o Alojamento.`);
+      }
+    }
+
     // 3. Outros efeitos de edifícios (moral / sanidade)
     // Edifícios contribuem, mas limitados a +2/dia — múltiplos edifícios não devem
     // cancelar o decaimento natural indefinidamente.
@@ -197,9 +230,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // 4. Recuperação de fadiga (base + enfermaria + curandeiro) — não vale para
     //    quem está mobilizado na guerra (o front acumula fadiga em avancarGuerra).
+    // Superlotação reduz a recuperação: cada NPC excedente corta 4 pontos de rec.
+    // (excedente=1 → -4 rec, excedente=3 → rec zerada, excedente≥3+ sem recuperação)
     vivos.filter(n => !n.emGuerra).forEach(n => {
       let rec = 12 + ef.fadigaRec;
       if (n.habilidade === 'curandeiro') rec += 15;
+      if (excedente > 0) rec = Math.max(0, rec - excedente * 4);
       n.fadiga = Math.max(0, n.fadiga - rec);
     });
 

@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext';
-import { FastForward, ShieldAlert } from 'lucide-react';
+import { FastForward, ShieldAlert, Users } from 'lucide-react';
+import { getEfeitos, POP_BASE } from '../lib/game-data';
 
 export function Dashboard() {
   const { state, setSpeed, advanceDay } = useGame();
@@ -10,7 +11,13 @@ export function Dashboard() {
     return 'text-warning';
   };
 
-  const vivos = state.npcs.filter(n => n.vivo).length;
+  const vivos        = state.npcs.filter(n => n.vivo).length;
+  const ef           = getEfeitos(state.edificios, state.npcs);
+  const cap          = ef.capPopulacao ?? POP_BASE;
+  // Conta apenas moradores próprios (exclui hóspedes de aliança)
+  const proprios     = state.npcs.filter(n => n.vivo && !n.emprestado && !n.reforco).length;
+  const excedente    = Math.max(0, proprios - cap);
+  const superlotado  = excedente > 0;
 
   return (
     <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
@@ -55,16 +62,51 @@ export function Dashboard() {
           </div>
         </div>
         
-        <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 p-4 flex flex-col justify-between rounded shadow-lg col-span-2">
+        <div className={`bg-gradient-to-b from-[#1C2333] to-[#161B22] p-4 flex flex-col justify-between rounded shadow-lg col-span-2 border ${
+          superlotado ? 'border-destructive/60' : 'border-primary/30'
+        }`}>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[10px] text-secondary tracking-widest">POPULAÇÃO VIVA</span>
+            <div className="flex items-center gap-1.5">
+              <Users size={10} className={superlotado ? 'text-destructive' : 'text-secondary'} />
+              <span className={`text-[10px] tracking-widest ${superlotado ? 'text-destructive' : 'text-secondary'}`}>
+                POPULAÇÃO VIVA
+              </span>
+            </div>
+            {superlotado && (
+              <span className="text-[9px] font-bold text-destructive tracking-widest animate-pulse">
+                ⚠ SUPERLOTADO +{excedente}
+              </span>
+            )}
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-bold font-cinzel ${vivos <= 3 ? 'text-destructive animate-pulse' : 'text-foreground'}`}>
-              {vivos}
+            <span className={`text-3xl font-bold font-cinzel ${
+              superlotado ? 'text-destructive' : vivos <= 3 ? 'text-destructive animate-pulse' : 'text-foreground'
+            }`}>
+              {proprios}
             </span>
-            <span className="text-muted-foreground text-sm font-cinzel mb-1">/ {state.npcs.length}</span>
+            <span className={`text-sm font-cinzel mb-1 ${superlotado ? 'text-destructive/70' : 'text-muted-foreground'}`}>
+              / {cap}
+            </span>
+            {vivos !== proprios && (
+              <span className="text-[10px] text-secondary/50 mb-1 font-cinzel">
+                +{vivos - proprios} hóspedes
+              </span>
+            )}
           </div>
+          {/* Barra de ocupação */}
+          <div className="w-full bg-background h-1 rounded overflow-hidden border border-white/5 mt-2">
+            <div
+              className={`h-full transition-all duration-500 ${
+                superlotado ? 'bg-destructive' : proprios / cap > 0.8 ? 'bg-warning' : 'bg-success'
+              }`}
+              style={{ width: `${Math.min(100, (proprios / cap) * 100)}%` }}
+            />
+          </div>
+          {superlotado && (
+            <p className="text-[9px] text-destructive/70 mt-1.5 leading-snug">
+              Penalidades ativas: consumo extra de comida, -moral, -sanidade, -lealdade e fadiga acumulando.
+            </p>
+          )}
         </div>
       </div>
 

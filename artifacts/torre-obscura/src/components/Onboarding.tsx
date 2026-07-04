@@ -38,6 +38,7 @@ const SLIDES: Slide[] = [
     corpo: [
       'Construa edifícios para produzir comida, recuperar fadiga, elevar moral e aumentar o limite de população.',
       'Sem comida, moradores morrem. Sem moral, trairão. Gerencie os dois.',
+      'Ter mais moradores do que o Alojamento suporta gera superlotação: consumo extra de comida, decaimento de sanidade e lealdade, e fadiga que nunca recupera.',
     ],
     dica: 'Fazenda e Fogueira primeiro. Alojamento quando quiser recrutar mais moradores.',
   },
