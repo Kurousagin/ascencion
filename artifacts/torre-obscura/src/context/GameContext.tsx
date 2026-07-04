@@ -518,7 +518,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       vivo:         true,
       obscuro:      false,
       emExpedicao:  false,
-      raridade:     npcConfig.primordial ? 'Épico' : 'Raro',
+      raridade:     npcConfig.divino ? 'Divino' : npcConfig.primordial ? 'Lendário' : 'Raro',
       habilidade:   npcConfig.habilidade,
       posto:        null,
       lancamento:   npcConfig.primordial ?? false,
@@ -591,8 +591,24 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           n.agilidade   = base.agilidade;
           n.inteligencia = base.inteligencia;
           n.resistencia = base.resistencia;
+          // Normaliza raridade: saves antigos tinham 'Épico'; primordiais são Lendários
+          n.raridade = base.divino ? 'Divino' : 'Lendário';
         }
         n.primordialNivel = 0;
+      });
+    }
+    // Migração independente de raridade: normaliza TODOS os primordiais para Lendário/Divino,
+    // independente do estado de primordialNivel (cobre saves já migrados que ainda têm 'Épico').
+    {
+      const todosLancamentosRar = [LANCAMENTO_ATIVO, LANCAMENTO_T2].filter(Boolean) as import('../lib/lancamento').LancamentoTemporada[];
+      parsed.npcs.forEach(n => {
+        if (!n.lancamento) return;
+        if (n.raridade === 'Lendário' || n.raridade === 'Divino') return; // já normalizado
+        let base: import('../lib/lancamento').NpcLancamento | undefined;
+        for (const lanc of todosLancamentosRar) {
+          if (lanc.primordial.nome === n.nome) { base = lanc.primordial; break; }
+        }
+        n.raridade = (base?.divino) ? 'Divino' : 'Lendário';
       });
     }
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)

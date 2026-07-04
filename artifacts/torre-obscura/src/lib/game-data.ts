@@ -59,7 +59,7 @@ export const HABILIDADES: Record<HabilidadeId, Habilidade> = {
   },
 };
 
-export type Raridade = 'Comum' | 'Incomum' | 'Raro' | 'Épico';
+export type Raridade = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Divino';
 
 // ─── NPC ─────────────────────────────────────────────────────────────────────
 
@@ -1524,10 +1524,12 @@ export const GACHA_ODDS: Array<{ raridade: Raridade; peso: number }> = [
 
 function statsParaRaridade(r: Raridade): { min: number; max: number } {
   switch (r) {
-    case 'Épico':   return { min: 9,  max: 15 };
-    case 'Raro':    return { min: 6,  max: 12 };
-    case 'Incomum': return { min: 4,  max: 9  };
-    case 'Comum':   return { min: 2,  max: 7  };
+    case 'Divino':   return { min: 9,  max: 15 }; // não entra no gacha; mesmo range que Épico
+    case 'Lendário': return { min: 9,  max: 15 }; // não entra no gacha; mesmo range que Épico
+    case 'Épico':    return { min: 9,  max: 15 };
+    case 'Raro':     return { min: 6,  max: 12 };
+    case 'Incomum':  return { min: 4,  max: 9  };
+    case 'Comum':    return { min: 2,  max: 7  };
   }
 }
 

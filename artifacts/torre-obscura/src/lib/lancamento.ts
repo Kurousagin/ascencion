@@ -21,6 +21,8 @@ export interface NpcLancamento {
   cardLoreFinal?: string;
   // Se true: quase imortal (imune a fome, 10% mort. expedição)
   primordial?: boolean;
+  // Se true: primordial da temporada final — raridade Divino (acima de Lendário)
+  divino?: boolean;
 }
 
 export interface LancamentoTemporada {

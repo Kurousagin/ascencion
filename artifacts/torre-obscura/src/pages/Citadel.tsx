@@ -12,21 +12,26 @@ import {
 // ─── helpers de raridade ──────────────────────────────────────────────────────
 
 const RARITY_COLOR: Record<string, string> = {
-  Comum:   'var(--rarity-comum)',
-  Incomum: 'var(--rarity-incomum)',
-  Raro:    'var(--rarity-raro)',
-  Épico:   'var(--rarity-epico)',
+  Comum:    'var(--rarity-comum)',
+  Incomum:  'var(--rarity-incomum)',
+  Raro:     'var(--rarity-raro)',
+  Épico:    'var(--rarity-epico)',
+  Lendário: 'var(--rarity-lendario)',
+  Divino:   'var(--rarity-divino)',
 };
 
 const RARITY_STARS: Record<string, string> = {
   Comum: '★', Incomum: '★★', Raro: '★★★', Épico: '★★★★',
+  Lendário: '★★★★★', Divino: '✦✦✦✦✦✦',
 };
 
 const RARITY_GLOW: Record<string, string> = {
-  Comum:   '',
-  Incomum: 'shadow-[0_0_12px_rgba(46,213,115,0.35)]',
-  Raro:    'shadow-[0_0_16px_rgba(74,158,255,0.45)]',
-  Épico:   'shadow-[0_0_22px_rgba(212,175,55,0.55)]',
+  Comum:    '',
+  Incomum:  'shadow-[0_0_12px_rgba(46,213,115,0.35)]',
+  Raro:     'shadow-[0_0_16px_rgba(74,158,255,0.45)]',
+  Épico:    'shadow-[0_0_22px_rgba(212,175,55,0.55)]',
+  Lendário: 'shadow-[0_0_30px_rgba(255,140,0,0.70)]',
+  Divino:   'shadow-[0_0_40px_rgba(250,250,250,0.85)]',
 };
 
 // ─── NPC gacha card ───────────────────────────────────────────────────────────

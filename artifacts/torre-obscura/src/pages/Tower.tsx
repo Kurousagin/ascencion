@@ -100,20 +100,24 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
   const getRarityColorHex = (r: string) => {
     switch(r) {
-      case 'Comum': return 'var(--rarity-comum)';
-      case 'Incomum': return 'var(--rarity-incomum)';
-      case 'Raro': return 'var(--rarity-raro)';
-      case 'Épico': return 'var(--rarity-epico)';
+      case 'Comum':    return 'var(--rarity-comum)';
+      case 'Incomum':  return 'var(--rarity-incomum)';
+      case 'Raro':     return 'var(--rarity-raro)';
+      case 'Épico':    return 'var(--rarity-epico)';
+      case 'Lendário': return 'var(--rarity-lendario)';
+      case 'Divino':   return 'var(--rarity-divino)';
       default: return 'var(--rarity-comum)';
     }
   };
 
   const getRarityStars = (r: string) => {
     switch(r) {
-      case 'Comum': return '★';
-      case 'Incomum': return '★★';
-      case 'Raro': return '★★★';
-      case 'Épico': return '★★★★';
+      case 'Comum':    return '★';
+      case 'Incomum':  return '★★';
+      case 'Raro':     return '★★★';
+      case 'Épico':    return '★★★★';
+      case 'Lendário': return '★★★★★';
+      case 'Divino':   return '✦✦✦✦✦✦';
       default: return '★';
     }
   };

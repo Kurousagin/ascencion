@@ -47,7 +47,7 @@ const SLIDES: Slide[] = [
     titulo: 'Os Moradores',
     subtitulo: 'Cada um é único.',
     corpo: [
-      'Recrute sobreviventes via Ritual em Trindade (3 por ritual). Raridades: Comum → Incomum → Raro → Épico.',
+      'Recrute sobreviventes via Ritual em Trindade (3 por ritual). Raridades: Comum → Incomum → Raro → Épico. Primordiais de temporada são Lendários — acima de qualquer gacha.',
       'Cada morador tem atributos, habilidade especial e status de lealdade e fadiga. Atribua postos em edifícios para bônus passivos.',
     ],
     dica: 'Lealdade baixa gera traição. Fadiga alta reduz poder de combate.',

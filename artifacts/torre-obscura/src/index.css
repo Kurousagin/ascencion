@@ -92,6 +92,8 @@
   --rarity-incomum: #2ED573;
   --rarity-raro: #4A9EFF;
   --rarity-epico: #9B5DE5;
+  --rarity-lendario: #FF8C00;
+  --rarity-divino: #FAFAFA;
 }
 
 .dark {
@@ -136,6 +138,8 @@
   --rarity-incomum: #2ED573;
   --rarity-raro: #4A9EFF;
   --rarity-epico: #9B5DE5;
+  --rarity-lendario: #FF8C00;
+  --rarity-divino: #FAFAFA;
 }
 
 @layer base {
