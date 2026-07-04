@@ -2,7 +2,11 @@ import { useGame } from '../context/GameContext';
 import { ShieldAlert, Users } from 'lucide-react';
 import { getEfeitos, POP_BASE } from '../lib/game-data';
 
-export function Dashboard() {
+interface DashboardProps {
+  t2Desbloqueado: boolean;
+}
+
+export function Dashboard({ t2Desbloqueado }: DashboardProps) {
   const { state, setSpeed } = useGame();
 
   const getMoralColor = (m: number) => {
@@ -38,9 +42,9 @@ export function Dashboard() {
         <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 p-4 flex flex-col justify-between rounded shadow-lg">
           <span className="text-[10px] text-secondary tracking-widest mb-2">ANDARES</span>
           <div className="flex flex-col gap-1">
-            <span className="text-xl text-foreground font-bold font-cinzel">{state.andarAtual - 1} / 40</span>
+            <span className="text-xl text-foreground font-bold font-cinzel">{Math.min(state.andarAtual - 1, t2Desbloqueado ? 40 : 20)} / {t2Desbloqueado ? 40 : 20}</span>
             <div className="flex gap-0.5 mt-1">
-              {Array.from({length: 40}).map((_, i) => (
+              {Array.from({length: t2Desbloqueado ? 40 : 20}).map((_, i) => (
                 <div key={i} className={`flex-1 h-1.5 ${i < state.andarAtual - 1 ? 'bg-primary' : 'bg-background border border-primary/20'}`} />
               ))}
             </div>

@@ -5,7 +5,13 @@ import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
-export function Tower() {
+interface TowerProps {
+  t2Desbloqueado: boolean;
+  pioneerPosicao: number | null;
+  pioneersTotal: number;
+}
+
+export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerProps) {
   const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, abrirCodex } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
@@ -34,6 +40,8 @@ export function Tower() {
   }, [modalOpen]);
 
   const isFarming = farmAndar !== null;
+  // Trava de T2: enquanto T2 não desbloqueado globalmente e não está em modo farm, mostra tela de espera.
+  const aguardandoT2 = !isFarming && state.andarAtual > 20 && !t2Desbloqueado;
   const targetAndar = isFarming ? farmAndar! : state.andarAtual;
   const floorData = FLOORS[targetAndar - 1];
   const isBoss = floorData?.isBoss;
@@ -152,99 +160,147 @@ export function Tower() {
         </div>
       )}
 
-      <div className={`bg-gradient-to-b border p-6 relative rounded-sm shadow-2xl overflow-hidden ${getTierBg(floorData.tier, isBoss)} ${isBoss && !isFarming ? 'shadow-[0_0_20px_rgba(248,81,73,0.3)]' : ''}`}>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[50px] pointer-events-none rounded-full" />
-
-        {isBoss && !isFarming && (
-          <div className="absolute top-0 right-0 bg-destructive text-destructive-foreground px-4 py-1.5 text-[10px] font-bold flex items-center gap-1 tracking-[0.2em] rounded-bl-sm z-10">
-            <Skull size={12} /> CHEFE
-          </div>
-        )}
-        {isFarming && (
-          <div className="absolute top-0 right-0 bg-secondary/80 text-background px-4 py-1.5 text-[10px] font-bold flex items-center gap-1 tracking-[0.2em] rounded-bl-sm z-10">
-            <RotateCcw size={12} /> EXPLORAÇÃO
-          </div>
-        )}
-
-        {/* Capítulo */}
-        <div className="text-[9px] text-white/35 tracking-[0.25em] mb-0.5 font-inter uppercase relative z-10">
-          {isFarming ? 'MODO EXPLORAÇÃO' : `CAPÍTULO ${floorData.tier} · ${CAPITULO_NOMES[floorData.tier]}`}
-        </div>
-
-        <div className="text-5xl font-bold text-white font-cinzel flex items-baseline gap-2 mb-1 drop-shadow-md relative z-10">
-          {floorData.floor} <span className="text-xl text-white/70">ANDAR</span>
-        </div>
-        <div className="text-sm text-primary tracking-[0.2em] font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
-
-        {/* Biome badge */}
-        {biomaInfo && (
-          <div className="mt-1 flex items-center gap-1.5 relative z-10">
-            <span className="text-base leading-none">{biomaInfo.icone}</span>
-            <span className="text-[10px] text-white/60 tracking-wider">{biomaInfo.label.toUpperCase()}</span>
-            <span className="text-[9px] text-white/35 mx-1">·</span>
-            <span className="text-[9px] text-white/50 italic">{biomaInfo.dica}</span>
-          </div>
-        )}
-
-        {/* Texto narrativo do andar */}
-        {floorData.descricao && (
-          <p className="mt-3 mb-1 text-[11px] text-white/50 italic leading-relaxed relative z-10 border-l border-white/10 pl-3">
-            {floorData.descricao}
-          </p>
-        )}
-
-        {/* Banner do Boss */}
-        {floorData.boss && !isFarming && (
-          <div className="mt-3 mb-0 px-3 py-2 rounded-sm bg-destructive/15 border border-destructive/50 relative z-10">
-            <div className="text-[9px] text-destructive/80 tracking-[0.3em] mb-0.5 font-cinzel">GUARDIÃO DO ANDAR</div>
-            <div className="text-sm font-cinzel font-bold text-destructive tracking-widest">{floorData.boss.nome}</div>
-            <div className="text-[9px] text-white/40 italic mt-0.5">{floorData.boss.epiteto}</div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4 mb-4 bg-black/30 p-4 rounded-sm border border-white/5 relative z-10">
-          <div>
-            <div className="text-[10px] text-white/50 mb-1 tracking-widest">DIFICULDADE</div>
-            <div className="text-lg font-bold text-white/90 flex items-center gap-2"><Swords size={14} className="text-primary"/> {floorData.difficulty} PWR</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-white/50 mb-1 tracking-widest">RISCO BASE</div>
-            <div className="text-lg font-bold text-warning">{floorData.mortality}% MORT.</div>
-          </div>
-        </div>
-
-        {recompensa && (
-          <div className="mb-8 bg-black/30 p-4 rounded-sm border border-primary/20 relative z-10">
-            <div className="text-[10px] text-primary/80 mb-2 tracking-widest flex items-center gap-1">
-              <Check size={12} /> {isFarming ? 'RECOMPENSAS (×70% no modo exploração)' : 'RECOMPENSAS AO CONQUISTAR'}
+      {aguardandoT2 ? (
+        /* ── TEMPORADA I COMPLETA — aguardando desbloqueio global de T2 ── */
+        <div className="bg-gradient-to-b from-[#1A1808] to-[#0E0D0B] border border-primary/40 rounded-sm overflow-hidden">
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+          <div className="p-6 space-y-5 text-center">
+            <div className="flex justify-center">
+              <div className="w-3 h-3 rotate-45 border border-primary shadow-[0_0_8px_rgba(212,175,55,0.6)] bg-primary/20" />
             </div>
-            <div className="flex flex-wrap gap-3 text-sm font-bold">
-              <span className="flex items-center gap-1 text-white/90"><Wheat size={14} className="text-warning" /> +{isFarming ? Math.round(recompensa.comida * 0.7) : recompensa.comida}</span>
-              <span className="flex items-center gap-1 text-white/90"><Trees size={14} className="text-success" /> +{isFarming ? Math.round(recompensa.madeira * 0.7) : recompensa.madeira}</span>
-              <span className="flex items-center gap-1 text-white/90"><Mountain size={14} className="text-secondary" /> +{isFarming ? Math.round(recompensa.pedra * 0.7) : recompensa.pedra}</span>
-              {recompensa.ferro > 0 && (
-                <span className="flex items-center gap-1 text-white/90"><Zap size={14} className="text-primary" /> +{isFarming ? Math.round(recompensa.ferro * 0.7) : recompensa.ferro}</span>
+            <div>
+              <div className="text-[9px] text-secondary tracking-[0.3em] mb-1">TEMPORADA I — A ASCENSÃO</div>
+              <h2 className="font-cinzel font-bold text-primary tracking-[0.15em] text-lg">ASCENSÃO COMPLETA</h2>
+            </div>
+            <p className="text-[11px] text-white/55 leading-relaxed italic border-l border-primary/30 pl-3 text-left">
+              {pioneerPosicao === 1
+                ? '"Você foi o primeiro a transcender o Vigésimo Andar. A Torre registrou sua presença entre as ruínas do que havia antes. Aguarde — quando dez exploradores alcançarem este patamar, o véu entre as temporadas será rasgado."'
+                : '"Você alcançou o limite do que a Torre revela por agora. Outros ainda percorrem os andares que você pisou. Quando dez ascenderem, o silêncio entre as temporadas será quebrado e o próximo capítulo se abrirá."'}
+            </p>
+            <div className="border border-primary/20 bg-black/40 rounded-sm px-4 py-4 space-y-3">
+              <div className="text-[9px] text-secondary tracking-[0.2em]">EXPLORADORES ASCENDIDOS</div>
+              <div className="flex gap-1.5 justify-center flex-wrap">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-4 h-4 rotate-45 border transition-all ${
+                      i < pioneersTotal
+                        ? 'border-primary bg-primary/30 shadow-[0_0_6px_rgba(212,175,55,0.5)]'
+                        : 'border-primary/20'
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="font-cinzel font-bold text-primary text-xl">
+                {pioneersTotal} <span className="text-sm text-white/40">/ 10</span>
+              </div>
+              {pioneersTotal < 10 && (
+                <div className="text-[9px] text-secondary/50 tracking-wider">
+                  {10 - pioneersTotal} explorador{10 - pioneersTotal !== 1 ? 'es' : ''} restante{10 - pioneersTotal !== 1 ? 's' : ''} para a Temporada 2
+                </div>
               )}
             </div>
-            {!isFarming && (
-              <div className="text-[9px] text-white/40 mt-2 tracking-wide">Em caso de falha: ~30% dos recursos são recuperados de qualquer forma.</div>
-            )}
+            <p className="text-[9px] text-secondary/40 tracking-widest">
+              Os andares conquistados permanecem acessíveis para exploração enquanto aguarda.
+            </p>
           </div>
-        )}
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        </div>
+      ) : (
+        <div className={`bg-gradient-to-b border p-6 relative rounded-sm shadow-2xl overflow-hidden ${getTierBg(floorData.tier, isBoss)} ${isBoss && !isFarming ? 'shadow-[0_0_20px_rgba(248,81,73,0.3)]' : ''}`}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[50px] pointer-events-none rounded-full" />
 
-        <button
-          onClick={() => setModalOpen(true)}
-          className={`w-full h-14 font-cinzel font-bold tracking-[0.2em] text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 touch-manipulation ${
-            isFarming
-              ? 'bg-secondary/80 text-background shadow-none'
-              : isBoss
-                ? 'bg-destructive text-destructive-foreground shadow-[0_0_15px_rgba(248,81,73,0.4)]'
-                : 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(212,175,55,0.4)]'
-          } rounded-sm`}
-        >
-          <ChevronUp /> {isFarming ? 'EXPLORAR ANDAR' : 'PREPARAR EXPEDIÇÃO'}
-        </button>
-      </div>
+          {isBoss && !isFarming && (
+            <div className="absolute top-0 right-0 bg-destructive text-destructive-foreground px-4 py-1.5 text-[10px] font-bold flex items-center gap-1 tracking-[0.2em] rounded-bl-sm z-10">
+              <Skull size={12} /> CHEFE
+            </div>
+          )}
+          {isFarming && (
+            <div className="absolute top-0 right-0 bg-secondary/80 text-background px-4 py-1.5 text-[10px] font-bold flex items-center gap-1 tracking-[0.2em] rounded-bl-sm z-10">
+              <RotateCcw size={12} /> EXPLORAÇÃO
+            </div>
+          )}
+
+          {/* Capítulo */}
+          <div className="text-[9px] text-white/35 tracking-[0.25em] mb-0.5 font-inter uppercase relative z-10">
+            {isFarming ? 'MODO EXPLORAÇÃO' : `CAPÍTULO ${floorData.tier} · ${CAPITULO_NOMES[floorData.tier]}`}
+          </div>
+
+          <div className="text-5xl font-bold text-white font-cinzel flex items-baseline gap-2 mb-1 drop-shadow-md relative z-10">
+            {floorData.floor} <span className="text-xl text-white/70">ANDAR</span>
+          </div>
+          <div className="text-sm text-primary tracking-[0.2em] font-cinzel glow-gold block w-max relative z-10">{floorData.tierName.toUpperCase()}</div>
+
+          {/* Biome badge */}
+          {biomaInfo && (
+            <div className="mt-1 flex items-center gap-1.5 relative z-10">
+              <span className="text-base leading-none">{biomaInfo.icone}</span>
+              <span className="text-[10px] text-white/60 tracking-wider">{biomaInfo.label.toUpperCase()}</span>
+              <span className="text-[9px] text-white/35 mx-1">·</span>
+              <span className="text-[9px] text-white/50 italic">{biomaInfo.dica}</span>
+            </div>
+          )}
+
+          {/* Texto narrativo do andar */}
+          {floorData.descricao && (
+            <p className="mt-3 mb-1 text-[11px] text-white/50 italic leading-relaxed relative z-10 border-l border-white/10 pl-3">
+              {floorData.descricao}
+            </p>
+          )}
+
+          {/* Banner do Boss */}
+          {floorData.boss && !isFarming && (
+            <div className="mt-3 mb-0 px-3 py-2 rounded-sm bg-destructive/15 border border-destructive/50 relative z-10">
+              <div className="text-[9px] text-destructive/80 tracking-[0.3em] mb-0.5 font-cinzel">GUARDIÃO DO ANDAR</div>
+              <div className="text-sm font-cinzel font-bold text-destructive tracking-widest">{floorData.boss.nome}</div>
+              <div className="text-[9px] text-white/40 italic mt-0.5">{floorData.boss.epiteto}</div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 mb-4 bg-black/30 p-4 rounded-sm border border-white/5 relative z-10">
+            <div>
+              <div className="text-[10px] text-white/50 mb-1 tracking-widest">DIFICULDADE</div>
+              <div className="text-lg font-bold text-white/90 flex items-center gap-2"><Swords size={14} className="text-primary"/> {floorData.difficulty} PWR</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-white/50 mb-1 tracking-widest">RISCO BASE</div>
+              <div className="text-lg font-bold text-warning">{floorData.mortality}% MORT.</div>
+            </div>
+          </div>
+
+          {recompensa && (
+            <div className="mb-8 bg-black/30 p-4 rounded-sm border border-primary/20 relative z-10">
+              <div className="text-[10px] text-primary/80 mb-2 tracking-widest flex items-center gap-1">
+                <Check size={12} /> {isFarming ? 'RECOMPENSAS (×70% no modo exploração)' : 'RECOMPENSAS AO CONQUISTAR'}
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm font-bold">
+                <span className="flex items-center gap-1 text-white/90"><Wheat size={14} className="text-warning" /> +{isFarming ? Math.round(recompensa.comida * 0.7) : recompensa.comida}</span>
+                <span className="flex items-center gap-1 text-white/90"><Trees size={14} className="text-success" /> +{isFarming ? Math.round(recompensa.madeira * 0.7) : recompensa.madeira}</span>
+                <span className="flex items-center gap-1 text-white/90"><Mountain size={14} className="text-secondary" /> +{isFarming ? Math.round(recompensa.pedra * 0.7) : recompensa.pedra}</span>
+                {recompensa.ferro > 0 && (
+                  <span className="flex items-center gap-1 text-white/90"><Zap size={14} className="text-primary" /> +{isFarming ? Math.round(recompensa.ferro * 0.7) : recompensa.ferro}</span>
+                )}
+              </div>
+              {!isFarming && (
+                <div className="text-[9px] text-white/40 mt-2 tracking-wide">Em caso de falha: ~30% dos recursos são recuperados de qualquer forma.</div>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={() => setModalOpen(true)}
+            className={`w-full h-14 font-cinzel font-bold tracking-[0.2em] text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 touch-manipulation ${
+              isFarming
+                ? 'bg-secondary/80 text-background shadow-none'
+                : isBoss
+                  ? 'bg-destructive text-destructive-foreground shadow-[0_0_15px_rgba(248,81,73,0.4)]'
+                  : 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+            } rounded-sm`}
+          >
+            <ChevronUp /> {isFarming ? 'EXPLORAR ANDAR' : 'PREPARAR EXPEDIÇÃO'}
+          </button>
+        </div>
+      )}
 
       {/* Histórico / andares conquistados (clicáveis para farm) */}
       <div className="space-y-3 mt-10">
