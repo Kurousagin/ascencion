@@ -5,7 +5,6 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 WORKDIR /app
 
-# Copia manifestos e estrutura de workspace
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY lib/api-client-react/package.json ./lib/api-client-react/
 COPY lib/api-spec/package.json         ./lib/api-spec/
@@ -34,7 +33,7 @@ COPY lib/api-zod/package.json ./lib/api-zod/
 COPY lib/db/package.json      ./lib/db/
 COPY artifacts/api-server/package.json ./artifacts/api-server/
 
-# Instala todas as dependências no container de prod para não quebrar links do workspace
+# Instalamos as dependências necessárias
 RUN pnpm install
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
@@ -45,6 +44,5 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-# Usamos o 'pnpm exec' a partir da raiz. Ele usa a árvore de módulos nativa do pnpm
-# e resolve o 'drizzle-orm' sem precisar baixar cópias temporárias pelo npm.
-CMD ["sh", "-c", "pnpm exec drizzle-kit push --config=./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+# Chamamos o arquivo executável do drizzle diretamente via Node, apontando para o arquivo config copiado
+CMD ["sh", "-c", "node ./node_modules/drizzle-kit/bin.cjs push --config ./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
