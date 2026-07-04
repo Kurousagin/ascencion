@@ -92,18 +92,59 @@ async function gerarCodigoUnico(): Promise<string> {
   return gerarCodigo() + gerarCodigo();
 }
 
+// Retorna os ids das aliadas de `playerId` olhando o vínculo nas DUAS colunas
+// (playerId OU allyId). O pareamento sempre grava as duas direções, mas isso
+// nos torna resilientes a linhas órfãs/unidirecionais (dado legado, corrida,
+// falha parcial) — a aliança aparece pra quem consultar de qualquer lado.
+async function idsAliadas(
+  playerId: number,
+): Promise<{ ids: number[]; espelhoFaltando: number[] }> {
+  const linhas = await db
+    .select({ playerId: alliancesTable.playerId, allyId: alliancesTable.allyId })
+    .from(alliancesTable)
+    .where(or(eq(alliancesTable.playerId, playerId), eq(alliancesTable.allyId, playerId)));
+
+  const direta = new Set<number>(); // aliadas com linha playerId -> allyId (sentido esperado)
+  const todas = new Set<number>();
+  const inversa = new Set<number>(); // aliadas que só têm a linha no sentido inverso
+  for (const l of linhas) {
+    if (l.playerId === playerId) {
+      direta.add(l.allyId);
+      todas.add(l.allyId);
+    } else if (l.allyId === playerId) {
+      todas.add(l.playerId);
+      inversa.add(l.playerId);
+    }
+  }
+  const espelhoFaltando = [...inversa].filter((id) => !direta.has(id));
+  return { ids: [...todas], espelhoFaltando };
+}
+
+// Garante a linha espelho (playerId -> allyId) para cada aliada que só tinha
+// o vínculo no sentido inverso. Auto-repara dados assimétricos legados.
+async function repararEspelho(playerId: number, faltando: number[]): Promise<void> {
+  if (faltando.length === 0) return;
+  await db
+    .insert(alliancesTable)
+    .values(faltando.map((allyId) => ({ playerId, allyId })))
+    .onConflictDoNothing();
+}
+
 async function contarAliadas(playerId: number): Promise<number> {
+  const { ids, espelhoFaltando } = await idsAliadas(playerId);
+  if (ids.length === 0) return 0;
+  void repararEspelho(playerId, espelhoFaltando).catch(() => {});
   // JOIN garante que só contamos links cuja aliada ainda existe na tabela players.
   const result = await db
-    .select({ cnt: count(alliancesTable.id) })
-    .from(alliancesTable)
-    .innerJoin(playersTable, eq(alliancesTable.allyId, playersTable.id))
-    .where(eq(alliancesTable.playerId, playerId));
+    .select({ cnt: count(playersTable.id) })
+    .from(playersTable)
+    .where(inArray(playersTable.id, ids));
   return Number(result[0]?.cnt ?? 0);
 }
 
 // Confirma que existe vínculo de aliança entre `playerId` e a aliada de deviceId
 // `aliadaDeviceId`. Retorna a aliada (linha de players) quando aliada, ou null.
+// Verifica o vínculo nas duas direções — ver `idsAliadas`.
 async function resolverAliada(playerId: number, aliadaDeviceId: string) {
   const [aliada] = await db
     .select()
@@ -115,13 +156,16 @@ async function resolverAliada(playerId: number, aliadaDeviceId: string) {
     .select({ id: alliancesTable.id })
     .from(alliancesTable)
     .where(
-      and(
-        eq(alliancesTable.playerId, playerId),
-        eq(alliancesTable.allyId, aliada.id),
+      or(
+        and(eq(alliancesTable.playerId, playerId), eq(alliancesTable.allyId, aliada.id)),
+        and(eq(alliancesTable.playerId, aliada.id), eq(alliancesTable.allyId, playerId)),
       ),
     )
     .limit(1);
-  return link ? aliada : null;
+  if (!link) return null;
+  // Repara a linha espelho em segundo plano, se estiver faltando.
+  void repararEspelho(playerId, [aliada.id]).catch(() => {});
+  return aliada;
 }
 
 // Mapeia um registro de troca para o formato da caixa de entrada.
@@ -213,19 +257,22 @@ router.get("/alianca/:deviceId/aliadas", async (req, res): Promise<void> => {
     res.json(ListarAliadasResponse.parse([]));
     return;
   }
-  // JOIN único: evita inconsistência entre dois queries separados e ignora
-  // automaticamente links cujo registro de aliada foi removido do banco.
-  const aliadas = await db
-    .select({
-      deviceId: playersTable.deviceId,
-      nome: playersTable.nome,
-      codigoAlianca: playersTable.codigoAlianca,
-      resumo: playersTable.resumo,
-      atualizadoEm: playersTable.updatedAt,
-    })
-    .from(alliancesTable)
-    .innerJoin(playersTable, eq(alliancesTable.allyId, playersTable.id))
-    .where(eq(alliancesTable.playerId, player.id));
+  // Olha o vínculo nas duas direções (ver `idsAliadas`) e ignora automaticamente
+  // ids cujo registro de aliada foi removido do banco (filtro implícito do IN).
+  const { ids, espelhoFaltando } = await idsAliadas(player.id);
+  void repararEspelho(player.id, espelhoFaltando).catch(() => {});
+  const aliadas = ids.length === 0
+    ? []
+    : await db
+        .select({
+          deviceId: playersTable.deviceId,
+          nome: playersTable.nome,
+          codigoAlianca: playersTable.codigoAlianca,
+          resumo: playersTable.resumo,
+          atualizadoEm: playersTable.updatedAt,
+        })
+        .from(playersTable)
+        .where(inArray(playersTable.id, ids));
 
   const data = ListarAliadasResponse.parse(
     aliadas.map((a) => ({
