@@ -1,0 +1,42 @@
+# Exclui arquivos desnecessários do contexto de build do Docker
+# (reduz tamanho do contexto e acelera o build)
+
+# Dependências instaladas localmente (reinstaladas dentro do container)
+node_modules
+**/node_modules
+
+# Builds locais (reconstruídos dentro do container)
+dist
+**/.expo
+**/dist
+
+# Arquivos do Replit
+.local/
+.cache/
+.replit
+replit.nix
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Variáveis de ambiente locais (NUNCA enviar para imagem)
+.env
+.env.*
+!.env.example
+
+# Testes e docs
+**/*.test.ts
+**/*.spec.ts
+*.md
+!README.md
+
+# Sandbox de mockup (dev only)
+artifacts/mockup-sandbox/
+
+# TypeScript build info
+*.tsbuildinfo

@@ -47,3 +47,12 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Variáveis de ambiente — NUNCA commitar segredos
+.env
+.env.local
+.env.*.local
+# .env.example pode ser commitado (sem valores reais)
+
+# Fly.io — opcional, pode commitar se não tiver segredos inline
+# fly.toml
