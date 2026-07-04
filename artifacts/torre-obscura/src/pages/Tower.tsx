@@ -317,7 +317,8 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             const habData = HABITANTES[f.floor];
             const isBossFloor = f.isBoss;
             const bossEcoAtivo = isBossFloor && state.ecosCapitulo.includes(f.tier);
-            const ecoAtivo = !isBossFloor && state.ecos.includes(f.floor);
+            // ecos podem existir em boss floors (andares 5/10/15 com habitants)
+            const ecoAtivo = state.ecos.includes(f.floor);
             const habCompletavel = habData && verificarQuestAndar(state, f.floor);
             const habEstIcon = habEst === 'descoberto' ? '👁' : habEst === 'quest_ativa' ? '⚡' : habEst === 'concluido' ? '✦' : null;
             return (

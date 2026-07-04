@@ -646,9 +646,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const ecoStr = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
       addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}`);
 
-      // Descoberta de habitante (apenas ao avançar, andares não-boss)
+      // Descoberta de habitante (ao avançar — inclui andares-boss se houver habitante definido)
       let habitanteDescoberto: string | undefined;
-      if (!isFarming && !floorData.isBoss && HABITANTES[floorData.floor]
+      if (!isFarming && HABITANTES[floorData.floor]
           && !s.habitantesEstado[floorData.floor]) {
         s.habitantesEstado[floorData.floor] = 'descoberto';
         s.habitantesDiaDescoberta[floorData.floor] = s.dia;

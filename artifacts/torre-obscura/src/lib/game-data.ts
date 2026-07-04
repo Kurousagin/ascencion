@@ -284,6 +284,19 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       recompensaDesc: '+25% loot neste andar · +10 Ferro',
     },
   },
+  5: {
+    floor: 5, nome: 'Âncora do Primeiro Ciclo', papel: 'Fundação Consciente', icone: '⚓',
+    fala: 'Não sou um ser que a Torre absorveu. Sou o que o Fundador plantou aqui deliberadamente — um fragmento de intenção original, cristalizado na pedra no momento exato em que a construção cruzou este ponto. Minha função: lembrar a Torre do que ela foi projetada para ser. A Torre ouve. Mas ouvir não é obedecer. Preciso de tempo para verificar se você ainda carrega intenção genuína — ou se a Torre já começou a substituí-la.',
+    falamissão: 'Quinze dias. O tempo que o Fundador estimou ser necessário para que a Torre não consiga imitar o propósito de alguém que ainda o possui. Se ao final você ainda for você mesmo, acreditarei no que diz ser.',
+    falaConcluso: 'Quinze dias e sua intenção permaneceu intacta. Isso é raro. Os outros perderam algo antes de chegar aqui — uma fatia de memória sobre por que estavam subindo. Você ainda a tem. Guarde esse "ainda" com cuidado. A Torre está apenas começando a atentar.',
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 15 dias desde a descoberta',
+      dias: 15,
+      ecoBonus: 22, moralBonus: 10,
+      lore: 'O Fundador sabia que a entidade tentaria corromper o propósito da Torre antes que a construção terminasse. Por isso plantou âncoras — fragmentos de intenção original — a cada cinco andares. Esta foi a primeira. Sua função: lembrar a Torre do que ela deveria ser. A entidade aprendeu, com o tempo, a fazer a Torre ouvir a Âncora sem obedecer. O Fundador não previu isso. Ou previu, e concluiu que não havia alternativa melhor do que tentar mesmo assim.',
+      recompensaDesc: '+22% loot neste andar · +10 Moral',
+    },
+  },
   6: {
     floor: 6, nome: 'Sentinela Sem Nome', papel: 'Guardião Perdido', icone: '🗿',
     fala: 'Última ordem recebida: não deixar ninguém passar. A autoridade que a deu não existe mais. Mas a ordem existe. Se você pode provar que tem força suficiente para disputar passagem, posso reconhecer sua autoridade em substituição.',
@@ -336,6 +349,19 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       recompensaDesc: '+30% loot neste andar · +15 Ferro',
     },
   },
+  10: {
+    floor: 10, nome: 'Memória da Construção', papel: 'Arquivo do Processo', icone: '🏛️',
+    fala: 'Estive presente quando o Fundador construiu este andar específico. Não como trabalhador — como resistência. A Torre não queria ser construída aqui. O Fundador forçou. Guardo o registro desse conflito e do método que ele usou para vencer. Mas o registro exige capacidade intelectual para ser extraído — e exige que você continue subindo. Não me interessa testemunhar quem para.',
+    falamissão: 'Traga um Erudito capaz de interpretar estruturas de intenção — e demonstre que avançou ao menos até o décimo segundo andar. Preciso saber que o que aconteceu aqui não será a última resistência que você enfrenta.',
+    falaConcluso: 'O Erudito extraiu o que guardo. A Torre foi vencida aqui uma vez — pelo Fundador, pelo método que ele usou. Esse método não foi força. Foi outra coisa. O Erudito sabe agora, ou aprenderá com o que copiou. Uma Torre que foi vencida uma vez pode ser vencida de novo. O que importa é saber qual método usar.',
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter um Erudito e conquistar o Andar 12',
+      profissoes: ['erudito'], andarMin: 12,
+      ecoBonus: 28, recursosBonus: { ferro: 15, pedra: 10 },
+      lore: 'O décimo andar foi o mais difícil de construir. A pedra recusava-se a assentar — não por instabilidade geológica, mas por resistência da estrutura. O Fundador não usou força: repetiu o propósito original em voz alta por quarenta dias consecutivos até que a Torre cedesse. A Memória guarda essas palavras exatas. O Erudito as copiou — mas ainda não sabe o que são, ou quando será necessário usá-las. O momento de entender está mais adiante.',
+      recompensaDesc: '+28% loot neste andar · +15 Ferro +10 Pedra',
+    },
+  },
   11: {
     floor: 11, nome: 'Afogado Lúcido', papel: 'Transformado Consciente', icone: '💧',
     fala: 'Não estou morrendo. Estou sendo preenchido. Há uma diferença — insisto que há. Se você ficar tempo suficiente, verá que continuo sendo eu mesmo. Isso é o que me separa dos outros.',
@@ -386,6 +412,19 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 35, recursosBonus: { ferro: 20 },
       lore: 'A cidadela que ele protegia afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Ele ainda protege uma posição acima de algo que não existe mais. E faz isso perfeitamente.',
       recompensaDesc: '+35% loot neste andar · +20 Ferro',
+    },
+  },
+  15: {
+    floor: 15, nome: 'Vigia do Penúltimo Ciclo', papel: 'Preparador do Que Vem Depois', icone: '🗼',
+    fala: 'Estou aqui para preparar quem chega ao vigésimo andar com intenção real. O vigésimo andar não tem um guardião de força — tem algo que o Fundador deixou como teste de propósito. Quem chega sem ter sacrificado algo genuíno não compreende o que encontra. Quem sacrifica pode escolher. A Torre reconhece quem pagou e quem não pagou — e trata os dois de formas muito diferentes.',
+    falamissão: 'Dezoito pontos de Moral. Não como punição — como evidência de que você tem algo real a perder. Apenas quem tem algo a perder pode verdadeiramente escolher.',
+    falaConcluso: 'O que você deu era real. Isso significa que você pode compreender o que o vigésimo andar oferece. Não direi o que é — a escolha precisa ser sua, sem minha interpretação. Direi apenas o que o Fundador deixou escrito antes de entrar: "Não construí uma barreira no vigésimo andar. Construí uma pergunta."',
+    quest: {
+      tipo: 'sacrificio', descricaoObj: 'Sacrificar 18 de Moral (custo imediato ao aceitar)',
+      custo: { moral: 18 },
+      ecoBonus: 32, moralBonus: 20,
+      lore: 'O vigésimo andar contém uma pergunta que o Fundador formulou antes de morrer — não de velhice, mas de escolha deliberada. Ele entrou no vigésimo andar sabendo que não sairia, porque a pergunta que deixou ali só pode ser respondida por alguém que ainda não fez a escolha que ele fez. A resposta errada não mata. A resposta certa transforma — mas o Vigia nunca disse em quê.',
+      recompensaDesc: '+32% loot neste andar · +20 Moral (retorno)',
     },
   },
   16: {
@@ -747,6 +786,8 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
     titulo: 'Tecelã de Raízes — Andar 3',       texto: HABITANTES[3].quest.lore },
   hab_4:    { id: 'hab_4',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 4,
     titulo: 'Voz do Cristal — Andar 4',         texto: HABITANTES[4].quest.lore },
+  hab_5:    { id: 'hab_5',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 4.5,
+    titulo: 'Âncora do Primeiro Ciclo — Andar 5', texto: HABITANTES[5].quest.lore },
   eco_1:    { id: 'eco_1',    tipo: 'eco_capitulo', temporada: 1, capitulo: 1, ordem: 5,
     titulo: BOSS_ECO_LORE[5].titulo,            texto: BOSS_ECO_LORE[5].texto },
   sus_t1_0: { id: 'sus_t1_0', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 6,
@@ -774,6 +815,8 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
     titulo: 'Estudioso do Infinito — Andar 8',  texto: HABITANTES[8].quest.lore },
   hab_9:    { id: 'hab_9',    tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 4,
     titulo: 'Ferreiro Espectral — Andar 9',     texto: HABITANTES[9].quest.lore },
+  hab_10:   { id: 'hab_10',   tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 4.5,
+    titulo: 'Memória da Construção — Andar 10', texto: HABITANTES[10].quest.lore },
   eco_2:    { id: 'eco_2',    tipo: 'eco_capitulo', temporada: 1, capitulo: 2, ordem: 5,
     titulo: BOSS_ECO_LORE[10].titulo,           texto: BOSS_ECO_LORE[10].texto },
   sus_t2_0: { id: 'sus_t2_0', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 6,
@@ -801,6 +844,8 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
     titulo: 'Oráculo Invertido — Andar 13',      texto: HABITANTES[13].quest.lore },
   hab_14:   { id: 'hab_14',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 4,
     titulo: 'Comandante de Mármore — Andar 14',  texto: HABITANTES[14].quest.lore },
+  hab_15:   { id: 'hab_15',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 4.5,
+    titulo: 'Vigia do Penúltimo Ciclo — Andar 15', texto: HABITANTES[15].quest.lore },
   eco_3:    { id: 'eco_3',    tipo: 'eco_capitulo', temporada: 1, capitulo: 3, ordem: 5,
     titulo: BOSS_ECO_LORE[15].titulo,            texto: BOSS_ECO_LORE[15].texto },
   sus_t3_0: { id: 'sus_t3_0', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 6,
@@ -849,7 +894,7 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
   // ── Verdade da Temporada I ────────────────────────────────────────────────
   verdade_t1: { id: 'verdade_t1', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 99,
     titulo: 'A Verdade — O Ser Reunificado',
-    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezasseis — cada habitante era um fragmento de algo que nunca deveria ter sido dividido. Os Construtores separaram o que era um. Os Guardiões foram colocados para impedir a reunificação. Você não subiu uma torre. Você remontou um ser. E agora que todos os fragmentos foram ouvidos — agora que cada habitante completou seu ciclo através de você — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.' },
+    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezanove — dezasseis fragmentos de algo que nunca deveria ter sido dividido, e três Âncoras que o Fundador plantou nos marcos de progressão para conter a reunificação. Os Construtores separaram o que era um. O Fundador tentou usar âncoras para preservar o propósito original. A entidade aprendeu a fazer as Âncoras ouvirem sem obedecer — e as absorveu também. Você não subiu uma torre. Você reconciliou um conflito que precede qualquer linguagem que você conhece. E agora que todos os dezenove completaram seu ciclo através de você — fragmentos e âncoras igualmente — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.' },
 
   // ── Fragmento especial — pioneiros T1 ────────────────────────────────────
   pioneers_fragment: { id: 'pioneers_fragment', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 98,

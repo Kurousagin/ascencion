@@ -6,7 +6,7 @@
 - [Expedition reinforcement (reforço) multiplayer](reforco-expedicao.md) — tipo 'reforco' reuses devolver; reforcoConcluido flag set in sendExpedition triggers auto-return; removerEmprestado handles both emprestado/reforco.
 - [Guerra entre cidadelas](guerra-cidadelas.md) — war is client-local (GameState.guerra, resolved in processDay/avancarGuerra); server only serves bot pool; clear emGuerra on ALL committed troops at resolution.
 - [Floor narrative arcs + NPC stat UX](floor-narrative-npc-stat.md) — each 5-floor chapter has lore; NPC modal sorts/highlights by biome statPrimario; boss floors show boss name/epiteto.
-- [Habitantes da Torre system](habitantes-torre.md) — 16 floor inhabitants with 4 quest types (recurso/expedicao/temporal/sacrificio); eco loot bonus; dual-resource support via recurso2; semGuerra reset via habitantesQuestResetDia.
+- [Habitantes da Torre system](habitantes-torre.md) — 19 floor inhabitants (T1 adds floors 5/10/15 as milestone boss-floor habitants); 4 quest types; eco loot bonus; boss-floor discovery allowed if HABITANTES[floor] exists.
 - [Combatant training system](combatant-training.md) — treinarNpc in GameContext; podeTreinarNpc/calcCustoTreinamento in game-data; UI in People.tsx expanded card; treinamentos optional field defaults via ?? 0.
 - [Temporada 2 — O Intervalo](t2-season.md) — andares 21-40, 16 habitants, codex T2, pioneer system (backend+frontend), Thael gacha, Arquivo/Mirante; vitoria movida para >40; LANCAMENTO_T2 exportado mas não ativo ainda.
 
