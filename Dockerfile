@@ -21,7 +21,7 @@ COPY artifacts/torre-obscura/package.json ./artifacts/torre-obscura/
 # mockup-sandbox é dev-only e está no .dockerignore — não incluído aqui
 
 # Instala todas as dependências (dev incluído — necessário para builds)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copia o código-fonte
 COPY . .
