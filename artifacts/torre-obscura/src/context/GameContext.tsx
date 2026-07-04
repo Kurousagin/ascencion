@@ -636,7 +636,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Só avança o andar em modo avançar.
       if (!isFarming) {
         s.andarAtual++;
-        if (s.andarAtual > 20) s.vitoria = true;
+        if (s.andarAtual > 40) s.vitoria = true;
       }
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
@@ -1178,6 +1178,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (todosFloors.every(f => s.habitantesEstado[f] === 'concluido')) {
         if (desbloquearFragmento(s, 'verdade_t1')) {
           addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA I DESBLOQUEADA — todos os habitantes responderam ao chamado. Acesse o Codex Obscuro.');
+        }
+        // Fragmento especial dos Pioneers — rumor dos 100 andares (gated em T1 completo)
+        desbloquearFragmento(s, 'pioneers_fragment');
+      }
+      // Codex: verificar Verdade da Temporada II (todos os 16 habitants de T2 concluídos)
+      const todosFloorsT2 = floorsHabitantesTemporada(2);
+      if (todosFloorsT2.length > 0 && todosFloorsT2.every(f => s.habitantesEstado[f] === 'concluido')) {
+        if (desbloquearFragmento(s, 'verdade_t2')) {
+          addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA II DESBLOQUEADA — o Intervalo revelou o que sempre esteve antes. Acesse o Codex Obscuro.');
         }
       }
       saveState(s);

@@ -14,6 +14,8 @@ import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
 import { GachaLancamento } from './components/GachaLancamento';
+import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
+import { usePioneer } from './hooks/usePioneer';
 import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT } from './lib/onboarding-keys';
 import { LANCAMENTO_ATIVO } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -44,6 +46,9 @@ function MainGameArea() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
 
+  const andarAtual = state?.andarAtual ?? 0;
+  const pioneer = usePioneer(andarAtual);
+
   // Quando o jogo inicia (state null→não-nulo), verifica sinais de pending/recovery.
   useEffect(() => {
     if (!state) return;
@@ -71,6 +76,11 @@ function MainGameArea() {
 
   if (!state) return <TitleScreen />;
   if (state.gameOver || state.vitoria) return <GameOverScreen />;
+
+  // Notificação pessoal: player está entre os top 10 e ainda não viu
+  const mostrarPessoal = pioneer.foiTop10 && !pioneer.notificacaoVista;
+  // Banner global: T2 desbloqueado e ainda não foi dispensado
+  const mostrarT2Banner = (pioneer.status?.desbloqueado ?? false) && !pioneer.bannerVisto;
 
   return (
     <>
@@ -117,7 +127,6 @@ function MainGameArea() {
         lancamento={LANCAMENTO_ATIVO}
         onClose={() => {
           setGachaOpen(false);
-          // Após gacha, abre onboarding se pendente
           if (sessionStorage.getItem(ONBOARDING_PENDING)) {
             sessionStorage.removeItem(ONBOARDING_PENDING);
             setOnboardingOpen(true);
@@ -133,6 +142,22 @@ function MainGameArea() {
         localStorage.setItem(ONBOARDING_KEY, '1');
         setOnboardingOpen(false);
       }}
+    />
+
+    {/* Notificação pessoal: player entre os top 10 pioneers */}
+    {mostrarPessoal && pioneer.posicao !== null && (
+      <PioneerPessoal
+        posicao={pioneer.posicao}
+        visible={mostrarPessoal}
+        onDismiss={pioneer.dispensarNotificacao}
+      />
+    )}
+
+    {/* Banner global: T2 desbloqueado */}
+    <T2GlobalBanner
+      nomes={pioneer.status?.nomes ?? []}
+      visible={mostrarT2Banner}
+      onDismiss={pioneer.dispensarBanner}
     />
     </>
   );

@@ -8,3 +8,4 @@
 - [Floor narrative arcs + NPC stat UX](floor-narrative-npc-stat.md) — each 5-floor chapter has lore; NPC modal sorts/highlights by biome statPrimario; boss floors show boss name/epiteto.
 - [Habitantes da Torre system](habitantes-torre.md) — 16 floor inhabitants with 4 quest types (recurso/expedicao/temporal/sacrificio); eco loot bonus; dual-resource support via recurso2; semGuerra reset via habitantesQuestResetDia.
 - [Combatant training system](combatant-training.md) — treinarNpc in GameContext; podeTreinarNpc/calcCustoTreinamento in game-data; UI in People.tsx expanded card; treinamentos optional field defaults via ?? 0.
+- [Temporada 2 — O Intervalo](t2-season.md) — andares 21-40, 16 habitants, codex T2, pioneer system (backend+frontend), Thael gacha, Arquivo/Mirante; vitoria movida para >40; LANCAMENTO_T2 exportado mas não ativo ainda.

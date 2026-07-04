@@ -138,3 +138,104 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     'BÔNUS INICIAIS — Recursos e moral reforçados para a primeira jornada.',
   ],
 };
+
+export const LANCAMENTO_T2: LancamentoTemporada = {
+  temporada: 2,
+  titulo: 'TEMPORADA II — O INTERVALO',
+  subtitulo: 'A Torre revela o que sempre esteve antes de si.',
+  descricao: [
+    'A Torre não terminou no vigésimo andar.',
+    'Ela apenas mudou. O que você encontrou nos primeiros vinte andares era uma introdução — a Torre apresentando o que está disposta a mostrar a quem chegou até aqui.',
+    'Como reconhecimento aos que alcançaram o Intervalo, a Torre concede um segundo Ritual em Trindade — três cartas, um chamado. Apenas uma será atendida.',
+    'Thael conhece o que a Torre apagou. Se ele responder ao chamado, você saberá que não foi por acaso.',
+  ],
+
+  // ── Primordial: Thael ─────────────────────────────────────────────────────
+  primordial: {
+    nome: 'Thael, a Memória',
+    titulo: 'Primordial da Temporada II',
+    forca: 11, agilidade: 13, inteligencia: 16, resistencia: 14,
+    habilidade: 'oraculo',
+    primordial: true,
+    cardLore: [
+      'Não é uma pessoa. É um arquivo vivo do que a Torre apagou — cada memória excluída, cada nome reescrito, cada intenção original substituída por outra.',
+      'Fala em fragmentos de idiomas que ninguém mais usa. Às vezes para no meio de uma frase e fica olhando para um ponto fixo, como se estivesse ouvindo algo do outro lado.',
+      'A Torre o reconhece com algo próximo a medo. Não porque ele seja mais forte — mas porque ele lembra do que ela era antes de aprender a esquecer.',
+      '"Você perguntou sobre o andar um. Mas a pergunta certa é: o que havia antes do andar um? Eu sei. E vou te mostrar — quando você estiver pronto."',
+    ],
+    cardLoreFinal: 'Thael carrega o que a Torre tentou destruir. Em toda a extensão dos ecos, apenas você o recebeu.',
+  },
+  chanceValdris: 0.04,
+
+  // ── Sobreviventes Marcados de T2 ──────────────────────────────────────────
+  marcados: [
+    {
+      nome: 'Reth, o Fragmentado',
+      titulo: 'Sobrevivente Marcado da Temporada II',
+      forca: 13, agilidade: 11, inteligencia: 12, resistencia: 13,
+      habilidade: 'guardiao',
+      cardLore: [
+        'Lembra de duas vidas ao mesmo tempo. Em uma delas, chegou até o vigésimo andar e voltou. Na outra, nunca tentou. Não sabe qual é a verdadeira.',
+        'A Torre o fragmentou e depois remontou — mas as peças voltaram em ordem diferente. Ele funciona. Só não tem certeza de quem é o que funciona.',
+      ],
+    },
+    {
+      nome: 'Mira, a Ouvinte',
+      titulo: 'Sobrevivente Marcada da Temporada II',
+      forca: 9, agilidade: 14, inteligencia: 13, resistencia: 13,
+      habilidade: 'sombra',
+      cardLore: [
+        'Ouve o que a Torre está dizendo. Não metaforicamente — literalmente. A estrutura produz frequências que ela aprendeu a interpretar.',
+        'Nunca explica o que ouve. Diz que a tradução sempre perde algo essencial. Que o essencial é a parte que você precisa descobrir sozinho.',
+      ],
+    },
+    {
+      nome: 'Caen, o Construtor',
+      titulo: 'Sobrevivente Marcado da Temporada II',
+      forca: 15, agilidade: 10, inteligencia: 11, resistencia: 13,
+      habilidade: 'guardiao',
+      cardLore: [
+        'Descendente direto dos que ergueram a Torre. Carrega plantas arquitetônicas gravadas na memória — estruturas que não existem em nenhum dos vinte andares conhecidos.',
+        'Quando vê as paredes, toca como se reconhecesse o trabalho. "Meu bisavô fez esse bloco", disse uma vez, sobre um andar que nenhum humano deveria ter construído.',
+      ],
+    },
+    {
+      nome: 'Liora, a Constante',
+      titulo: 'Sobrevivente Marcada da Temporada II',
+      forca: 10, agilidade: 12, inteligencia: 15, resistencia: 12,
+      habilidade: 'estrategista',
+      cardLore: [
+        'Esteve presente em três versões diferentes do Intervalo. Em duas, a Torre a expulsou antes do vigésimo andar. Na terceira — esta — chegou mais longe.',
+        'Não demonstra surpresa com nada. Não porque seja corajosa, mas porque já viu versões de tudo. O que a surpreende são as variações pequenas — os detalhes que mudam entre as versões.',
+      ],
+    },
+    {
+      nome: 'Aldric, o Arquivado',
+      titulo: 'Sobrevivente Marcado da Temporada II',
+      forca: 12, agilidade: 13, inteligencia: 13, resistencia: 11,
+      habilidade: 'explorador',
+      cardLore: [
+        'A Torre tem um arquivo com seu nome. Não como visitante — como dado. Algo na estrutura o catalogou antes de ele entrar.',
+        'Encontrou a entrada no andar oito. Não leu o que estava escrito depois do nome. Diz que não estava pronto. Ainda não está — mas chegará.',
+      ],
+    },
+    {
+      nome: 'Vass, a Testemunha',
+      titulo: 'Sobrevivente Marcada da Temporada II',
+      forca: 11, agilidade: 11, inteligencia: 14, resistencia: 13,
+      habilidade: 'oraculo',
+      cardLore: [
+        'Viu o momento em que a Torre foi construída. Não como visão ou profecia — como memória. Uma memória que não deveria ser dela.',
+        'Quando foi investigar de onde a memória vinha, encontrou Thael. Ele a reconheceu antes de ela falar. "Você esteve lá", disse. "Não fisicamente. Mas esteve."',
+      ],
+    },
+  ],
+
+  bonusRecursos: { comida: 100, madeira: 80, pedra: 60, ferro: 40 },
+  bonusMoral: 25,
+  logsBoas: [
+    'TEMPORADA II INICIADA — O Intervalo começa. A Torre revela o que estava antes.',
+    'RITUAL GRATUITO CONCLUÍDO — Um guardião do Intervalo responde ao chamado.',
+    'BÔNUS INICIAIS — Recursos reforçados para a jornada além do vigésimo andar.',
+  ],
+};
