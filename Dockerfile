@@ -45,4 +45,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Chamamos o arquivo executável do drizzle diretamente via Node, apontando para o arquivo config copiado
-CMD ["sh", "-c", "node ./node_modules/drizzle-kit/bin.cjs push --config ./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+CMD ["sh", "-c", "pnpm --filter @workspace/db run push && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
