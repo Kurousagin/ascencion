@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import { AllianceProvider } from './context/AllianceContext';
 import { WarProvider } from './context/WarContext';
@@ -12,6 +12,8 @@ import { Alliance } from './pages/Alliance';
 import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
+import { Onboarding } from './components/Onboarding';
+import { ONBOARDING_KEY, ONBOARDING_PENDING } from './lib/onboarding-keys';
 import { AnimatePresence, motion } from 'framer-motion';
 
 function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
@@ -37,11 +39,22 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
 function MainGameArea() {
   const { state } = useGame();
   const [tab, setTab] = useState('obs');
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  // Abre o onboarding quando o state passa de null → não-nulo (jogo recém-iniciado)
+  // e há um sinal pendente de sessionStorage deixado pelo TitleScreen.
+  useEffect(() => {
+    if (state && sessionStorage.getItem(ONBOARDING_PENDING)) {
+      sessionStorage.removeItem(ONBOARDING_PENDING);
+      setOnboardingOpen(true);
+    }
+  }, [state]);
 
   if (!state) return <TitleScreen />;
   if (state.gameOver || state.vitoria) return <GameOverScreen />;
 
   return (
+    <>
     <AllianceProvider>
     <WarProvider>
       <div
@@ -51,7 +64,7 @@ function MainGameArea() {
         {/* Alerta de invasão pendente */}
         <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />
 
-        {/* Content area — no z-index so it never buries the nav */}
+        {/* Content area */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -73,13 +86,24 @@ function MainGameArea() {
           </AnimatePresence>
         </div>
 
-        {/* Nav always on top, z-50 beats framer-motion exit layers */}
+        {/* Nav always on top */}
         <div className="relative z-50 flex-shrink-0">
           <BottomNav currentTab={tab} onTabChange={setTab} />
         </div>
       </div>
+
     </WarProvider>
     </AllianceProvider>
+
+    {/* Onboarding fora dos providers — não precisa de contexto de aliança/guerra */}
+    <Onboarding
+      open={onboardingOpen}
+      onClose={() => {
+        localStorage.setItem(ONBOARDING_KEY, '1');
+        setOnboardingOpen(false);
+      }}
+    />
+    </>
   );
 }
 

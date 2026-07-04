@@ -79,6 +79,10 @@ export interface NPC {
   raridade: Raridade;
   habilidade: HabilidadeId;
   posto: EdificioTipo | null; // edifício onde trabalha (null = ocioso)
+  // ─── Lançamento de temporada ─────────────────────────────────────────────────
+  // true = NPC especial de lançamento. Imune à morte por inanição; chance de morte
+  // em expedições reduzida a 1/10 do normal. Praticamente imortal.
+  lancamento?: boolean;
   // ─── Treinamento (Quartel, desbloqueado após andar 5) ────────────────────────
   // Sessões de treino permanentes completadas. Cada sessão eleva forca em +1
   // (ou +2 com aliado combatente presente). Máximo: MAX_TREINAMENTOS.
@@ -741,7 +745,7 @@ export function getRandomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function getRandomHabilidade(): HabilidadeId {
+export function getRandomHabilidade(): HabilidadeId {
   const ids = Object.keys(HABILIDADES) as HabilidadeId[];
   return ids[Math.floor(Math.random() * ids.length)];
 }

@@ -14,7 +14,9 @@ import {
   HABITANTES, BOSS_ECO_LORE, verificarQuestAndar,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
+  getRandomHabilidade,
 } from '../lib/game-data';
+import type { LancamentoTemporada } from '../lib/lancamento';
 
 export interface ExpeditionResult {
   vitoria: boolean;
@@ -33,7 +35,7 @@ export interface ExpeditionResult {
 interface GameContextType {
   state: GameState;
   hasSave: boolean;
-  startNewGame: () => void;
+  startNewGame: (lancamento?: LancamentoTemporada) => void;
   continueGame: () => void;
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
@@ -161,6 +163,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const chanceBase = Math.min(0.50, (draft.diasSemComida - 1) * 0.05);
         let mortes = 0;
         vivos.forEach(n => {
+          // NPCs de lançamento são imunes à morte por inanição.
+          if (n.lancamento) return;
           if (Math.random() < chanceBase) {
             n.vivo = false;
             n.posto = null;
@@ -412,7 +416,45 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [state?.velocidade, state?.gameOver, state?.vitoria]);
 
-  const startNewGame = () => saveState(createInitialState());
+  const startNewGame = (lancamento?: LancamentoTemporada) => {
+    const s = createInitialState();
+    if (lancamento) {
+      // Adiciona NPC especial de lançamento (quase imortal)
+      const npcSpec = lancamento.npcEspecial;
+      const especial: NPC = {
+        id:           crypto.randomUUID(),
+        nome:         npcSpec.nome,
+        forca:        npcSpec.forca,
+        agilidade:    npcSpec.agilidade,
+        inteligencia: npcSpec.inteligencia,
+        resistencia:  npcSpec.resistencia,
+        sanidade:     100,
+        lealdade:     100,
+        fadiga:       0,
+        vivo:         true,
+        obscuro:      false,
+        emExpedicao:  false,
+        raridade:     'Épico',
+        habilidade:   npcSpec.habilidade,
+        posto:        null,
+        lancamento:   true,
+      };
+      s.npcs.push(especial);
+      // Aplica bônus de recursos
+      const cap = s.recursos.capacidadeArmazem;
+      s.recursos.comida   = Math.min(cap, s.recursos.comida   + (lancamento.bonusRecursos.comida   ?? 0));
+      s.recursos.madeira  = Math.min(cap, s.recursos.madeira  + (lancamento.bonusRecursos.madeira  ?? 0));
+      s.recursos.pedra    = Math.min(cap, s.recursos.pedra    + (lancamento.bonusRecursos.pedra    ?? 0));
+      s.recursos.ferro    = Math.min(cap, s.recursos.ferro    + (lancamento.bonusRecursos.ferro    ?? 0));
+      // Bônus de moral
+      if (lancamento.bonusMoral) s.moral = Math.min(100, s.moral + lancamento.bonusMoral);
+      // Logs de boas-vindas (mais recentes primeiro)
+      lancamento.logsBoas.forEach(msg => {
+        s.log.unshift({ id: crypto.randomUUID(), tipo: 'descoberta', mensagem: msg, dia: 1 });
+      });
+    }
+    saveState(s);
+  };
 
   const continueGame = () => {
     const saved = localStorage.getItem('torre_obscura_save');
@@ -455,6 +497,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
     }
     if (parsed.codexNovoFragmento === undefined) parsed.codexNovoFragmento = false;
+    // Migração: campo lancamento nos NPCs (saves anteriores não têm)
+    parsed.npcs.forEach(n => { if (n.lancamento === undefined) n.lancamento = false; });
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
@@ -630,6 +674,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const red = Math.min(((groupPower - floorData.difficulty) / floorData.difficulty) * 50, 80);
           mort = mort * (1 - red / 100);
         }
+        // NPCs de lançamento são quase imortais: chance de morte reduzida a 1/10.
+        if (n.lancamento) mort *= 0.1;
         if (Math.random() * 100 < mort) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
@@ -680,7 +726,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
       // Mortality per NPC (falha)
       group.forEach(n => {
-        if (Math.random() * 100 < floorData.mortality) {
+        // NPCs de lançamento também têm 1/10 de chance de morte em derrota.
+        const mortFalha = n.lancamento ? floorData.mortality * 0.1 : floorData.mortality;
+        if (Math.random() * 100 < mortFalha) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
