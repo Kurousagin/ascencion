@@ -68,4 +68,21 @@ router.post("/primordial/claim", async (req, res) => {
   }
 });
 
+// DELETE /api/primordial/claims/mine?deviceId=xxx — libera todos os primordiais
+// reivindicados por este device. Chamado quando o jogador inicia um novo jogo.
+// Idempotente: se o device não tem claims, não faz nada.
+router.delete("/primordial/claims/mine", async (req, res) => {
+  const deviceId = typeof req.query.deviceId === "string"
+    ? req.query.deviceId.trim().slice(0, 64)
+    : null;
+
+  if (!deviceId) { res.status(400).json({ erro: "deviceId obrigatório" }); return; }
+
+  await db
+    .delete(primordialClaimsTable)
+    .where(eq(primordialClaimsTable.deviceId, deviceId));
+
+  res.json({ released: true });
+});
+
 export default router;

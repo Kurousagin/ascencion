@@ -18,6 +18,18 @@ export async function checkPrimordialDisponivel(
   }
 }
 
+// Libera todos os claims de primordial deste device.
+// Chamado quando o jogador inicia um novo jogo — permite que outro player receba o primordial.
+export async function releaseAllPrimordialClaims(deviceId: string): Promise<void> {
+  try {
+    await fetch(`${BASE}/primordial/claims/mine?deviceId=${encodeURIComponent(deviceId)}`, {
+      method: 'DELETE',
+    });
+  } catch {
+    // Silencioso — será tentado novamente na próxima vez (sem bloquear o novo jogo)
+  }
+}
+
 export async function claimPrimordial(
   tipo: string,
   deviceId: string,

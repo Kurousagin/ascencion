@@ -21,6 +21,8 @@ import {
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
+import { getDeviceId } from '../lib/alliance-identity';
+import { releaseAllPrimordialClaims } from '../lib/primordial-api';
 
 export interface ExpeditionResult {
   vitoria: boolean;
@@ -483,6 +485,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state?.velocidade, state?.gameOver, state?.vitoria]);
 
   const startNewGame = (lancamento?: LancamentoTemporada) => {
+    // Se o jogo atual tinha um primordial, libera o claim global para que
+    // outro jogador possa recebê-lo no gacha.
+    if (state) {
+      const temPrimordial = state.npcs.some(n => n.lancamento);
+      if (temPrimordial) {
+        void releaseAllPrimordialClaims(getDeviceId());
+      }
+    }
     const s = createInitialState();
     if (lancamento) {
       // O NPC especial é adicionado DEPOIS via adicionarNpcLancamento (gacha de lançamento).
