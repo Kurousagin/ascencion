@@ -485,13 +485,22 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state?.velocidade, state?.gameOver, state?.vitoria]);
 
   const startNewGame = (lancamento?: LancamentoTemporada) => {
-    // Se o jogo atual tinha um primordial, libera o claim global para que
-    // outro jogador possa recebê-lo no gacha.
-    if (state) {
-      const temPrimordial = state.npcs.some(n => n.lancamento);
-      if (temPrimordial) {
-        void releaseAllPrimordialClaims(getDeviceId());
-      }
+    // Libera o claim global do primordial para que outro jogador possa recebê-lo.
+    // Verifica o state em memória (caminho GameOver) ou o save no localStorage
+    // (caminho TitleScreen — state ainda é null quando o app foi fechado e reaberto).
+    const temPrimordialEmMemoria = state?.npcs.some(n => n.lancamento) ?? false;
+    let temPrimordialNoSave = false;
+    if (!temPrimordialEmMemoria) {
+      try {
+        const saved = localStorage.getItem('torre_obscura_save');
+        if (saved) {
+          const parsed = JSON.parse(saved) as { npcs?: Array<{ lancamento?: boolean }> };
+          temPrimordialNoSave = parsed.npcs?.some(n => n.lancamento) ?? false;
+        }
+      } catch { /* save corrompido — ignora */ }
+    }
+    if (temPrimordialEmMemoria || temPrimordialNoSave) {
+      void releaseAllPrimordialClaims(getDeviceId());
     }
     const s = createInitialState();
     if (lancamento) {
