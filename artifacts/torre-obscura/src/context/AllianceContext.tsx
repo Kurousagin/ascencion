@@ -104,6 +104,10 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const deviceId = useRef(getDeviceId());
   const stateRef = useRef<GameState | null>(state);
   const aliadasRef = useRef<Aliada[]>(aliadas);
+  // Contador de geração: evita que um request antigo (iniciado antes do parear)
+  // sobrescreva o estado com lista vazia depois que um request mais novo já
+  // entregou o resultado correto.
+  const aliadasGen = useRef(0);
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { aliadasRef.current = aliadas; }, [aliadas]);
 
@@ -155,17 +159,17 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const puxarAliadasECaixa = useCallback(async () => {
-    // cache: 'no-store' evita que o browser envie If-None-Match e receba 304.
-    // Express ativa ETags por padrão; uma resposta 304 chega ao customFetch sem
-    // corpo, que retorna null — o que apagaria a lista de aliadas no estado.
+    // Incrementa geração antes de qualquer await. Se um request mais novo
+    // terminar primeiro (e incrementar novamente), o resultado deste é descartado.
+    const gen = ++aliadasGen.current;
+    // cache: 'no-store' evita 304 sem corpo (Express ETag padrão).
     try {
       const as = await listarAliadas(deviceId.current, { cache: 'no-store' });
-      if (Array.isArray(as)) setAliadas(as);
-      // null = 304 edge case; mantém estado anterior
+      if (gen === aliadasGen.current && Array.isArray(as)) setAliadas(as);
     } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current, { cache: 'no-store' });
-      if (Array.isArray(c)) setCaixa(c);
+      if (gen === aliadasGen.current && Array.isArray(c)) setCaixa(c);
     } catch { /* mantém estado anterior */ }
   }, []);
 
