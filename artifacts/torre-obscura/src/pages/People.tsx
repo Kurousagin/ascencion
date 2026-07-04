@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1 } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, type PassivaId } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
@@ -185,6 +185,11 @@ export function People() {
                       </span>
                     );
                   })()}
+                  {npc.vestigio && npc.passivaId && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border bg-[#7A3D00]/20 border-[#CC6B00]/50 text-[#FF8C00]/90">
+                      ◈ VESTÍGIO
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -267,6 +272,19 @@ export function People() {
                         ).join(' · ')}
                       </div>
                     )}
+                  </div>
+                );
+              })()}
+
+              {/* Passiva do vestígio */}
+              {npc.vestigio && npc.passivaId && PASSIVAS[npc.passivaId as PassivaId] && (() => {
+                const p = PASSIVAS[npc.passivaId as PassivaId];
+                return (
+                  <div className="mt-3 pt-3 border-t border-[#7A3D00]/30 bg-[#7A3D00]/5 rounded-sm p-3">
+                    <div className="text-[9px] text-[#FF8C00]/70 tracking-widest mb-1 flex items-center gap-1 font-bold">
+                      ◈ PASSIVA — {p.nome.toUpperCase()}
+                    </div>
+                    <div className="text-[10px] text-white/60 leading-relaxed">{p.descricao}</div>
                   </div>
                 );
               })()}

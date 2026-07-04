@@ -3,7 +3,7 @@
 // Para configurar uma nova temporada, edite LANCAMENTO_ATIVO.
 // Para desativar o lançamento (fora do período), defina como null.
 
-import type { HabilidadeId } from './game-data';
+import type { HabilidadeId, PassivaId } from './game-data';
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,10 @@ export interface NpcLancamento {
   primordial?: boolean;
   // Se true: primordial da temporada final — raridade Divino (acima de Lendário)
   divino?: boolean;
+  // Se true: Vestígio — NPC excepcional com passiva única, mas mortal
+  vestigio?: boolean;
+  // Passiva ativa quando este NPC está no grupo de expedição
+  passivaId?: PassivaId;
 }
 
 export interface LancamentoTemporada {
@@ -33,6 +37,9 @@ export interface LancamentoTemporada {
   // Primordial: o NPC lendário único — sorteado com chanceValdris
   primordial: NpcLancamento;
   chanceValdris: number;    // 0–1, ex: 0.05 = 5%
+  // Vestígios: NPCs excepcionais com passivas únicas — sorteados com chanceVestigio
+  vestigios?: NpcLancamento[];
+  chanceVestigio?: number;  // 0–1, probabilidade de cair em um vestígio (se não for primordial)
   // Pool de Sobreviventes Marcados — todos os outros resultados do gacha
   marcados: NpcLancamento[];
   // Bônus de recursos e moral aplicados ao iniciar o jogo
@@ -69,13 +76,58 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     primordial: true,
     cardLore: [
       'Sobreviveu a eras antes da Torre existir. Não sabe o que é cansaço. Não conhece o que é medo.',
-      'Chegou ao vigésimo andar uma vez. Voltou diferente. Quando perguntado sobre o que viu lá, olha para o horizonte e cala.',
+      'Subiu. Até onde, ninguém sabe — ele não fala. A Torre ainda carrega as marcas da passagem dele em andares que você ainda não viu.',
       'A Torre o reconhece antes de reconhecer você. Isso, sozinho, deveria dizer tudo.',
       '"Eu esperei antes. Posso esperar de novo." — disse uma vez, sem contexto. Ninguém perguntou pelo quê.',
     ],
     cardLoreFinal: 'Em toda a extensão dos ecos, apenas você o recebeu.',
   },
   chanceValdris: 0.05,
+
+  // ── Vestígios da Temporada I ──────────────────────────────────────────────
+  // ~8% de chance após não sortear o primordial. Excepcionais mas mortais.
+  chanceVestigio: 0.08,
+  vestigios: [
+    {
+      nome: 'Corven, o Inquebrável',
+      titulo: 'Vestígio da Temporada I',
+      forca: 17, agilidade: 13, inteligencia: 11, resistencia: 17,
+      habilidade: 'guardiao',
+      vestigio: true,
+      passivaId: 'veterano_das_profundezas' as PassivaId,
+      cardLore: [
+        'Voltou de onde outros não voltaram. A Torre o testou uma vez. Não tentou de novo.',
+        'Quando você pergunta onde foi, ele olha para um ponto fixo acima de você. Não é hostil. É que o que viu não tem nome nesta língua.',
+      ],
+      cardLoreFinal: 'Carrega o peso de andares que você ainda não conhece.',
+    },
+    {
+      nome: 'Seris, a Decifradora',
+      titulo: 'Vestígio da Temporada I',
+      forca: 11, agilidade: 14, inteligencia: 19, resistencia: 14,
+      habilidade: 'estrategista',
+      vestigio: true,
+      passivaId: 'leitura_da_torre' as PassivaId,
+      cardLore: [
+        'Lê a Torre como outros leem mapas. Não metaforicamente — literalmente encontra recursos onde a lógica diz que não deveria haver.',
+        'Passou por andares que não constam em nenhum registro. Quando você menciona um número específico, ela para de andar por um momento.',
+      ],
+      cardLoreFinal: 'A Torre mostra a ela o que esconde dos outros.',
+    },
+    {
+      nome: 'Kael, o Sem-Rastro',
+      titulo: 'Vestígio da Temporada I',
+      forca: 14, agilidade: 18, inteligencia: 12, resistencia: 14,
+      habilidade: 'explorador',
+      vestigio: true,
+      passivaId: 'rastro_vivo' as PassivaId,
+      cardLore: [
+        'Não deixa pegadas. Não por habilidade — a Torre simplesmente não registra sua passagem. Os registros têm lacunas exatas no formato dele.',
+        'A Torre sussurra coisas para ele. Ele anota. Quando você lê as notas, o texto mudou desde que ele escreveu.',
+      ],
+      cardLoreFinal: 'Ouve o que a Torre diz entre as paredes.',
+    },
+  ],
 
   // ── Sobreviventes Marcados ────────────────────────────────────────────────
   marcados: [

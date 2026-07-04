@@ -522,6 +522,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       habilidade:   npcConfig.habilidade,
       posto:        null,
       lancamento:   npcConfig.primordial ?? false,
+      vestigio:     npcConfig.vestigio ?? false,
+      passivaId:    npcConfig.passivaId,
     };
     s.npcs.push(npc);
     addLog(s, 'descoberta', `${npcConfig.nome.toUpperCase()} une-se à sua cidadela.`);
@@ -683,6 +685,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
     const isVictory = groupPower >= floorData.difficulty;
 
+    // Passivas de vestígios ativas nesta expedição (escopo de sendExpedition inteiro)
+    const hasVeterano = group.some(n => n.passivaId === 'veterano_das_profundezas');
+    const hasLeitura  = group.some(n => n.passivaId === 'leitura_da_torre');
+    const hasRastro   = group.some(n => n.passivaId === 'rastro_vivo');
+
     if (isVictory) {
       const r = calcRecompensaAndar(floorData.floor, floorData.bioma);
       // Batedores no grupo aumentam o loot (+15% por batedor).
@@ -692,7 +699,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const ecoBonus = s.ecos.includes(floorData.floor)
         ? (HABITANTES[floorData.floor]?.quest.ecoBonus ?? 0) / 100
         : 0;
-      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus);
+      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus) * (hasLeitura ? 1.20 : 1.0);
       const comidaG = Math.round(r.comida * lootMult);
       const madeiraG = Math.round(r.madeira * lootMult);
       const pedraG = Math.round(r.pedra * lootMult);
@@ -710,8 +717,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       group.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 3); });
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
       const biomaStr = biomaMultiplier !== 1.0 ? ` [Bioma ${biomaMultiplier > 1 ? '+30% poder' : '−20% poder'}]` : '';
-      const ecoStr = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
-      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}`);
+      const ecoStr     = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
+      const leituraStr = hasLeitura ? ' [Leitura da Torre +20% loot]' : '';
+      const veteranoStr = hasVeterano ? ' [Veterano das Profundezas −30% mort.]' : '';
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}${leituraStr}${veteranoStr}`);
 
       // Descoberta de habitante (ao avançar — inclui andares-boss se houver habitante definido)
       let habitanteDescoberto: string | undefined;
@@ -748,7 +757,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       {
         const cap = capituloDoAndar(floorData.floor);
         const candidatos = (SUSSURROS_POR_CAPITULO[cap] ?? []).filter(id => !s.codexFragmentos.includes(id));
-        if (candidatos.length > 0 && Math.random() < 0.15) {
+        if (candidatos.length > 0 && Math.random() < (hasRastro ? 0.30 : 0.15)) {
           const id = candidatos[Math.floor(Math.random() * candidatos.length)];
           desbloquearFragmento(s, id);
           sussurro = CODEX_FRAGMENTOS[id];
@@ -777,7 +786,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const farmCount = ((s.farmsPerFloor ?? {})[floorData.floor] ?? 0) + 1;
         s.farmsPerFloor = { ...(s.farmsPerFloor ?? {}), [floorData.floor]: farmCount };
         // A partir da 3ª exploração bem-sucedida do mesmo andar: 20% de chance por vez
-        if (farmCount >= 3 && Math.random() < 0.20) {
+        if (farmCount >= 3 && Math.random() < (hasRastro ? 0.40 : 0.20)) {
           const nova = gerarQuestOculta('exploracao', floorData.floor, s);
           if (nova) {
             s.questsOcultas = [...(s.questsOcultas ?? []), nova];
@@ -805,6 +814,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
         // NPCs de lançamento são quase imortais: chance de morte reduzida a 1/10.
         if (n.lancamento) mort *= 0.1;
+        // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
+        if (hasVeterano && !n.lancamento) mort *= 0.70;
         if (Math.random() * 100 < mort) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
@@ -856,7 +867,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Mortality per NPC (falha)
       group.forEach(n => {
         // NPCs de lançamento também têm 1/10 de chance de morte em derrota.
-        const mortFalha = n.lancamento ? floorData.mortality * 0.1 : floorData.mortality;
+        let mortFalha = n.lancamento ? floorData.mortality * 0.1 : floorData.mortality;
+        // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
+        if (hasVeterano && !n.lancamento) mortFalha *= 0.70;
         if (Math.random() * 100 < mortFalha) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;

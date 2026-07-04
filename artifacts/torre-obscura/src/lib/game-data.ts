@@ -61,6 +61,31 @@ export const HABILIDADES: Record<HabilidadeId, Habilidade> = {
 
 export type Raridade = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Divino';
 
+// ─── PASSIVAS (Vestígios) ─────────────────────────────────────────────────────
+// Cada vestígio carrega uma passiva única que afeta as expedições enquanto vivo.
+
+export type PassivaId = 'veterano_das_profundezas' | 'leitura_da_torre' | 'rastro_vivo';
+
+export interface Passiva {
+  nome: string;
+  descricao: string;
+}
+
+export const PASSIVAS: Record<PassivaId, Passiva> = {
+  veterano_das_profundezas: {
+    nome: 'Veterano das Profundezas',
+    descricao: 'Mortalidade de todos no grupo reduzida em 30% em expedições.',
+  },
+  leitura_da_torre: {
+    nome: 'Leitura da Torre',
+    descricao: '+20% loot quando no grupo de expedição.',
+  },
+  rastro_vivo: {
+    nome: 'Rastro Vivo',
+    descricao: 'Sussurros da Torre +15pp de chance. Câmaras Ocultas +20pp quando no grupo.',
+  },
+};
+
 // ─── NPC ─────────────────────────────────────────────────────────────────────
 
 export interface NPC {
@@ -106,6 +131,11 @@ export interface NPC {
   // Apenas para NPCs primordiais (lancamento=true). Rastreia quantos níveis de
   // recuperação de memória foram aplicados; cada nível aumenta atributos em-lugar.
   primordialNivel?: number;
+  // ─── Vestígio ─────────────────────────────────────────────────────────────
+  // true = NPC excepcional de lançamento com passiva única. Mortal — pode morrer
+  // em expedições. A passiva permanece ativa enquanto ele estiver vivo e no grupo.
+  vestigio?: boolean;
+  passivaId?: PassivaId;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).

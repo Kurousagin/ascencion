@@ -22,3 +22,4 @@ export * from "./alliances";
 export * from "./exchanges";
 export * from "./botCitadels";
 export * from "./milestones";
+export * from "./primordialClaims";
