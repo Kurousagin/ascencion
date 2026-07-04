@@ -265,7 +265,7 @@ export function Citadel() {
     );
   };
 
-  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem'];
+  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante'];
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
@@ -402,63 +402,92 @@ export function Citadel() {
         </div>
       </section>
 
-      {/* ── Modal de resultado do gacha ──────────────────────────────────────── */}
+      {/* ── Modal de resultado do gacha (estilo GachaLancamento) ──────────────── */}
       {gachaNpcs && (
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-md"
-          onClick={closeModal}
+          className="fixed inset-0 z-50 bg-black/97 backdrop-blur-lg flex flex-col"
+          onClick={e => e.stopPropagation()}
         >
-          <div
-            className="flex flex-col h-full p-5 max-w-md mx-auto w-full"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-cinzel font-bold text-primary tracking-widest">RITUAL CONCLUÍDO</h2>
-                <p className="text-[10px] text-secondary mt-0.5">
-                  {gachaNpcs.length} sobrevivente{gachaNpcs.length !== 1 ? 's' : ''} responderam ao chamado
-                </p>
-              </div>
-              <button
-                onClick={closeModal}
-                className="w-10 h-10 border border-card-border text-secondary hover:text-foreground flex items-center justify-center rounded-sm touch-manipulation"
-              >
-                <X size={18} />
-              </button>
+          {/* Linha superior dourada */}
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/80 to-transparent shrink-0" />
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-primary/20 shrink-0">
+            <div>
+              <h2 className="font-cinzel font-bold text-primary tracking-[0.2em] text-sm leading-tight">
+                RITUAL EM TRINDADE — CONCLUÍDO
+              </h2>
+              <p className="text-[10px] text-secondary/70 tracking-widest mt-0.5">
+                {revealed.every(Boolean)
+                  ? 'Toque em cada nome para ver os detalhes'
+                  : `${revealed.filter(Boolean).length}/${gachaNpcs.length} sobreviventes revelados`}
+              </p>
             </div>
-
-            {/* Cards row — flex, each card equal width */}
-            <div className="flex gap-3 flex-1 min-h-0">
-              {gachaNpcs.map((npc, i) =>
-                revealed[i]
-                  ? <GachaCard key={npc.id} npc={npc} revealed={revealed[i]} />
-                  : <MysteryCard key={i} />
-              )}
-            </div>
-
-            {/* Raridade summary */}
-            {revealed.every(Boolean) && (
-              <div className="mt-4 flex gap-2 flex-wrap justify-center">
-                {gachaNpcs.map(npc => (
-                  <span
-                    key={npc.id}
-                    className="text-[10px] px-2 py-1 rounded-sm font-bold tracking-wider border flex items-center gap-1"
-                    style={{ color: RARITY_COLOR[npc.raridade], borderColor: RARITY_COLOR[npc.raridade], background: `${RARITY_COLOR[npc.raridade]}18` }}
-                  >
-                    <Star size={9} fill="currentColor" /> {npc.nome} — {npc.raridade}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* CTA */}
             <button
               onClick={closeModal}
-              className="mt-4 w-full h-14 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation"
+              className="w-9 h-9 border border-card-border/60 text-secondary hover:text-foreground flex items-center justify-center rounded-sm touch-manipulation shrink-0"
             >
-              ACEITAR TODOS
+              <X size={16} />
             </button>
+          </div>
+
+          {/* Cards — área principal */}
+          <div className="flex-1 flex items-center justify-center px-4 min-h-0">
+            <div className="flex gap-3 w-full max-w-sm">
+              {gachaNpcs.map((npc, i) => (
+                revealed[i]
+                  ? <GachaCard key={npc.id} npc={npc} revealed={revealed[i]} />
+                  : (
+                    <div
+                      key={i}
+                      className="flex-1 min-w-0 rounded-sm border border-primary/40 bg-gradient-to-b from-[#1C1808] to-[#0E0D0B] flex flex-col items-center justify-center gap-4 py-12 cursor-pointer active:scale-[0.97] transition-transform touch-manipulation shadow-[0_0_20px_rgba(212,175,55,0.05)]"
+                      onClick={() => {
+                        const next = revealed.map((r, idx) => (idx === i ? true : r));
+                        setRevealed(next);
+                      }}
+                    >
+                      <div className="w-5 h-5 rotate-45 border border-primary/50" />
+                      <span className="font-cinzel font-bold text-primary/50 text-3xl tracking-widest">?</span>
+                      <span className="text-[9px] text-primary/30 tracking-[0.3em] uppercase">REVELAR</span>
+                    </div>
+                  )
+              ))}
+            </div>
+          </div>
+
+          {/* Resumo de raridades quando todos revelados */}
+          {revealed.every(Boolean) && (
+            <div className="px-5 py-3 border-t border-primary/10 flex flex-wrap gap-2 justify-center shrink-0">
+              {gachaNpcs.map(npc => (
+                <span
+                  key={npc.id}
+                  className="text-[10px] px-2.5 py-1 rounded-sm font-bold tracking-wider border flex items-center gap-1"
+                  style={{ color: RARITY_COLOR[npc.raridade], borderColor: RARITY_COLOR[npc.raridade] + '60', background: RARITY_COLOR[npc.raridade] + '15' }}
+                >
+                  <Star size={8} fill="currentColor" /> {npc.nome} — {npc.raridade}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Rodapé */}
+          <div className="px-5 pb-6 shrink-0">
+            {revealed.every(Boolean) ? (
+              <button
+                onClick={closeModal}
+                className="w-full h-13 bg-primary hover:bg-primary/90 text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation shadow-[0_0_20px_rgba(212,175,55,0.25)] transition-all"
+                style={{ minHeight: '52px' }}
+              >
+                ACEITAR TODOS E CONTINUAR
+              </button>
+            ) : (
+              <button
+                onClick={() => setRevealed([true, true, true])}
+                className="w-full border border-primary/30 text-primary/60 font-cinzel text-[10px] tracking-widest py-3 rounded-sm hover:border-primary/60 hover:text-primary transition-all touch-manipulation"
+              >
+                REVELAR TODOS DE UMA VEZ
+              </button>
+            )}
           </div>
         </div>
       )}

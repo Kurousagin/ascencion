@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, count, eq, inArray, or } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -93,11 +93,13 @@ async function gerarCodigoUnico(): Promise<string> {
 }
 
 async function contarAliadas(playerId: number): Promise<number> {
-  const linhas = await db
-    .select({ id: alliancesTable.id })
+  // JOIN garante que só contamos links cuja aliada ainda existe na tabela players.
+  const result = await db
+    .select({ cnt: count(alliancesTable.id) })
     .from(alliancesTable)
+    .innerJoin(playersTable, eq(alliancesTable.allyId, playersTable.id))
     .where(eq(alliancesTable.playerId, playerId));
-  return linhas.length;
+  return Number(result[0]?.cnt ?? 0);
 }
 
 // Confirma que existe vínculo de aliança entre `playerId` e a aliada de deviceId
@@ -211,18 +213,19 @@ router.get("/alianca/:deviceId/aliadas", async (req, res): Promise<void> => {
     res.json(ListarAliadasResponse.parse([]));
     return;
   }
-  const links = await db
-    .select({ allyId: alliancesTable.allyId })
-    .from(alliancesTable)
-    .where(eq(alliancesTable.playerId, player.id));
-  if (links.length === 0) {
-    res.json(ListarAliadasResponse.parse([]));
-    return;
-  }
+  // JOIN único: evita inconsistência entre dois queries separados e ignora
+  // automaticamente links cujo registro de aliada foi removido do banco.
   const aliadas = await db
-    .select()
-    .from(playersTable)
-    .where(inArray(playersTable.id, links.map((l) => l.allyId)));
+    .select({
+      deviceId: playersTable.deviceId,
+      nome: playersTable.nome,
+      codigoAlianca: playersTable.codigoAlianca,
+      resumo: playersTable.resumo,
+      atualizadoEm: playersTable.updatedAt,
+    })
+    .from(alliancesTable)
+    .innerJoin(playersTable, eq(alliancesTable.allyId, playersTable.id))
+    .where(eq(alliancesTable.playerId, player.id));
 
   const data = ListarAliadasResponse.parse(
     aliadas.map((a) => ({
@@ -230,7 +233,7 @@ router.get("/alianca/:deviceId/aliadas", async (req, res): Promise<void> => {
       nome: a.nome,
       codigoAlianca: a.codigoAlianca,
       resumo: a.resumo ?? null,
-      atualizadoEm: a.updatedAt,
+      atualizadoEm: a.atualizadoEm,
     })),
   );
   res.json(data);

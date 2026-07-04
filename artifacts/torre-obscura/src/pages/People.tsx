@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, calcCustoTreinamento, calcCustoEstudo, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [mostrarMortos, setMostrarMortos] = useState(false);
 
   const vivos = state.npcs.filter(n => n.vivo).length;
 
@@ -258,9 +259,8 @@ export function People() {
                 )}
               </div>
 
-              {/* Treinamento (Combatentes no Quartel, após andar 5) */}
+              {/* Treinamento no Quartel (Combatente / Batedor / Sentinela) */}
               {(() => {
-                // Combatente, Batedor e Sentinela são profissões de combate — treinam no Quartel.
                 const profissao = getProfissao(npc);
                 if (profissao !== 'combatente' && profissao !== 'batedor' && profissao !== 'sentinela') return null;
                 const quartelEd = state.edificios.find(e => e.tipo === 'Quartel');
@@ -268,69 +268,49 @@ export function People() {
                 const treinamentos = npc.treinamentos ?? 0;
                 const custo = calcCustoTreinamento(treinamentos);
                 const podeT = podeTreinarNpc(npc, quartelNivel, state.andarAtual);
-                // Instrutor = NPC com maior Força disponível (excluindo o próprio treinando)
                 const statKey = statTreinamento(npc);
                 const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : 'FOR';
                 const instrutor = calcInstrutor(npc.id, state.npcs, statKey);
                 const instrutorStat = instrutor ? instrutor[statKey] : 0;
                 const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
 
-                // Motivo de bloqueio (para exibir dica)
                 let bloqueio: string | null = null;
                 if (state.andarAtual < 6) bloqueio = 'Disponível após vencer o chefe do andar 5.';
                 else if (quartelNivel < 1) bloqueio = 'Requer Quartel construído.';
                 else if (treinamentos >= MAX_TREINAMENTOS) bloqueio = 'Limite de sessões atingido.';
                 else if (npc.emGuerra) bloqueio = 'Mobilizado na guerra — retorna ao fim da campanha.';
                 else if (npc.emExpedicao) bloqueio = 'Em expedição — aguarde o retorno.';
-                else if (npc.fadiga >= 60) bloqueio = 'Fadiga alta demais para treinar (< 60).';
+                else if (npc.fadiga >= 60) bloqueio = 'Fadiga alta demais (< 60 para treinar).';
                 else if (npc.emprestado || npc.reforco) bloqueio = 'Só moradores próprios podem treinar.';
 
-                // Se nem o pré-requisito de andar/quartel está ativo, não exibe a seção
                 if (state.andarAtual < 6 && quartelNivel < 1) return null;
-                // Exibe a seção mesmo bloqueada para comunicar o caminho
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
                     <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Dumbbell size={10} className="text-primary" /> TREINAMENTO — QUARTEL
-                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">
-                        {treinamentos}/{MAX_TREINAMENTOS} SESSÕES
-                      </span>
+                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
-
                     {bloqueio ? (
                       <div className="text-[10px] text-muted-foreground italic">{bloqueio}</div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-[10px] text-secondary flex items-center gap-3">
-                            <span className="flex items-center gap-1">
-                              <span className="text-success">🪵</span> {custo.madeira} madeira
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="text-primary">⚡</span> {custo.ferro} ferro
-                            </span>
+                            <span className="flex items-center gap-1"><span className="text-success">🪵</span> {custo.madeira} madeira</span>
+                            <span className="flex items-center gap-1"><span className="text-primary">⚡</span> {custo.ferro} ferro</span>
                           </div>
-                          <span className="text-[9px] text-primary/80 font-bold">
-                            +{ganho} {statLabel}
-                          </span>
+                          <span className="text-[9px] text-primary/80 font-bold">+{ganho} {statLabel}</span>
                         </div>
                         {instrutor ? (
-                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${
-                            ganho === 2
-                              ? 'text-success bg-success/10 border-success/30'
-                              : 'text-secondary bg-white/5 border-white/10'
-                          }`}>
+                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
                             <Swords size={9} />
                             Instrutor: <span className="font-bold ml-1">{instrutor.nome}</span>
                             <span className="ml-1 opacity-70">({statLabel}:{instrutorStat})</span>
-                            {ganho === 2
-                              ? <span className="ml-auto font-bold text-success">+2 {statLabel} ↑</span>
-                              : <span className="ml-auto opacity-60">+1 {statLabel}</span>
-                            }
+                            {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 {statLabel} ↑</span> : <span className="ml-auto opacity-60">+1 {statLabel}</span>}
                           </div>
                         ) : (
                           <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
-                            Sem instrutor disponível — treinamento solo (+1 {statLabel})
+                            Sem instrutor — treinamento solo (+1 {statLabel})
                           </div>
                         )}
                         <button
@@ -340,6 +320,75 @@ export function People() {
                         >
                           <Dumbbell size={12} /> TREINAR
                           {(state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro) && (
+                            <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                          )}
+                        </button>
+                        <div className="text-[9px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Estudo no Arquivo (Erudito → INT, andar 21+, T2) */}
+              {(() => {
+                if (getProfissao(npc) !== 'erudito') return null;
+                const arquivoEd = state.edificios.find(e => e.tipo === 'Arquivo');
+                const arquivoNivel = arquivoEd?.nivel ?? 0;
+                const treinamentos = npc.treinamentos ?? 0;
+                const custo = calcCustoEstudo(treinamentos);
+                const podeE = podeEstudarNpc(npc, arquivoNivel, state.andarAtual);
+                const instrutor = calcInstrutor(npc.id, state.npcs, 'inteligencia');
+                const instrutorStat = instrutor ? instrutor.inteligencia : 0;
+                const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
+
+                let bloqueio: string | null = null;
+                if (state.andarAtual < 21) bloqueio = 'Disponível na Temporada 2 (andar 21+).';
+                else if (arquivoNivel < 1) bloqueio = 'Requer Arquivo construído.';
+                else if (treinamentos >= MAX_TREINAMENTOS) bloqueio = 'Limite de sessões atingido.';
+                else if (npc.emGuerra) bloqueio = 'Mobilizado na guerra — retorna ao fim da campanha.';
+                else if (npc.emExpedicao) bloqueio = 'Em expedição — aguarde o retorno.';
+                else if (npc.fadiga >= 60) bloqueio = 'Fadiga alta demais (< 60 para estudar).';
+                else if (npc.emprestado || npc.reforco) bloqueio = 'Só moradores próprios podem estudar.';
+
+                // Não exibir se ainda longe de T2 e arquivo não construído
+                if (state.andarAtual < 18 && arquivoNivel < 1) return null;
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                    <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
+                      <Brain size={10} className="text-primary" /> ESTUDO — ARQUIVO
+                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
+                    </div>
+                    {bloqueio ? (
+                      <div className="text-[10px] text-muted-foreground italic">{bloqueio}</div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[10px] text-secondary flex items-center gap-3">
+                            <span className="flex items-center gap-1"><span>🪨</span> {custo.pedra} pedra</span>
+                            <span className="flex items-center gap-1"><span>🌾</span> {custo.comida} comida</span>
+                          </div>
+                          <span className="text-[9px] text-primary/80 font-bold">+{ganho} INT</span>
+                        </div>
+                        {instrutor ? (
+                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
+                            <BookOpen size={9} />
+                            Tutor: <span className="font-bold ml-1">{instrutor.nome}</span>
+                            <span className="ml-1 opacity-70">(INT:{instrutorStat})</span>
+                            {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 INT ↑</span> : <span className="ml-auto opacity-60">+1 INT</span>}
+                          </div>
+                        ) : (
+                          <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                            Sem tutor disponível — estudo solo (+1 INT)
+                          </div>
+                        )}
+                        <button
+                          onClick={() => treinarNpc(npc.id)}
+                          disabled={!podeE || state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida}
+                          className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
+                        >
+                          <Brain size={12} /> ESTUDAR
+                          {(state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida) && (
                             <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
@@ -366,9 +415,36 @@ export function People() {
         <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
       </header>
 
+      {/* Habitantes vivos */}
       <div className="space-y-3">
-        {state.npcs.sort((a,b) => (b.vivo ? 1 : 0) - (a.vivo ? 1 : 0)).map(renderCard)}
+        {state.npcs.filter(n => n.vivo).map(renderCard)}
       </div>
+
+      {/* Seção colapsável de falecidos */}
+      {state.npcs.filter(n => !n.vivo).length > 0 && (
+        <div>
+          <button
+            onClick={() => setMostrarMortos(m => !m)}
+            className="w-full flex items-center justify-between px-3 py-2 border border-destructive/20 bg-destructive/5 text-destructive text-[10px] font-bold tracking-widest font-cinzel rounded-sm touch-manipulation"
+          >
+            <span>{state.npcs.filter(n => !n.vivo).length} FALECIDO{state.npcs.filter(n => !n.vivo).length !== 1 ? 'S' : ''}</span>
+            <span className="text-[9px] opacity-60">{mostrarMortos ? '▴ OCULTAR' : '▾ MOSTRAR'}</span>
+          </button>
+          {mostrarMortos && (
+            <div className="space-y-2 mt-2">
+              {state.npcs.filter(n => !n.vivo).map(npc => (
+                <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-55 grayscale flex justify-between items-center rounded-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[10px] font-cinzel">✕</div>
+                    <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm">{npc.nome}</span>
+                  </div>
+                  <span className="text-[9px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm">FALECIDO</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

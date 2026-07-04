@@ -75,7 +75,7 @@ export function Tower() {
     setModalOpen(false);
   };
 
-  if (state.andarAtual > 20) {
+  if (state.andarAtual > 40) {
     return <div className="p-6 text-center text-primary mt-20 font-cinzel text-xl drop-shadow-[0_0_10px_rgba(212,175,55,0.5)] tracking-widest">ÁPICE ALCANÇADO</div>;
   }
 
@@ -112,6 +112,9 @@ export function Tower() {
 
   // Andares já conquistados (para farm)
   const conquistados = FLOORS.slice(0, state.andarAtual - 1).reverse();
+  const [mostrarTodosAndares, setMostrarTodosAndares] = useState(false);
+  const ANDARES_VISIVEIS = 8;
+  const conquistadosMostrados = mostrarTodosAndares ? conquistados : conquistados.slice(0, ANDARES_VISIVEIS);
 
   return (
     <>
@@ -252,7 +255,7 @@ export function Tower() {
           )}
         </h3>
         <div className="space-y-2">
-          {conquistados.map(f => {
+          {conquistadosMostrados.map(f => {
             const isSelected = farmAndar === f.floor;
             const habEst = state.habitantesEstado[f.floor];
             const habData = HABITANTES[f.floor];
@@ -312,6 +315,17 @@ export function Tower() {
               </div>
             );
           })}
+          {/* Botão "ver mais / recolher" quando há andares ocultos */}
+          {conquistados.length > ANDARES_VISIVEIS && (
+            <button
+              onClick={() => setMostrarTodosAndares(m => !m)}
+              className="w-full mt-1 text-[10px] font-cinzel tracking-widest text-secondary border border-card-border hover:border-primary/40 py-2 rounded-sm transition-all touch-manipulation"
+            >
+              {mostrarTodosAndares
+                ? `▴ RECOLHER`
+                : `▾ VER MAIS (${conquistados.length - ANDARES_VISIVEIS} andares ocultos)`}
+            </button>
+          )}
         </div>
       </div>
 

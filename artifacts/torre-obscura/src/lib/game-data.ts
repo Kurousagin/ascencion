@@ -249,8 +249,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Pedra. Apenas pedra. Para que nossa memória seja completa.',
     falaConcluso: 'Agora lembramos tudo. O que construímos. Por que construímos. E quem nos mentiu sobre o propósito.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 25 pedra',
-      recurso: { tipo: 'pedra', qtd: 25 },
+      tipo: 'recurso', descricaoObj: 'Trazer 45 pedra',
+      recurso: { tipo: 'pedra', qtd: 45 },
       ecoBonus: 25, recursosBonus: { pedra: 10 },
       lore: 'Os Construtores sabiam que seriam selados. Aceitaram porque a criatura dentro prometeu libertá-los depois. Nunca os libertou. O Eco lembra — e aguarda alguém que possa.',
       recompensaDesc: '+25% loot neste andar · +10 Pedra',
@@ -275,8 +275,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'O silêncio ainda analisa. Permaneça. O cristal avalia paciência.',
     falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental. Mas isso levanta uma questão que o cristal não consegue resolver sozinho: o que você é, afinal?',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 5 dias após descobrir o Cristal',
-      dias: 5,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 12 dias após descobrir o Cristal',
+      dias: 28,
       ecoBonus: 25, recursosBonus: { ferro: 10 },
       lore: 'O cristal gravou cada palavra dita na Torre. A palavra mais repetida não é "ajuda". É "espera". O cristal ainda espera que alguém entenda por quê.',
       recompensaDesc: '+25% loot neste andar · +10 Ferro',
@@ -301,8 +301,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Comida do mundo exterior. Não do que a Torre produz. Há diferença — mesmo que você não consiga sentir.',
     falaConcluso: 'Lembro. A diferença entre crescer e ser nutrido. Obrigada por trazer a memória de volta junto com a comida.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 30 comida',
-      recurso: { tipo: 'comida', qtd: 30 },
+      tipo: 'recurso', descricaoObj: 'Trazer 55 comida',
+      recurso: { tipo: 'comida', qtd: 55 },
       ecoBonus: 25, moralBonus: 8,
       lore: 'Ela ainda cura. Tudo que toca cresce de volta — diferente. Mais parecido com a Torre do que com o que era antes. Mas ela luta contra isso todo dia. E até agora, está vencendo.',
       recompensaDesc: '+25% loot neste andar · +8 Moral',
@@ -314,8 +314,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Ferro. Para terminar o que o Arquivista lá em cima não quer que eu termine.',
     falaConcluso: 'Tradução concluída. Era uma lista de nomes. O último nome era o meu. Penúltimo... era o seu.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 15 ferro',
-      recurso: { tipo: 'ferro', qtd: 15 },
+      tipo: 'recurso', descricaoObj: 'Trazer 30 ferro',
+      recurso: { tipo: 'ferro', qtd: 30 },
       ecoBonus: 30, recursosBonus: { pedra: 15 },
       lore: 'O único livro que ele não conseguia ler estava escrito em ferro. Não era um idioma — era uma lista de nomes de todos que chegariam ao ápice. Seu nome estava lá antes de você nascer.',
       recompensaDesc: '+30% loot neste andar · +15 Pedra',
@@ -327,8 +327,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Ferro real. Do mundo que ainda existe fora daqui.',
     falaConcluso: 'Reforçadas. Por enquanto. Mas você vai continuar subindo, não vai? E as correntes vão continuar diminuindo. Eu sei. Apenas... saiba o que está desfazendo.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 20 ferro',
-      recurso: { tipo: 'ferro', qtd: 20 },
+      tipo: 'recurso', descricaoObj: 'Trazer 40 ferro',
+      recurso: { tipo: 'ferro', qtd: 40 },
       ecoBonus: 30, recursosBonus: { ferro: 15 },
       lore: 'Ele forjou as correntes que prendem a entidade. Elas ainda seguram. Mas ficam um pouco menores a cada andar conquistado. O Ferreiro sabe. E forja assim mesmo, porque é tudo que sabe fazer.',
       recompensaDesc: '+30% loot neste andar · +15 Ferro',
@@ -340,8 +340,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Permaneça. Observe. Veja que ainda sou eu. Que a consciência sobrevive mesmo quando o corpo muda.',
     falaConcluso: 'Você ficou. E viu. Guardarei isso — a memória de alguém que olhou e não fugiu. É o que me mantém eu mesmo.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 7 dias após descobri-lo',
-      dias: 7,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 18 dias após descobri-lo',
+      dias: 18,
       ecoBonus: 30, moralBonus: 8,
       lore: 'Ele não está morrendo. Está sendo preenchido pela Torre lentamente. E permanece consciente durante todo o processo. Há uma diferença entre transformação e morte. Ele é a prova.',
       recompensaDesc: '+30% loot neste andar · +8 Moral',
@@ -392,8 +392,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Comida. Muita comida. O apetite não é negociável em quantidade.',
     falaConcluso: 'Satisfeito. Por um momento. O apetite voltará — sempre volta. Mas agora você passou e ele estava distraído. Use isso.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 40 comida',
-      recurso: { tipo: 'comida', qtd: 40 },
+      tipo: 'recurso', descricaoObj: 'Trazer 70 comida',
+      recurso: { tipo: 'comida', qtd: 70 },
       ecoBonus: 35, recursosBonus: { comida: 25 },
       lore: 'Não é a entidade. É seu apetite — o único fragmento que ela deixou vagar livremente quando aprendeu paciência. O apetite não conhece intenção. Apenas fome.',
       recompensaDesc: '+35% loot neste andar · +25 Comida',
@@ -405,8 +405,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'O tempo verifica. Dez dias é o mínimo para que os momentos colapsar em um.',
     falaConcluso: 'O terceiro momento não aconteceu. Mas ficou muito perto. Guarde isso — a proximidade do que quase foi.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 10 dias após encontrá-lo',
-      dias: 10,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 25 dias após encontrá-lo',
+      dias: 25,
       ecoBonus: 35, recursosBonus: { ferro: 20 },
       lore: 'Ele existe em três tempos simultâneos. Em um, você chegou ao ápice e foi consumido. Em outro, desistiu no décimo andar. No terceiro — o único em que o Paradoxo sorri — o resultado é diferente. Ele não revela qual.',
       recompensaDesc: '+35% loot neste andar · +20 Ferro',
@@ -418,9 +418,9 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Ferro e pedra. Os materiais dos que constroem para durar.',
     falaConcluso: 'Material verificado. Sua cidadela tem substância. Os que me construíram teriam aprovado. Isso significa algo — mesmo que você não saiba ainda por quê.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 30 ferro e 30 pedra',
-      recurso: { tipo: 'ferro', qtd: 30 },
-      recurso2: { tipo: 'pedra', qtd: 30 },
+      tipo: 'recurso', descricaoObj: 'Trazer 55 ferro e 55 pedra',
+      recurso: { tipo: 'ferro', qtd: 55 },
+      recurso2: { tipo: 'pedra', qtd: 55 },
       recursosBonus: { ferro: 25 },
       ecoBonus: 35,
       lore: 'Os que o construíram falharam em parar a entidade. Mas não foram covardes. Foram os únicos que tentaram construir algo que durasse além deles. O Último Defensor é a prova de que tentaram.',
@@ -433,8 +433,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Silêncio. Sem guerras. Por três dias. O limiar observa.',
     falaConcluso: 'Silêncio mantido. O que sei sobre o último andar: ela não vai lutar. Vai conversar. E o que ela propõe... depende do que você trouxer de si mesmo até lá.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 3 dias sem entrar em guerra',
-      dias: 3, semGuerra: true,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 10 dias sem entrar em guerra',
+      dias: 10, semGuerra: true,
       ecoBonus: 35, moralBonus: 15,
       lore: 'O silêncio que você ouve não é ausência de som. É a entidade respirando devagar para não assustar a presa antes do momento certo. O Susurro é essa respiração. E ele te avisou.',
       recompensaDesc: '+35% loot neste andar · +15 Moral',
@@ -461,8 +461,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Ferro. Não pedra — ferro. O que construímos era mais pesado do que qualquer parede.',
     falaConcluso: 'O ferro faz sentido. Agora lembramos o que era antes de ser lembrança. Havia intenção primeiro. Depois veio a pedra. A ordem importa mais do que qualquer um nos disse.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 50 ferro',
-      recurso: { tipo: 'ferro', qtd: 50 },
+      tipo: 'recurso', descricaoObj: 'Trazer 85 ferro',
+      recurso: { tipo: 'ferro', qtd: 85 },
       ecoBonus: 25, recursosBonus: { ferro: 20 },
       lore: 'O Fragmento Coletivo é a memória dos Construtores antes de terem linguagem — pura intenção, puro peso. Eles não sabiam o que construíam. Sabiam apenas que precisavam construir. A razão chegou depois, quando já era tarde para mudar a direção.',
       recompensaDesc: '+25% loot neste andar · +20 Ferro',
@@ -474,8 +474,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Permaneça. Testemunhe. O momento precisa de uma segunda consciência para se manter real.',
     falaConcluso: 'O momento persistiu. Com duas consciências a sustentá-lo, ficou mais sólido do que estava há séculos. Obrigado. O que eu guardo não posso revelar — mas você sentiu, não sentiu? Algo se acomodou no lugar certo.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 8 dias após encontrá-lo',
-      dias: 8,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 18 dias após encontrá-lo',
+      dias: 18,
       ecoBonus: 22, recursosBonus: { pedra: 25 },
       lore: 'O Guardião preserva o instante em que a Torre escolheu ser o que é em vez do que deveria ser. Esse momento é frágil — sem testemunha, dissolve-se. Com uma, permanece. Você foi a primeira testemunha nova em muito tempo.',
       recompensaDesc: '+22% loot neste andar · +25 Pedra',
@@ -513,8 +513,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Madeira. Não pedra nem ferro — madeira. O material que dura apenas o suficiente para ser útil antes de apodrecer.',
     falaConcluso: 'A madeira confirma minha teoria: você também está aqui por uma razão que não é completamente sua. Isso não te faz traidor. Te faz o tipo de pessoa que a Torre consegue trabalhar. Como eu. Não é insulto — é observação.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 60 madeira',
-      recurso: { tipo: 'madeira', qtd: 60 },
+      tipo: 'recurso', descricaoObj: 'Trazer 100 madeira',
+      recurso: { tipo: 'madeira', qtd: 100 },
       ecoBonus: 25, recursosBonus: { madeira: 25 },
       lore: 'O Construtor que traiu não vendeu os outros por fraqueza. Entendeu algo que eles não conseguiram: a Torre não era inimiga. Era uma oportunidade que exigia um preço que os outros não estavam dispostos a pagar. Ele pagou. E ficou aqui, como memória, como prova de que entendeu.',
       recompensaDesc: '+25% loot neste andar · +25 Madeira',
@@ -526,8 +526,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Doze dias. Não é sobre você — é sobre o que flutua ao seu redor sem que perceba. O que a Torre vai usar.',
     falaConcluso: 'Vi o suficiente. Não direi o que a Torre fará — mas direi isto: o que você carrega sem saber é mais valioso do que o que sabe que tem. A Torre já percebeu. Você é o único que ainda não.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 12 dias após encontrá-lo',
-      dias: 12,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 28 dias após encontrá-lo',
+      dias: 28,
       ecoBonus: 28, recursosBonus: { ferro: 25 },
       lore: 'O Oráculo vê o destino da Torre, não dos visitantes. Em todas as visões que teve, a Torre termina de formas radicalmente diferentes dependendo de uma única variável: quem chega ao fim e o que ignora carregar. Você é a variável atual.',
       recompensaDesc: '+28% loot neste andar · +25 Ferro',
@@ -552,8 +552,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Pedra real. Para que a Raiz compare o peso do que foi com o peso do que é.',
     falaConcluso: 'A pedra que você trouxe pesa diferente. É de fora. O que foi colocado aqui primeiro também era de fora — mas de um fora que não existe mais. Você é a prova de que o exterior ainda produz coisas reais. Isso importa mais do que parece.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 55 pedra',
-      recurso: { tipo: 'pedra', qtd: 55 },
+      tipo: 'recurso', descricaoObj: 'Trazer 90 pedra',
+      recurso: { tipo: 'pedra', qtd: 90 },
       ecoBonus: 27, recursosBonus: { pedra: 30 },
       lore: 'A primeira pedra colocada neste ponto não era de construção — era de fundação. Havia algo abaixo que precisava ser selado antes que qualquer estrutura pudesse existir. O que foi selado não era perigoso. Era o acordo original entre os Construtores e o que havia aqui antes.',
       recompensaDesc: '+27% loot neste andar · +30 Pedra',
@@ -578,8 +578,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Treze dias. O mesmo número de dias que levou para o propósito ser completamente esquecido depois de a Torre estar pronta.',
     falaConcluso: 'Você entendeu. Não com palavras — com o peso de treze dias passados em um lugar onde o propósito virou ausência. O que a Torre constrói sem propósito é diferente do que constrói com ele. Você está no meio do construído sem propósito. Mas o seu propósito ainda está intacto. Por enquanto.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 13 dias após encontrá-lo',
-      dias: 13,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 30 dias após encontrá-lo',
+      dias: 30,
       ecoBonus: 30, moralBonus: 18,
       lore: 'O Eco existe no milissegundo em que o último Construtor vivo esqueceu por que haviam começado a construir. Não foi drama — foi exaustão. Ele simplesmente parou de lembrar. E naquele instante, a Torre mudou de propósito por conta própria, preenchendo o vácuo com o único propósito que conhecia: continuar existindo.',
       recompensaDesc: '+30% loot neste andar · +18 Moral',
@@ -604,9 +604,9 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Comida e ferro. O que vem antes do começo não tem fazenda nem forja — depende do que passa por aqui.',
     falaConcluso: 'Sustentado. Há algo que posso te dizer antes de ir — algo que os registros acima nunca vão mencionar porque não sabem: antes do Andar 1, havia um número. Um número específico de câmaras que foi alterado antes do primeiro visitante chegar. O número original era maior. Quanto maior, os registros não dizem. Apenas que foi maior, e que foi mudado, e que ninguém perguntou por quê.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 65 comida e 30 ferro',
-      recurso: { tipo: 'comida', qtd: 65 },
-      recurso2: { tipo: 'ferro', qtd: 30 },
+      tipo: 'recurso', descricaoObj: 'Trazer 110 comida e 55 ferro',
+      recurso: { tipo: 'comida', qtd: 110 },
+      recurso2: { tipo: 'ferro', qtd: 55 },
       ecoBonus: 30, recursosBonus: { comida: 30, ferro: 15 },
       lore: 'O Habitante do Intervalo existe apenas nesta janela de tempo específica — quando os andares 21–40 são acessíveis mas ainda não foram completamente explorados. Não é um ser da Torre. É um ser do Intervalo entre o que a Torre foi e o que ainda não se tornou. Quando o intervalo fechar, ele simplesmente não estará mais aqui para ser encontrado.',
       recompensaDesc: '+30% loot neste andar · +30 Comida +15 Ferro',
@@ -631,8 +631,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Quinze dias. Não consecutivos de paz — apenas quinze dias existindo neste andar onde as duas Torras se sobrepõem.',
     falaConcluso: 'Você sentiu as duas camadas. Não vou perguntar o que sentiu — é diferente para cada pessoa. O que posso dizer é que o que você sentiu como segunda camada é mais antigo do que a pedra. E que ainda está vivo. E que sabe que você está aqui.',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 15 dias após encontrá-lo',
-      dias: 15,
+      tipo: 'temporal', descricaoObj: 'Sobreviver 35 dias após encontrá-lo',
+      dias: 35,
       ecoBonus: 33, recursosBonus: { pedra: 35, madeira: 25 },
       lore: 'O Vigilante existe no ponto exato de sobreposição entre o que a Torre foi antes do propósito ser esquecido e o que se tornou depois. As duas estruturas coexistem aqui — não metaforicamente, mas fisicamente. A pedra antiga e a pedra nova vibram em frequências diferentes. Quem passa tempo suficiente neste andar começa a ouvir as duas.',
       recompensaDesc: '+33% loot neste andar · +35 Pedra +25 Madeira',
@@ -1093,9 +1093,22 @@ export interface GameState {
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 export const NAMES = [
+  // Originais
   'Aldric', 'Brenna', 'Caelum', 'Dúnia', 'Erlen', 'Fausta', 'Gael', 'Helva',
   'Ira', 'Jasper', 'Kira', 'Luca', 'Mira', 'Naldo', 'Orla', 'Petra', 'Quino',
-  'Raia', 'Seren', 'Tobias', 'Ursa', 'Vale', 'Wren', 'Xara', 'Yago', 'Zilda',
+  'Raia', 'Tobias', 'Ursa', 'Vale', 'Wren', 'Xara', 'Yago', 'Zilda',
+  // Expansão A — nórdico / eslavo
+  'Askar', 'Bjorn', 'Corvus', 'Dagny', 'Einar', 'Freja', 'Gunnar', 'Hilda',
+  'Ivar', 'Jorvik', 'Keld', 'Lilja', 'Maren', 'Njord', 'Olvir', 'Pyra',
+  'Ragna', 'Sigrid', 'Thyra', 'Ulrik', 'Valdis', 'Wynja',
+  // Expansão B — mediterrâneo / ibérico
+  'Adara', 'Bael', 'Cira', 'Daren', 'Elia', 'Faro', 'Gareth', 'Ivana',
+  'Jora', 'Kaira', 'Leste', 'Moira', 'Nira', 'Orel', 'Pira', 'Roel',
+  'Sael', 'Tara', 'Ulan', 'Vael', 'Zana',
+  // Expansão C — fantasia obscura
+  'Auren', 'Belath', 'Corda', 'Dael', 'Esra', 'Feld', 'Grael', 'Havan',
+  'Izel', 'Kael', 'Lyren', 'Marek', 'Noel', 'Owan', 'Pael', 'Quel',
+  'Raen', 'Savel', 'Tael', 'Uwen', 'Varek', 'Wyren', 'Zael',
 ];
 
 export function getRandomInt(min: number, max: number) {
@@ -1134,13 +1147,21 @@ export function calcCustoTreinamento(treinamentos: number): { madeira: number; f
   };
 }
 
+// Custo de treinamento intelectual (Erudito no Arquivo).
+export function calcCustoEstudo(treinamentos: number): { pedra: number; comida: number } {
+  return {
+    pedra:  15 + treinamentos * 12,
+    comida: 20 + treinamentos * 10,
+  };
+}
+
 // Seleciona o melhor instrutor disponível para o treinamento.
 // O stat de comparação depende da profissão do treinando (FOR/AGI/RES).
 // Retorna null se não houver ninguém apto.
 export function calcInstrutor(
   treineeId: string,
   npcs: NPC[],
-  stat: 'forca' | 'agilidade' | 'resistencia' = 'forca',
+  stat: 'forca' | 'agilidade' | 'resistencia' | 'inteligencia' = 'forca',
 ): NPC | null {
   const candidatos = npcs.filter(
     n => n.vivo && !n.emExpedicao && !n.emGuerra && n.id !== treineeId,
@@ -1149,31 +1170,46 @@ export function calcInstrutor(
   return candidatos.reduce((best, n) => (n[stat] > best[stat] ? n : best));
 }
 
-// Retorna true se o NPC pode ser treinado agora.
+// Retorna true se o NPC pode ser treinado agora (quartel = combatente/batedor/sentinela).
 export function podeTreinarNpc(
   npc: NPC,
   quartelNivel: number,  // 0 = não construído
   andarAtual: number,
 ): boolean {
-  if (andarAtual < 6) return false;           // exige chefe do andar 5 vencido
-  if (quartelNivel < 1) return false;         // exige Quartel construído
+  if (andarAtual < 6) return false;
+  if (quartelNivel < 1) return false;
   if (!npc.vivo) return false;
   if (npc.emExpedicao || npc.emGuerra) return false;
-  if (npc.emprestado || npc.reforco) return false; // só moradores próprios
-  if (npc.fadiga >= 60) return false;         // muito cansado para treinar
+  if (npc.emprestado || npc.reforco) return false;
+  if (npc.fadiga >= 60) return false;
   if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
-  // Combatente, Batedor e Sentinela são profissões de combate — treinam no Quartel.
-  // Erudito é civil e não se beneficia do treinamento físico.
   const prof = getProfissao(npc);
   if (prof !== 'combatente' && prof !== 'batedor' && prof !== 'sentinela') return false;
   return true;
 }
 
-// Stat primário de combate para cada profissão treinável.
-export function statTreinamento(npc: NPC): 'forca' | 'agilidade' | 'resistencia' {
+// Retorna true se o Erudito pode estudar no Arquivo agora.
+export function podeEstudarNpc(
+  npc: NPC,
+  arquivoNivel: number,  // 0 = não construído
+  andarAtual: number,
+): boolean {
+  if (andarAtual < 21) return false;          // T2 — exige andar 21+
+  if (arquivoNivel < 1) return false;         // exige Arquivo construído
+  if (!npc.vivo) return false;
+  if (npc.emExpedicao || npc.emGuerra) return false;
+  if (npc.emprestado || npc.reforco) return false;
+  if (npc.fadiga >= 60) return false;
+  if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
+  return getProfissao(npc) === 'erudito';
+}
+
+// Stat primário de cada profissão treinável.
+export function statTreinamento(npc: NPC): 'forca' | 'agilidade' | 'resistencia' | 'inteligencia' {
   const prof = getProfissao(npc);
   if (prof === 'batedor')   return 'agilidade';
   if (prof === 'sentinela') return 'resistencia';
+  if (prof === 'erudito')   return 'inteligencia';
   return 'forca';
 }
 

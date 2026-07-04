@@ -1,6 +1,72 @@
 import { Router, type IRouter } from "express";
+import { sql } from "drizzle-orm";
 import { db, botCitadelsTable, type BotCitadel } from "@workspace/db";
 import { ListarRivaisBody, ListarRivaisResponse } from "@workspace/api-zod";
+
+// ─── Geração e semeadura determinística de bots ───────────────────────────────
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const BOT_PREFIXOS  = ['Bastião','Cidadela','Forte','Enclave','Torre','Reduto','Fortaleza','Domínio','Ninho','Refúgio'];
+const BOT_SUFIXOS   = ['das Cinzas','do Ocaso','Silente','Errante','Carmesim','Esquecido','do Véu','Maldito','do Abismo','em Ruínas'];
+const BOT_POSTURAS  = ['agressiva','defensiva','equilibrada'] as const;
+
+function gerarBots() {
+  const bots = [];
+  for (let i = 0; i < 100; i++) {
+    const rand = mulberry32(1000 + i * 97);
+    const t = i / 99;
+    const pref   = BOT_PREFIXOS[Math.floor(rand() * BOT_PREFIXOS.length)];
+    const suf    = BOT_SUFIXOS[Math.floor(rand() * BOT_SUFIXOS.length)];
+    const postura = BOT_POSTURAS[Math.floor(rand() * BOT_POSTURAS.length)];
+    const dia    = Math.round(10 + rand() * 140);
+    const andar  = Math.max(1, Math.round(1 + t * 19));
+    const pop    = Math.round(5 + rand() * 35);
+    const comb   = Math.round(rand() * pop * 0.4);
+    const bat    = Math.round(rand() * pop * 0.2);
+    const sent   = Math.round(rand() * pop * 0.2);
+    const erud   = Math.max(0, pop - comb - bat - sent);
+    const poder  = Math.round(5 + rand() * (5 + t * 195));
+    bots.push({
+      slug: `bot-${i}`,
+      nome: `${pref} ${suf}`,
+      dia, andar, populacao: pop,
+      profissoes: { combatente: comb, batedor: bat, erudito: erud, sentinela: sent },
+      poderBase: poder,
+      suprimento: Math.round(100 + rand() * 4900),
+      recursos: {
+        comida:  Math.round(rand() * 200),
+        madeira: Math.round(rand() * 150),
+        pedra:   Math.round(rand() * 100),
+        ferro:   Math.round(rand() * 80),
+      },
+      postura,
+    });
+  }
+  return bots;
+}
+
+async function seedBotsIfEmpty(): Promise<void> {
+  try {
+    const [row] = await db.select({ n: sql<number>`COUNT(*)` }).from(botCitadelsTable);
+    if (Number(row?.n ?? 0) > 0) return;
+    const bots = gerarBots();
+    for (let i = 0; i < bots.length; i += 25) {
+      await db.insert(botCitadelsTable).values(bots.slice(i, i + 25)).onConflictDoNothing();
+    }
+    console.log('Bot citadels seeded (100 bots).');
+  } catch (e) {
+    console.error('Failed to seed bots:', e);
+  }
+}
+void seedBotsIfEmpty();
 
 const router: IRouter = Router();
 

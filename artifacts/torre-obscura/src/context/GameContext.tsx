@@ -8,7 +8,8 @@ import {
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, GuerraPendente, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA, gerarRivalAgressor, chanceBotWar,
-  podeTreinarNpc, calcCustoTreinamento, MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
+  podeTreinarNpc, podeEstudarNpc, calcCustoTreinamento, calcCustoEstudo,
+  MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
   HABITANTES, BOSS_ECO_LORE, verificarQuestAndar,
@@ -1088,34 +1089,48 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const quartelEd = s.edificios.find(e => e.tipo === 'Quartel');
     const quartelNivel = quartelEd?.nivel ?? 0;
+    const arquivoEd = s.edificios.find(e => e.tipo === 'Arquivo');
+    const arquivoNivel = arquivoEd?.nivel ?? 0;
 
-    if (!podeTreinarNpc(npc, quartelNivel, s.andarAtual)) return;
+    const isErudito = getProfissao(npc) === 'erudito';
+
+    // Erudito usa o Arquivo (INT); demais profissões usam o Quartel.
+    if (isErudito) {
+      if (!podeEstudarNpc(npc, arquivoNivel, s.andarAtual)) return;
+    } else {
+      if (!podeTreinarNpc(npc, quartelNivel, s.andarAtual)) return;
+    }
 
     const treinamentos = npc.treinamentos ?? 0;
-    const custo = calcCustoTreinamento(treinamentos);
-    if (s.recursos.madeira < custo.madeira || s.recursos.ferro < custo.ferro) return;
-
-    // O instrutor é o NPC com maior Força disponível na cidadela (excluindo o treinando).
-    // Se o instrutor for mais forte que o aprendiz → +2 FOR; caso contrário → +1.
-    // Stat treinado depende da profissão: Combatente→FOR, Batedor→AGI, Sentinela→RES
     const statKey = statTreinamento(npc);
     const instrutor = calcInstrutor(npcId, s.npcs, statKey);
     const instrutorStat = instrutor ? instrutor[statKey] : 0;
     const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
 
-    s.recursos.madeira -= custo.madeira;
-    s.recursos.ferro   -= custo.ferro;
+    if (isErudito) {
+      const custo = calcCustoEstudo(treinamentos);
+      if (s.recursos.pedra < custo.pedra || s.recursos.comida < custo.comida) return;
+      s.recursos.pedra  -= custo.pedra;
+      s.recursos.comida -= custo.comida;
+    } else {
+      const custo = calcCustoTreinamento(treinamentos);
+      if (s.recursos.madeira < custo.madeira || s.recursos.ferro < custo.ferro) return;
+      s.recursos.madeira -= custo.madeira;
+      s.recursos.ferro   -= custo.ferro;
+    }
+
     npc[statKey] += ganho;
     npc.fadiga = Math.min(100, npc.fadiga + 25);
     npc.treinamentos = treinamentos + 1;
     npc.raridade = recalcRaridade(npc);
 
-    const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : 'FOR';
+    const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : statKey === 'inteligencia' ? 'INT' : 'FOR';
+    const local = isErudito ? 'ARQUIVO' : 'QUARTEL';
     const instrutorStr = instrutor
-      ? ` instruído por ${instrutor.nome} (${statLabel}:${instrutor[statKey]})`
+      ? ` orientado por ${instrutor.nome} (${statLabel}:${instrutor[statKey]})`
       : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} TREINOU NO QUARTEL — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     saveState(s);
   };
