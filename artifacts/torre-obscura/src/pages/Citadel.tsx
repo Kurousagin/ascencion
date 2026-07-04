@@ -470,8 +470,8 @@ export function Citadel() {
             </div>
           )}
 
-          {/* Rodapé */}
-          <div className="px-5 pb-6 shrink-0">
+          {/* Rodapé — pb-24 garante espaço acima da barra de navegação inferior */}
+          <div className="px-5 pb-24 pt-3 shrink-0">
             {revealed.every(Boolean) ? (
               <button
                 onClick={closeModal}
