@@ -12,6 +12,8 @@ import {
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
   HABITANTES, BOSS_ECO_LORE, verificarQuestAndar,
+  CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
+  idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
 } from '../lib/game-data';
 
 export interface ExpeditionResult {
@@ -25,6 +27,7 @@ export interface ExpeditionResult {
   resgatado: { nome: string; raridade: Raridade } | null;
   habitanteDescoberto?: string;              // nome do habitante descoberto neste andar
   bossEco?: { titulo: string; texto: string }; // lore do capítulo desbloqueado ao derrotar boss
+  sussurro?: FragmentoCodex;                 // sussurro da Torre desbloqueado nesta expedição
 }
 
 interface GameContextType {
@@ -59,6 +62,8 @@ interface GameContextType {
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
+  // Codex Obscuro: marca fragmentos como vistos (limpa badge de notificação).
+  abrirCodex: () => void;
   // Resultado da última expedição (exibido em modal; nulo quando fechado).
   lastExpeditionResult: ExpeditionResult | null;
   clearExpeditionResult: () => void;
@@ -114,6 +119,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const addLog = (draft: GameState, tipo: LogEntry['tipo'], mensagem: string) => {
     draft.log.unshift({ id: crypto.randomUUID(), tipo, mensagem, dia: draft.dia });
     if (draft.log.length > 200) draft.log = draft.log.slice(0, 200);
+  };
+
+  // Desbloqueia um fragmento do Codex (idempotente). Retorna true se foi novo.
+  const desbloquearFragmento = (s: GameState, id: string): boolean => {
+    if (!CODEX_FRAGMENTOS[id]) return false;
+    if (s.codexFragmentos.includes(id)) return false;
+    s.codexFragmentos.push(id);
+    s.codexNovoFragmento = true;
+    return true;
   };
 
   const processDay = (draft: GameState): GameState => {
@@ -426,6 +440,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.ecos)                    parsed.ecos = [];
     if (!parsed.ecosCapitulo)            parsed.ecosCapitulo = [];
     if (!parsed.lores)                   parsed.lores = [];
+    // Migração: Codex Obscuro — converte ecos/ecosCapitulo existentes para IDs.
+    if (!parsed.codexFragmentos) {
+      parsed.codexFragmentos = [];
+      // Andares com eco ativo = habitante concluído → fragmento hab_X desbloqueado.
+      parsed.ecos.forEach(floor => {
+        const id = idFragmentoHabitante(floor);
+        if (id && !parsed.codexFragmentos.includes(id)) parsed.codexFragmentos.push(id);
+      });
+      // Tiers com eco de boss desbloqueado → fragmento eco_X desbloqueado.
+      parsed.ecosCapitulo.forEach(tier => {
+        const id = idFragmentoEco(tier);
+        if (id && !parsed.codexFragmentos.includes(id)) parsed.codexFragmentos.push(id);
+      });
+    }
+    if (parsed.codexNovoFragmento === undefined) parsed.codexNovoFragmento = false;
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
@@ -550,7 +579,24 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             bossEco = bossLore;
             s.lores.push({ floor: floorData.floor, titulo: bossLore.titulo, texto: bossLore.texto });
             addLog(s, 'descoberta', `ECO DO CAPÍTULO ${tier} DESBLOQUEADO — ${bossLore.titulo}`);
+            // Codex: unlock boss eco fragment
+            const ecoId = idFragmentoEco(tier);
+            if (ecoId) desbloquearFragmento(s, ecoId);
           }
+        }
+      }
+
+      // Sussurro da Torre: 15% de chance em qualquer vitória (farm ou avançar).
+      // Sorteia entre os sussurros do capítulo ainda não desbloqueados.
+      let sussurro: FragmentoCodex | undefined;
+      {
+        const cap = capituloDoAndar(floorData.floor);
+        const candidatos = (SUSSURROS_POR_CAPITULO[cap] ?? []).filter(id => !s.codexFragmentos.includes(id));
+        if (candidatos.length > 0 && Math.random() < 0.15) {
+          const id = candidatos[Math.floor(Math.random() * candidatos.length)];
+          desbloquearFragmento(s, id);
+          sussurro = CODEX_FRAGMENTOS[id];
+          addLog(s, 'descoberta', `SUSSURRO DA TORRE — "${sussurro.titulo}" registrado no Codex.`);
         }
       }
 
@@ -574,7 +620,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         vitoria: true, isFarming, floor: floorData.floor,
         poder: groupPower, dificuldade: floorData.difficulty,
         loot: { comida: comidaG, madeira: madeiraG, pedra: pedraG, ferro: ferroG },
-        mortos: [], resgatado, habitanteDescoberto, bossEco,
+        mortos: [], resgatado, habitanteDescoberto, bossEco, sussurro,
       };
 
       // Mortality per NPC (vitória)
@@ -1029,12 +1075,29 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (q.moralBonus) s.moral = Math.min(100, s.moral + q.moralBonus);
       // Ativar Eco de loot neste andar
       if (!s.ecos.includes(floor)) s.ecos.push(floor);
-      // Registrar lore desbloqueado
+      // Registrar lore desbloqueado (legado)
       s.lores.push({ floor, titulo: `${hab.nome} — Andar ${floor}`, texto: q.lore });
       s.habitantesEstado[floor] = 'concluido';
       addLog(s, 'descoberta', `ECO ATIVADO — ${hab.nome} (Andar ${floor}): ${q.recompensaDesc}.`);
+      // Codex: desbloquear fragmento de habitante
+      const habFragId = idFragmentoHabitante(floor);
+      if (habFragId) desbloquearFragmento(s, habFragId);
+      // Codex: verificar Verdade da Temporada I (todos os 16 habitants concluídos)
+      const todosFloors = floorsHabitantesTemporada(1);
+      if (todosFloors.every(f => s.habitantesEstado[f] === 'concluido')) {
+        if (desbloquearFragmento(s, 'verdade_t1')) {
+          addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA I DESBLOQUEADA — todos os habitantes responderam ao chamado. Acesse o Codex Obscuro.');
+        }
+      }
       saveState(s);
     }
+  };
+
+  const abrirCodex = () => {
+    if (!state || !state.codexNovoFragmento) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    s.codexNovoFragmento = false;
+    saveState(s);
   };
 
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
@@ -1078,6 +1141,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       responderGuerra,
       treinarNpc,
       interagirHabitante,
+      abrirCodex,
       lastExpeditionResult: expeditionResult,
       clearExpeditionResult: () => setExpeditionResult(null),
     }}>

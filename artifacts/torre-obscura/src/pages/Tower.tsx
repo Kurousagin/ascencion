@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar } from '../lib/game-data';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
 export function Tower() {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, abrirCodex } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
   const [farmAndar, setFarmAndar] = useState<number | null>(null);
   // Modal do habitante — qual andar está aberto
   const [habitanteModalFloor, setHabitanteModalFloor] = useState<number | null>(null);
+  // Modal do Codex Obscuro
+  const [codexOpen, setCodexOpen] = useState(false);
+  // Capítulo expandido no Codex (1-4); null = todos colapsados
+  const [codexCapExpanded, setCodexCapExpanded] = useState<number | null>(1);
 
   // Quando o andar avança, sai do modo farm automaticamente.
   useEffect(() => { setFarmAndar(null); }, [state.andarAtual]);
@@ -112,9 +116,22 @@ export function Tower() {
   return (
     <>
     <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-3 border-b border-primary/30 relative">
-        <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">TORRE OBSCURA</h2>
-        <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
+      <header className="pb-3 border-b border-primary/30 relative flex items-end justify-between">
+        <div>
+          <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">TORRE OBSCURA</h2>
+          <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
+        </div>
+        {/* Botão do Codex Obscuro */}
+        <button
+          onClick={() => { setCodexOpen(true); abrirCodex(); }}
+          title="Codex Obscuro — fragmentos de lore"
+          className="relative mb-0.5 w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/70 hover:text-primary hover:border-primary/60 transition-all touch-manipulation shrink-0"
+        >
+          <BookOpen size={16} />
+          {state.codexNovoFragmento && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse border border-background" />
+          )}
+        </button>
       </header>
 
       {/* Banner de modo exploração */}
@@ -297,6 +314,138 @@ export function Tower() {
           })}
         </div>
       </div>
+
+      {/* ── Modal Codex Obscuro ─────────────────────────────────────────────── */}
+      <Dialog.Root open={codexOpen} onOpenChange={open => { if (!open) { setCodexOpen(false); abrirCodex(); } }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-lg max-h-[88vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 flex flex-col z-50 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.95)] overflow-hidden">
+            {/* Header fixo */}
+            <div className="flex items-center justify-between p-5 border-b border-primary/20 shrink-0">
+              <div>
+                <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.2em] text-base leading-tight flex items-center gap-2">
+                  <BookOpen size={14} /> CODEX OBSCURO
+                </Dialog.Title>
+                {Object.values(TEMPORADAS).map(t => {
+                  const total = totalFragmentosTemporada(t.numero);
+                  const desbloqueados = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === t.numero).length;
+                  return (
+                    <div key={t.numero} className="text-[9px] text-secondary/70 tracking-widest mt-0.5">
+                      TEMPORADA {t.numero} · {t.nome.toUpperCase()} · {desbloqueados}/{total} FRAGMENTOS
+                    </div>
+                  );
+                })}
+              </div>
+              <Dialog.Close asChild>
+                <button className="w-8 h-8 flex items-center justify-center border border-card-border text-secondary hover:text-foreground rounded-sm touch-manipulation shrink-0">
+                  <X size={16} />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            {/* Conteúdo rolável */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+              {Object.values(TEMPORADAS).map(temporada => {
+                const totalTemp = totalFragmentosTemporada(temporada.numero);
+                const desbTemp = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === temporada.numero).length;
+                // capítulos 1-4
+                const capitulos = [1, 2, 3, 4];
+                const nomesCap: Record<number, string> = {
+                  1: CAPITULO_NOMES[1], 2: CAPITULO_NOMES[2],
+                  3: CAPITULO_NOMES[3], 4: CAPITULO_NOMES[4],
+                };
+                return (
+                  <div key={temporada.numero}>
+                    {/* Barra de progresso da temporada */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[10px] text-primary/60 tracking-widest font-cinzel">
+                        TEMPORADA {temporada.numero} — {temporada.nome.toUpperCase()}
+                      </div>
+                      <div className="text-[9px] text-secondary/60">{desbTemp}/{totalTemp}</div>
+                    </div>
+                    <div className="w-full h-1 bg-background rounded-sm overflow-hidden border border-white/5 mb-4">
+                      <div className="h-full bg-primary/60 transition-all" style={{ width: `${Math.round((desbTemp / totalTemp) * 100)}%` }} />
+                    </div>
+
+                    {/* Capítulos */}
+                    {capitulos.map(cap => {
+                      const fragsCapitulo = Object.values(CODEX_FRAGMENTOS)
+                        .filter(f => f.temporada === temporada.numero && f.capitulo === cap)
+                        .sort((a, b) => a.ordem - b.ordem);
+                      if (fragsCapitulo.length === 0) return null;
+                      const desbCap = fragsCapitulo.filter(f => state.codexFragmentos.includes(f.id)).length;
+                      const isExpanded = codexCapExpanded === cap;
+                      const tipoIcon: Record<string, string> = {
+                        habitante: '👁', eco_capitulo: '✦', sussurro: '🌀', verdade: '📜'
+                      };
+                      return (
+                        <div key={cap} className="mb-3">
+                          {/* Cabeçalho do capítulo */}
+                          <button
+                            onClick={() => setCodexCapExpanded(isExpanded ? null : cap)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-sm bg-black/30 border border-white/5 hover:border-primary/20 transition-colors touch-manipulation"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] text-secondary tracking-[0.2em] font-cinzel">
+                                CAP. {cap} — {(nomesCap[cap] ?? '').toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] text-primary/50">{desbCap}/{fragsCapitulo.length}</span>
+                              <span className="text-[10px] text-secondary/50">{isExpanded ? '▲' : '▼'}</span>
+                            </div>
+                          </button>
+
+                          {/* Fragmentos (colapsável) */}
+                          {isExpanded && (
+                            <div className="mt-1 space-y-1.5 pl-1">
+                              {fragsCapitulo.map(frag => {
+                                const desbloqueado = state.codexFragmentos.includes(frag.id);
+                                const isVerdade = frag.tipo === 'verdade';
+                                return (
+                                  <div key={frag.id} className={`rounded-sm border p-3 transition-all ${
+                                    isVerdade && desbloqueado
+                                      ? 'border-primary/60 bg-primary/5 shadow-[0_0_10px_rgba(212,175,55,0.1)]'
+                                      : desbloqueado
+                                        ? 'border-white/10 bg-black/20'
+                                        : 'border-white/5 bg-black/10 opacity-50'
+                                  }`}>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <span className="text-[11px] leading-none">{tipoIcon[frag.tipo] ?? '·'}</span>
+                                      <span className={`text-[9px] tracking-wider font-cinzel ${desbloqueado ? 'text-primary/70' : 'text-white/30'}`}>
+                                        {frag.titulo}
+                                      </span>
+                                      {!desbloqueado && (
+                                        <span className="ml-auto text-[8px] text-white/20 tracking-widest">BLOQUEADO</span>
+                                      )}
+                                    </div>
+                                    <p className={`text-[10px] leading-relaxed ${desbloqueado ? (isVerdade ? 'text-primary/80 italic' : 'text-white/55 italic') : 'text-white/15 select-none'}`}>
+                                      {desbloqueado
+                                        ? frag.texto
+                                        : '████ ████ ████ ████ ████ ████ ████ ████ ████ ████ ████'}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-primary/10 shrink-0">
+              <p className="text-[9px] text-white/25 text-center tracking-wider italic">
+                Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.
+              </p>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* ── Modal de diálogo com o Habitante ────────────────────────────────── */}
       <Dialog.Root
@@ -626,7 +775,7 @@ export function Tower() {
 // ── Componente de card de resultado ──────────────────────────────────────────
 
 function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; onClose: () => void }) {
-  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado, habitanteDescoberto, bossEco } = result;
+  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado, habitanteDescoberto, bossEco, sussurro } = result;
   const pct = Math.min(100, Math.round((poder / dificuldade) * 100));
 
   return (
@@ -728,6 +877,18 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
           </div>
           <div className="text-[10px] font-cinzel text-primary/80 mb-2">{bossEco.titulo}</div>
           <p className="text-[11px] text-white/55 italic leading-relaxed border-l border-primary/30 pl-3">{bossEco.texto}</p>
+        </div>
+      )}
+
+      {/* Sussurro da Torre */}
+      {sussurro && (
+        <div className="bg-black/40 border border-white/15 rounded-sm p-4">
+          <div className="text-[9px] text-white/50 tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
+            🌀 SUSSURRO DA TORRE
+          </div>
+          <div className="text-[9px] text-white/35 font-cinzel mb-1.5">{sussurro.titulo}</div>
+          <p className="text-[11px] text-white/55 italic leading-relaxed border-l border-white/10 pl-3">{sussurro.texto}</p>
+          <div className="text-[8px] text-white/25 mt-2 tracking-widest">Registrado no Codex Obscuro.</div>
         </div>
       )}
 

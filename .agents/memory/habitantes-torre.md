@@ -1,6 +1,6 @@
 ---
 name: Habitantes da Torre system
-description: Quest/eco system for floor inhabitants in Torre Obscura — design decisions, data model, state machine, and validation rules.
+description: Quest/eco system for floor inhabitants in Torre Obscura — design decisions, data model, state machine, validation rules, and Codex integration.
 ---
 
 ## System Overview
@@ -23,18 +23,22 @@ Each non-boss floor (1-4, 6-9, 11-14, 16-19) has one `HabitanteAndar` entry in `
 
 **Why:** Dual-resource fix prevents completing floor 18 by paying only iron. semGuerra reset ensures "no war during X days" is measured from last war day, not discovery day.
 
-## GameState New Fields
+## GameState Fields (Habitants)
 - `habitantesEstado: Record<number, HabitanteEstado>` — floor → state
 - `habitantesDiaDescoberta: Record<number, number>` — floor → discovery day
 - `habitantesQuestResetDia: Record<number, number>` — floor → last war reset day (semGuerra only)
 - `ecos: number[]` — floors with eco active
 - `ecosCapitulo: number[]` — tiers with boss eco
-- `lores: {floor, titulo, texto}[]` — unlocked lore fragments
+- `lores: {floor, titulo, texto}[]` — unlocked lore fragments (legacy, superseded by Codex)
 
-## Save Migration
-All 5 new fields default to `{}` or `[]` in continueGame. Safe for old saves.
+## Codex Obscuro Integration
+Each completed habitante quest → `desbloquearFragmento(s, 'hab_${floor}')` in interagirHabitante.
+Each boss defeated → `desbloquearFragmento(s, 'eco_${tier}')` in sendExpedition.
+All 16 habitants concluido → `desbloquearFragmento(s, 'verdade_t1')`.
+Sussurros: 15% chance per victorious expedition → random unseen sussurro from that chapter.
 
 ## UI (Tower.tsx)
-- Conquered floor card: shows 👁/⚡/✦ icon button per habitant state; eco "+XX% LOOT" badge; pulse animation when completable.
-- Habitante modal: shows fala (state-dependent), quest conditions with live progress, action button (Aceitar/Concluir/Fechar).
-- ExpeditionResultCard: shows `habitanteDescoberto` (name) on first conquest + `bossEco` lore block on boss defeat.
+- Codex button in header (BookOpen icon) with gold pulse badge when `state.codexNovoFragmento = true`.
+- Codex modal: collapsible chapters, progress bar per temporada, locked entries show ████.
+- Habitante floor cards: 👁/⚡/✦ icon button, eco "+XX% LOOT" badge, pulse when completable.
+- ExpeditionResultCard: habitanteDescoberto + bossEco lore + sussurro card.

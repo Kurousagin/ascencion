@@ -457,6 +457,196 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
   },
 };
 
+// ─── CODEX OBSCURO — SISTEMA DE TEMPORADAS ───────────────────────────────────
+// Fragmentos coletáveis organizados por Temporada → Capítulo.
+// Para adicionar uma nova temporada: inserir entrada em TEMPORADAS e os
+// fragmentos correspondentes em CODEX_FRAGMENTOS — nenhuma mudança no GameState.
+
+export type FragmentoTipo = 'habitante' | 'eco_capitulo' | 'sussurro' | 'verdade';
+
+export interface FragmentoCodex {
+  id: string;
+  tipo: FragmentoTipo;
+  temporada: number;
+  capitulo: number;
+  ordem: number;   // ordenação dentro do capítulo na UI
+  titulo: string;
+  texto: string;
+}
+
+export interface TemporadaData {
+  numero: number;
+  nome: string;
+  descricao: string;
+  andares: [number, number]; // [primeiro, último]
+  corTema: string;
+}
+
+export const TEMPORADAS: Record<number, TemporadaData> = {
+  1: {
+    numero: 1,
+    nome: 'A Ascensão',
+    descricao: 'Os primeiros vinte andares. O Observador desperta e descobre o que foi selado no núcleo da Torre.',
+    andares: [1, 20],
+    corTema: '#D4AF37',
+  },
+  // Temporadas futuras serão inseridas aqui (ex: Temporada 2 andares [21, 30])
+};
+
+// Capítulo (tier 1-4) de um andar — Temporada I usa ceil(floor/5).
+export const capituloDoAndar = (floor: number): number => Math.ceil(floor / 5);
+
+export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
+  // ── Capítulo I (andares 1–5) ──────────────────────────────────────────────
+  hab_1:    { id: 'hab_1',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 1,
+    titulo: 'Arauto da Névoa — Andar 1',        texto: HABITANTES[1].quest.lore },
+  hab_2:    { id: 'hab_2',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 2,
+    titulo: 'Eco dos Construtores — Andar 2',   texto: HABITANTES[2].quest.lore },
+  hab_3:    { id: 'hab_3',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 3,
+    titulo: 'Tecelã de Raízes — Andar 3',       texto: HABITANTES[3].quest.lore },
+  hab_4:    { id: 'hab_4',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 4,
+    titulo: 'Voz do Cristal — Andar 4',         texto: HABITANTES[4].quest.lore },
+  eco_1:    { id: 'eco_1',    tipo: 'eco_capitulo', temporada: 1, capitulo: 1, ordem: 5,
+    titulo: BOSS_ECO_LORE[5].titulo,            texto: BOSS_ECO_LORE[5].texto },
+  sus_t1_0: { id: 'sus_t1_0', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 6,
+    titulo: 'Sussurro I · A Névoa Respira',
+    texto: 'A névoa nos primeiros andares não é natural. Ela respira. Você respirou junto com ela sem perceber.' },
+  sus_t1_1: { id: 'sus_t1_1', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 7,
+    titulo: 'Sussurro I · Pedras Escondidas',
+    texto: 'Os Construtores gravaram mensagens nas pedras que nunca usaram para construir. Pedras que esconderam. Pedras que a Torre escondeu de volta.' },
+  sus_t1_2: { id: 'sus_t1_2', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 8,
+    titulo: 'Sussurro I · A Lista',
+    texto: 'Há uma lista de nomes escritos antes de qualquer um nascer. Seu nome está nela. O nome do próximo também.' },
+  sus_t1_3: { id: 'sus_t1_3', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 9,
+    titulo: 'Sussurro I · O Primeiro Andar',
+    texto: 'O primeiro andar nunca foi o primeiro. Havia algo antes — mas a Torre tem fome de histórias, não apenas de almas.' },
+  sus_t1_4: { id: 'sus_t1_4', tipo: 'sussurro',     temporada: 1, capitulo: 1, ordem: 10,
+    titulo: 'Sussurro I · A Função Real',
+    texto: 'O Guardião do Limiar não foi criado para proteger. Foi criado para contar. Mas nunca aprendeu a contar a verdade.' },
+
+  // ── Capítulo II (andares 6–10) ────────────────────────────────────────────
+  hab_6:    { id: 'hab_6',    tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 1,
+    titulo: 'Sentinela Sem Nome — Andar 6',     texto: HABITANTES[6].quest.lore },
+  hab_7:    { id: 'hab_7',    tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 2,
+    titulo: 'Jardineira Esquecida — Andar 7',   texto: HABITANTES[7].quest.lore },
+  hab_8:    { id: 'hab_8',    tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 3,
+    titulo: 'Estudioso do Infinito — Andar 8',  texto: HABITANTES[8].quest.lore },
+  hab_9:    { id: 'hab_9',    tipo: 'habitante',    temporada: 1, capitulo: 2, ordem: 4,
+    titulo: 'Ferreiro Espectral — Andar 9',     texto: HABITANTES[9].quest.lore },
+  eco_2:    { id: 'eco_2',    tipo: 'eco_capitulo', temporada: 1, capitulo: 2, ordem: 5,
+    titulo: BOSS_ECO_LORE[10].titulo,           texto: BOSS_ECO_LORE[10].texto },
+  sus_t2_0: { id: 'sus_t2_0', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 6,
+    titulo: 'Sussurro II · A Autoridade',
+    texto: 'A autoridade que deu a ordem à Sentinela não morreu. Apenas aprendeu a não precisar de corpo.' },
+  sus_t2_1: { id: 'sus_t2_1', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 7,
+    titulo: 'Sussurro II · As Correntes',
+    texto: 'O Ferreiro sabia que as correntes diminuiriam a cada andar conquistado. Forjou-as assim mesmo. Forjou-as para durar exatamente tempo suficiente.' },
+  sus_t2_2: { id: 'sus_t2_2', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 8,
+    titulo: 'Sussurro II · O Livro Fechado',
+    texto: 'O Arquivista encontrou seu nome na lista. E leu o nome seguinte. E fechou o livro. E nunca mais o abriu — mas também nunca o destruiu.' },
+  sus_t2_3: { id: 'sus_t2_3', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 9,
+    titulo: 'Sussurro II · O Que Cresce',
+    texto: 'A Jardineira cura o que toca. O que ela tocou ontem cresceu de volta diferente. Você passou por ali de manhã.' },
+  sus_t2_4: { id: 'sus_t2_4', tipo: 'sussurro',     temporada: 1, capitulo: 2, ordem: 10,
+    titulo: 'Sussurro II · A Paciência',
+    texto: 'As correntes não prendem a entidade. Elas a lembram de que há algo do outro lado que vale esperar.' },
+
+  // ── Capítulo III (andares 11–15) ──────────────────────────────────────────
+  hab_11:   { id: 'hab_11',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 1,
+    titulo: 'Afogado Lúcido — Andar 11',        texto: HABITANTES[11].quest.lore },
+  hab_12:   { id: 'hab_12',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 2,
+    titulo: 'Percussão Profunda — Andar 12',     texto: HABITANTES[12].quest.lore },
+  hab_13:   { id: 'hab_13',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 3,
+    titulo: 'Oráculo Invertido — Andar 13',      texto: HABITANTES[13].quest.lore },
+  hab_14:   { id: 'hab_14',   tipo: 'habitante',    temporada: 1, capitulo: 3, ordem: 4,
+    titulo: 'Comandante de Mármore — Andar 14',  texto: HABITANTES[14].quest.lore },
+  eco_3:    { id: 'eco_3',    tipo: 'eco_capitulo', temporada: 1, capitulo: 3, ordem: 5,
+    titulo: BOSS_ECO_LORE[15].titulo,            texto: BOSS_ECO_LORE[15].texto },
+  sus_t3_0: { id: 'sus_t3_0', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 6,
+    titulo: 'Sussurro III · A Preservação',
+    texto: 'A Torre não transforma para destruir. Transforma para preservar. O que ela preserva, ela nunca libera — mas também nunca esquece.' },
+  sus_t3_1: { id: 'sus_t3_1', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 7,
+    titulo: 'Sussurro III · A Frequência',
+    texto: 'A Percussão Profunda pulsa em frequências que o corpo humano não ouve. Mas sente. Você sentiu. Quando achou que era o coração.' },
+  sus_t3_2: { id: 'sus_t3_2', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 8,
+    titulo: 'Sussurro III · O Ponto de Inflexão',
+    texto: 'O Oráculo viu o passado de todos que passaram por aqui. Viu o mesmo ponto de inflexão em cada um. O momento em que poderiam ter voltado. E não voltaram.' },
+  sus_t3_3: { id: 'sus_t3_3', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 9,
+    titulo: 'Sussurro III · A Âncora',
+    texto: 'O Afogado Lúcido ainda está sendo preenchido. Mas cada vez que alguém sobe os andares, ele fica um pouco mais lúcido. Como se a progressão de alguém o ancorasse.' },
+  sus_t3_4: { id: 'sus_t3_4', tipo: 'sussurro',     temporada: 1, capitulo: 3, ordem: 10,
+    titulo: 'Sussurro III · A Pergunta',
+    texto: 'O Reflexo no espelho do décimo quinto andar não é um guardião. É uma pergunta. A pergunta que a Torre faz para decidir se você está pronto para o que vem depois.' },
+
+  // ── Capítulo IV (andares 16–20) ───────────────────────────────────────────
+  hab_16:   { id: 'hab_16',   tipo: 'habitante',    temporada: 1, capitulo: 4, ordem: 1,
+    titulo: 'Eco Faminto — Andar 16',            texto: HABITANTES[16].quest.lore },
+  hab_17:   { id: 'hab_17',   tipo: 'habitante',    temporada: 1, capitulo: 4, ordem: 2,
+    titulo: 'Paradoxo Ambulante — Andar 17',     texto: HABITANTES[17].quest.lore },
+  hab_18:   { id: 'hab_18',   tipo: 'habitante',    temporada: 1, capitulo: 4, ordem: 3,
+    titulo: 'Último Defensor — Andar 18',        texto: HABITANTES[18].quest.lore },
+  hab_19:   { id: 'hab_19',   tipo: 'habitante',    temporada: 1, capitulo: 4, ordem: 4,
+    titulo: 'Susurro do Limiar — Andar 19',      texto: HABITANTES[19].quest.lore },
+  eco_4:    { id: 'eco_4',    tipo: 'eco_capitulo', temporada: 1, capitulo: 4, ordem: 5,
+    titulo: BOSS_ECO_LORE[20].titulo,            texto: BOSS_ECO_LORE[20].texto },
+  sus_t4_0: { id: 'sus_t4_0', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 6,
+    titulo: 'Sussurro IV · O Apetite',
+    texto: 'O Eco Faminto não é o apetite da entidade. É o apetite que você trouxe de fora sem perceber. A Torre apenas o encontrou.' },
+  sus_t4_1: { id: 'sus_t4_1', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 7,
+    titulo: 'Sussurro IV · O Peso do Silêncio',
+    texto: 'No décimo oitavo andar, o silêncio tem peso. Não metaforicamente. Cada passo custa mais. Os que constroem para durar entenderam isso tarde demais.' },
+  sus_t4_2: { id: 'sus_t4_2', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 8,
+    titulo: 'Sussurro IV · A Razão da Desistência',
+    texto: 'O Paradoxo existe em três tempos. Em dois deles, você não chegou até aqui. Nos dois, a razão era a mesma: desistência. Não fraqueza.' },
+  sus_t4_3: { id: 'sus_t4_3', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 9,
+    titulo: 'Sussurro IV · O Antes',
+    texto: 'O Susurro do Limiar não está entre você e a entidade. Está entre a entidade e o que ela era antes de aprender a ser paciente.' },
+  sus_t4_4: { id: 'sus_t4_4', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 10,
+    titulo: 'Sussurro IV · A Vigília',
+    texto: 'A entidade está acordada há mais tempo do que a linguagem existe. Ela aprendeu a esperar observando a paciência dos que esperavam por ela.' },
+
+  // ── Verdade da Temporada I ────────────────────────────────────────────────
+  verdade_t1: { id: 'verdade_t1', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 99,
+    titulo: 'A Verdade — O Ser Reunificado',
+    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezesseis — cada habitante era um fragmento de algo que nunca deveria ter sido dividido. Os Construtores separaram o que era um. Os Guardiões foram colocados para impedir a reunificação. Você não subiu uma torre. Você remontou um ser. E agora que todos os fragmentos foram ouvidos — agora que cada habitante completou seu ciclo através de você — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?' },
+};
+
+// IDs dos sussurros por capítulo — para sortear durante expedições.
+export const SUSSURROS_POR_CAPITULO: Record<number, string[]> = {
+  1: ['sus_t1_0', 'sus_t1_1', 'sus_t1_2', 'sus_t1_3', 'sus_t1_4'],
+  2: ['sus_t2_0', 'sus_t2_1', 'sus_t2_2', 'sus_t2_3', 'sus_t2_4'],
+  3: ['sus_t3_0', 'sus_t3_1', 'sus_t3_2', 'sus_t3_3', 'sus_t3_4'],
+  4: ['sus_t4_0', 'sus_t4_1', 'sus_t4_2', 'sus_t4_3', 'sus_t4_4'],
+};
+
+// Total de fragmentos de uma temporada (para a barra de progresso na UI).
+export function totalFragmentosTemporada(temporada: number): number {
+  return Object.values(CODEX_FRAGMENTOS).filter(f => f.temporada === temporada).length;
+}
+
+// Fragmento de habitante correspondente ao andar (null se boss ou sem entrada).
+export function idFragmentoHabitante(floor: number): string | null {
+  const id = `hab_${floor}`;
+  return CODEX_FRAGMENTOS[id] ? id : null;
+}
+
+// Fragmento de Eco do Capítulo correspondente ao tier (1-4).
+export function idFragmentoEco(tier: number): string | null {
+  const id = `eco_${tier}`;
+  return CODEX_FRAGMENTOS[id] ? id : null;
+}
+
+// Andar dos habitantes de uma temporada (non-boss floors).
+export function floorsHabitantesTemporada(temporada: number): number[] {
+  const t = TEMPORADAS[temporada];
+  if (!t) return [];
+  const floors: number[] = [];
+  for (let f = t.andares[0]; f <= t.andares[1]; f++) {
+    if (HABITANTES[f]) floors.push(f);
+  }
+  return floors;
+}
+
 // Verifica se a quest de um habitante está concluída no GameState atual.
 export function verificarQuestAndar(state: GameState, floor: number): boolean {
   const hab = HABITANTES[floor];
@@ -532,7 +722,11 @@ export interface GameState {
   habitantesQuestResetDia: Record<number, number>;    // floor → dia em que guerra resetou o timer (semGuerra)
   ecos: number[];                                      // andares com Eco de loot ativo
   ecosCapitulo: number[];                              // capítulos (tiers) com Eco de boss
-  lores: { floor: number; texto: string; titulo: string }[]; // lore desbloqueado
+  lores: { floor: number; texto: string; titulo: string }[]; // lore desbloqueado (legado)
+
+  // ─── Codex Obscuro ───────────────────────────────────────────────────────
+  codexFragmentos: string[];   // IDs de FragmentoCodex desbloqueados
+  codexNovoFragmento: boolean; // true = há fragmento novo não visualizado (badge no ícone)
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -778,6 +972,8 @@ export const createInitialState = (): GameState => ({
   ecos: [],
   ecosCapitulo: [],
   lores: [],
+  codexFragmentos: [],
+  codexNovoFragmento: false,
 });
 
 // ─── BUILDINGS (leveled) ───────────────────────────────────────────────────────
