@@ -3,7 +3,8 @@
 - [Vestígios system](vestigios.md) — between Épico and Lendário; 3 per T1 season (8% gacha chance); have passiva (veterano/leitura/rastro) affecting expeditions; mortal unlike primordials.
 - [Primordial global uniqueness](primordial-uniqueness.md) — primordial_claims table (unique on tipo); GET+POST /api/primordial; client checks before roll and claims after confirm; optimistic fallback if server down.
 - [Lore Bible](../artifacts/torre-obscura/LORE_BIBLE.md) — fonte de verdade para lore, temporadas, Primordiais, Torres-Eco, Torre Original e seeds já plantadas. Ler antes de qualquer implementação de T2+.
-- [Async multiplayer alliance polling](async-multiplayer-alliance.md) — cross-player inbox/sync must refresh on tab mount + visibilitychange, not only setInterval (background tabs throttle timers).
+- [Async multiplayer alliance polling](async-multiplayer-alliance.md) — refresh() must be sequential (sincronizarPerfil THEN puxarAliadasECaixa); parallel dispatch caused puxarAliadas to return [] before player was registered, wiping aliadas state and hiding the send banner.
+- [Alliance dissolve on new game](alliance-dissolve.md) — AllianceProvider wraps TitleScreen/GameOverScreen (via MainGameInner); dissolveAll() clears local state immediately, retries server-side with pendingDissolve localStorage marker for offline recovery.
 - [Resident loan (empréstimo) multiplayer](resident-loan-multiplayer.md) — full async loan flow via exchanges table; idempotency via status transition; auto-return scan in AllianceContext.
 - [Multiple alliances model](multi-alianca.md) — max 3 allies, limits are GLOBAL not per-ally; pairing must be atomic (FOR UPDATE + 23505→409); dissolve removes both directions, in-flight loans survive.
 - [Expedition reinforcement (reforço) multiplayer](reforco-expedicao.md) — tipo 'reforco' reuses devolver; reforcoConcluido flag set in sendExpedition triggers auto-return; removerEmprestado handles both emprestado/reforco.

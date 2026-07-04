@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { useGame } from '../context/GameContext';
+import { useAlliance } from '../context/AllianceContext';
 import { Onboarding } from '../components/Onboarding';
 import { LancamentoModal } from '../components/LancamentoModal';
 import { LANCAMENTO_ATIVO } from '../lib/lancamento';
@@ -8,6 +9,7 @@ import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAM
 
 export function TitleScreen() {
   const { hasSave, startNewGame, continueGame } = useGame();
+  const { dissolveAll } = useAlliance();
 
   const [lancamentoOpen, setLancamentoOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -40,7 +42,9 @@ export function TitleScreen() {
     sessionStorage.setItem(GACHA_LANCAMENTO_PENDING, '1');
   };
 
-  const handleNovoJogo = () => {
+  const handleNovoJogo = async () => {
+    // Dissolve alianças do ciclo anterior antes de iniciar cidadela nova
+    await dissolveAll();
     if (LANCAMENTO_ATIVO) {
       setLancamentoOpen(true);
     } else {
@@ -50,7 +54,8 @@ export function TitleScreen() {
   };
 
   // Chamado ao clicar "REALIZAR O RITUAL E INICIAR" no LancamentoModal
-  const handleIniciarRitual = () => {
+  const handleIniciarRitual = async () => {
+    await dissolveAll();
     agendarGacha();
     agendarOnboarding();
     startNewGame(LANCAMENTO_ATIVO!);

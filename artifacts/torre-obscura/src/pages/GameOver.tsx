@@ -1,7 +1,14 @@
 import { useGame } from '../context/GameContext';
+import { useAlliance } from '../context/AllianceContext';
 
 export function GameOverScreen() {
   const { state, startNewGame } = useGame();
+  const { dissolveAll } = useAlliance();
+
+  const handleNovoJogo = async () => {
+    await dissolveAll();
+    startNewGame();
+  };
 
   if (state.vitoria) {
     return (
@@ -30,7 +37,7 @@ export function GameOverScreen() {
           </div>
           
           <button
-            onClick={() => startNewGame()}
+            onClick={handleNovoJogo}
             className="w-full max-w-sm h-[60px] bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg rounded-sm shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:bg-primary/90 transition-all active:scale-95"
           >
             NOVO CICLO
@@ -58,7 +65,7 @@ export function GameOverScreen() {
         
         <div className="w-full max-w-sm space-y-4">
           <button
-            onClick={() => startNewGame()}
+            onClick={handleNovoJogo}
             className="w-full h-[60px] border border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground font-cinzel font-bold tracking-[0.2em] text-lg transition-all rounded-sm hover:shadow-[0_0_15px_rgba(248,81,73,0.4)]"
           >
             NOVO JOGO

@@ -27,6 +27,8 @@ export interface EmprestimoRegistro {
 
 const HISTORICO_KEY = 'torre_obscura_emprestimos_historico';
 const MAX_HISTORICO = 50;
+// IDs de aliadas que precisam ser desfeitas no servidor (dissolve offline pendente)
+const PENDING_DISSOLVE_KEY = 'torre_obscura_pending_dissolve';
 
 function carregarHistorico(): EmprestimoRegistro[] {
   try {
@@ -39,6 +41,21 @@ function salvarHistoricoStorage(h: EmprestimoRegistro[]): void {
   try { localStorage.setItem(HISTORICO_KEY, JSON.stringify(h)); } catch { /* quota */ }
 }
 
+function salvarPendingDissolve(ids: string[]): void {
+  try { localStorage.setItem(PENDING_DISSOLVE_KEY, JSON.stringify(ids)); } catch { /* quota */ }
+}
+
+function carregarPendingDissolve(): string[] {
+  try {
+    const raw = localStorage.getItem(PENDING_DISSOLVE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function limparPendingDissolve(): void {
+  try { localStorage.removeItem(PENDING_DISSOLVE_KEY); } catch { /* noop */ }
+}
+
 // ─── Tipo do contexto ─────────────────────────────────────────────────────────
 
 interface AllianceContextType {
@@ -49,6 +66,7 @@ interface AllianceContextType {
   historico: EmprestimoRegistro[];
   parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
   desfazer: (aliadaDeviceId: string) => Promise<{ ok: boolean; erro?: string }>;
+  dissolveAll: () => Promise<void>;
   enviar: (aliadaDeviceId: string, r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
   emprestar: (aliadaDeviceId: string, npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
   reforcar: (aliadaDeviceId: string, npcId: string) => Promise<{ ok: boolean; erro?: string }>;
@@ -156,7 +174,30 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const puxarAliadasECaixa = useCallback(async () => {
     try {
       const as = await listarAliadas(deviceId.current);
-      setAliadas(as);
+      // Se há um dissolve pendente (offline durante startNewGame), retentar agora
+      const pendingIds = carregarPendingDissolve();
+      if (pendingIds.length > 0) {
+        const paraDesfazer = as.filter(a => pendingIds.includes(a.deviceId));
+        const resultados = await Promise.allSettled(
+          paraDesfazer.map(a => desfazerAlianca({ deviceId: deviceId.current, aliadaDeviceId: a.deviceId }))
+        );
+        const todosOk = resultados.every(r => r.status === 'fulfilled');
+        if (todosOk) {
+          limparPendingDissolve();
+          // Não exibir aliadas que foram dissolvidas
+          setAliadas(as.filter(a => !pendingIds.includes(a.deviceId)));
+        } else {
+          // Parcialmente falhou — mantém os que ainda não foram dissolvidos
+          const dissolvidosIds = paraDesfazer
+            .filter((_, i) => resultados[i].status === 'fulfilled')
+            .map(a => a.deviceId);
+          const restanteIds = pendingIds.filter(id => !dissolvidosIds.includes(id));
+          salvarPendingDissolve(restanteIds);
+          setAliadas(as.filter(a => !dissolvidosIds.includes(a.deviceId)));
+        }
+      } else {
+        setAliadas(as);
+      }
     } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current);
@@ -164,9 +205,11 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch { /* mantém estado anterior */ }
   }, []);
 
+  // Sequencial: garante que o perfil esteja registrado antes de buscar aliadas.
+  // Sem isso, puxarAliadasECaixa pode rodar antes de sincronizarPerfil e
+  // o servidor retorna [] (jogador não existe ainda), apagando a lista de aliadas.
   const refresh = useCallback(() => {
-    void sincronizarPerfil();
-    void puxarAliadasECaixa();
+    void sincronizarPerfil().then(() => puxarAliadasECaixa());
   }, [sincronizarPerfil, puxarAliadasECaixa]);
 
   useEffect(() => {
@@ -186,13 +229,16 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const parear = useCallback(async (codigo: string) => {
     try {
       const a = await parearAlianca({ deviceId: deviceId.current, codigo: codigo.trim().toUpperCase() });
+      // Atualização optimista: mostra a aliada antes mesmo do poll
       setAliadas(prev => (prev.some(x => x.deviceId === a.deviceId) ? prev : [...prev, a]));
       await sincronizarPerfil();
+      // Confirma com o servidor para garantir consistência bidirecional
+      void puxarAliadasECaixa();
       return { ok: true };
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [sincronizarPerfil]);
+  }, [sincronizarPerfil, puxarAliadasECaixa]);
 
   // ─── Desfazer aliança ────────────────────────────────────────────────────────
   const desfazer = useCallback(async (aliadaDeviceId: string) => {
@@ -340,6 +386,33 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     vencidos.forEach(n => { void devolver(n); });
   }, [state?.dia, state?.npcs, devolver]);
 
+  // ─── Dissolver todas as alianças (chamado ao iniciar novo jogo) ────────────
+  // Chamado antes de startNewGame para garantir que a cidadela que morreu não
+  // mantenha vínculos de aliança que pertenciam ao ciclo anterior.
+  const dissolveAll = useCallback(async () => {
+    const todas = aliadasRef.current;
+    const ids = todas.map(a => a.deviceId);
+
+    // Limpa estado local imediatamente — cidadela nova, ciclo novo
+    setAliadas([]);
+    setCaixa([]);
+    setHistorico([]);
+    salvarHistoricoStorage([]);
+    limparPendingDissolve();
+
+    if (ids.length === 0) return;
+
+    // Tenta desfazer no servidor — se offline/falha, marca para retentar
+    const resultados = await Promise.allSettled(
+      ids.map(id => desfazerAlianca({ deviceId: deviceId.current, aliadaDeviceId: id }))
+    );
+    const pendentes = ids.filter((_, i) => resultados[i].status === 'rejected');
+    if (pendentes.length > 0) {
+      // Dissolve pendente: será reexecutado na próxima vez que puxarAliadasECaixa rodar com conexão
+      salvarPendingDissolve(pendentes);
+    }
+  }, []);
+
   // ─── Renomear cidadela ─────────────────────────────────────────────────────
   const renomear = useCallback(async (nome: string) => {
     const limpo = nome.trim();
@@ -354,7 +427,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AllianceContext.Provider value={{
       perfil, aliadas, caixa, online, historico,
-      parear, desfazer, enviar, emprestar, reforcar, receber, renomear, refresh,
+      parear, desfazer, dissolveAll, enviar, emprestar, reforcar, receber, renomear, refresh,
     }}>
       {children}
     </AllianceContext.Provider>

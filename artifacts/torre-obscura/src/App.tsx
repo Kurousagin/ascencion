@@ -40,7 +40,10 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
   );
 }
 
-function MainGameArea() {
+// ─── Conteúdo interno: acessa GameContext + AllianceContext ──────────────────
+// AllianceProvider é subido para envolver também TitleScreen e GameOverScreen,
+// permitindo que dissolveAll() seja chamado antes de startNewGame().
+function MainGameInner() {
   const { state } = useGame();
   const [tab, setTab] = useState('obs');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -85,7 +88,6 @@ function MainGameArea() {
 
   return (
     <>
-    <AllianceProvider>
     <WarProvider>
       <div
         className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
@@ -119,7 +121,6 @@ function MainGameArea() {
         </div>
       </div>
     </WarProvider>
-    </AllianceProvider>
 
     {/* Gacha de lançamento — abre ao iniciar novo jogo na temporada ativa */}
     {LANCAMENTO_ATIVO && (
@@ -161,6 +162,14 @@ function MainGameArea() {
       onDismiss={pioneer.dispensarBanner}
     />
     </>
+  );
+}
+
+function MainGameArea() {
+  return (
+    <AllianceProvider>
+      <MainGameInner />
+    </AllianceProvider>
   );
 }
 
