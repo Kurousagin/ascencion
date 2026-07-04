@@ -91,7 +91,7 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     {
       nome: 'Corven, o Inquebrável',
       titulo: 'Vestígio da Temporada I',
-      forca: 17, agilidade: 13, inteligencia: 11, resistencia: 17,
+      forca: 20, agilidade: 14, inteligencia: 12, resistencia: 20,
       habilidade: 'guardiao',
       vestigio: true,
       passivaId: 'veterano_das_profundezas' as PassivaId,
@@ -104,7 +104,7 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     {
       nome: 'Seris, a Decifradora',
       titulo: 'Vestígio da Temporada I',
-      forca: 11, agilidade: 14, inteligencia: 19, resistencia: 14,
+      forca: 12, agilidade: 15, inteligencia: 23, resistencia: 15,
       habilidade: 'estrategista',
       vestigio: true,
       passivaId: 'leitura_da_torre' as PassivaId,
@@ -117,7 +117,7 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     {
       nome: 'Kael, o Sem-Rastro',
       titulo: 'Vestígio da Temporada I',
-      forca: 14, agilidade: 18, inteligencia: 12, resistencia: 14,
+      forca: 15, agilidade: 22, inteligencia: 13, resistencia: 15,
       habilidade: 'explorador',
       vestigio: true,
       passivaId: 'rastro_vivo' as PassivaId,
