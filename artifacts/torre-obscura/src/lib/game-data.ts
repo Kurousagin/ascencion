@@ -1147,11 +1147,17 @@ export function calcCustoTreinamento(treinamentos: number): { madeira: number; f
   };
 }
 
-// Custo de treinamento intelectual (Erudito no Arquivo).
-export function calcCustoEstudo(treinamentos: number): { pedra: number; comida: number } {
-  return {
+// Custo de treinamento intelectual no Arquivo.
+// Erudito paga custo base; outras profissões pagam 1,5× (INT é fora de sua especialidade).
+export function calcCustoEstudo(treinamentos: number, isErudito = true): { pedra: number; comida: number } {
+  const base = {
     pedra:  15 + treinamentos * 12,
     comida: 20 + treinamentos * 10,
+  };
+  if (isErudito) return base;
+  return {
+    pedra:  Math.ceil(base.pedra  * 1.5),
+    comida: Math.ceil(base.comida * 1.5),
   };
 }
 
@@ -1188,7 +1194,8 @@ export function podeTreinarNpc(
   return true;
 }
 
-// Retorna true se o Erudito pode estudar no Arquivo agora.
+// Retorna true se o NPC pode estudar no Arquivo agora (T2, qualquer profissão).
+// Erudito paga custo base; demais pagam 1,5× via calcCustoEstudo.
 export function podeEstudarNpc(
   npc: NPC,
   arquivoNivel: number,  // 0 = não construído
@@ -1201,7 +1208,7 @@ export function podeEstudarNpc(
   if (npc.emprestado || npc.reforco) return false;
   if (npc.fadiga >= 60) return false;
   if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
-  return getProfissao(npc) === 'erudito';
+  return true;
 }
 
 // Stat primário de cada profissão treinável.

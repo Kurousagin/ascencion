@@ -4,7 +4,7 @@ import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, S
 import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, calcCustoTreinamento, calcCustoEstudo, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
 
 export function People() {
-  const { state, assignPosto, treinarNpc } = useGame();
+  const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [mostrarMortos, setMostrarMortos] = useState(false);
 
@@ -330,13 +330,14 @@ export function People() {
                 );
               })()}
 
-              {/* Estudo no Arquivo (Erudito → INT, andar 21+, T2) */}
+              {/* Estudo no Arquivo (INT) — qualquer profissão, T2 (andar 21+) */}
               {(() => {
-                if (getProfissao(npc) !== 'erudito') return null;
+                const profNpc = getProfissao(npc);
+                const isErudito = profNpc === 'erudito';
                 const arquivoEd = state.edificios.find(e => e.tipo === 'Arquivo');
                 const arquivoNivel = arquivoEd?.nivel ?? 0;
                 const treinamentos = npc.treinamentos ?? 0;
-                const custo = calcCustoEstudo(treinamentos);
+                const custo = calcCustoEstudo(treinamentos, isErudito);
                 const podeE = podeEstudarNpc(npc, arquivoNivel, state.andarAtual);
                 const instrutor = calcInstrutor(npc.id, state.npcs, 'inteligencia');
                 const instrutorStat = instrutor ? instrutor.inteligencia : 0;
@@ -357,6 +358,7 @@ export function People() {
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
                     <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Brain size={10} className="text-primary" /> ESTUDO — ARQUIVO
+                      {!isErudito && <span className="text-[8px] text-warning/70 normal-case tracking-normal font-inter">(custo ×1,5)</span>}
                       <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
@@ -383,7 +385,7 @@ export function People() {
                           </div>
                         )}
                         <button
-                          onClick={() => treinarNpc(npc.id)}
+                          onClick={() => estudarNpc(npc.id)}
                           disabled={!podeE || state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida}
                           className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
                         >

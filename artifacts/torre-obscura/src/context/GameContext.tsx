@@ -63,6 +63,7 @@ interface GameContextType {
   responderGuerra: (tropaIds: string[]) => boolean;
   // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
+  estudarNpc: (npcId: string) => void;
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
@@ -1135,6 +1136,44 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  // ─── ESTUDO NO ARQUIVO (INT — qualquer profissão, T2) ────────────────────
+  // Separado de treinarNpc para não interferir com o path do Quartel.
+  const estudarNpc = (npcId: string) => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const npc = s.npcs.find(n => n.id === npcId);
+    if (!npc) return;
+
+    const arquivoEd = s.edificios.find(e => e.tipo === 'Arquivo');
+    const arquivoNivel = arquivoEd?.nivel ?? 0;
+    if (!podeEstudarNpc(npc, arquivoNivel, s.andarAtual)) return;
+
+    const isErudito = getProfissao(npc) === 'erudito';
+    const treinamentos = npc.treinamentos ?? 0;
+    const custo = calcCustoEstudo(treinamentos, isErudito);
+    if (s.recursos.pedra < custo.pedra || s.recursos.comida < custo.comida) return;
+
+    const instrutor = calcInstrutor(npcId, s.npcs, 'inteligencia');
+    const instrutorStat = instrutor ? instrutor.inteligencia : 0;
+    const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
+
+    s.recursos.pedra  -= custo.pedra;
+    s.recursos.comida -= custo.comida;
+    npc.inteligencia  += ganho;
+    npc.fadiga = Math.min(100, npc.fadiga + 25);
+    npc.treinamentos = treinamentos + 1;
+    npc.raridade = recalcRaridade(npc);
+
+    const instrutorStr = instrutor
+      ? ` orientado por ${instrutor.nome} (INT:${instrutor.inteligencia})`
+      : '';
+    addLog(s, 'info',
+      `${npc.nome.toUpperCase()} ESTUDOU NO ARQUIVO — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+    );
+    saveState(s);
+    setState(s);
+  };
+
   // ─── HABITANTES DA TORRE ─────────────────────────────────────────────────
   // Aceita ou conclui a quest de um habitante descoberto num andar conquistado.
   const interagirHabitante = (floor: number) => {
@@ -1256,6 +1295,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       declararGuerra,
       responderGuerra,
       treinarNpc,
+      estudarNpc,
       interagirHabitante,
       abrirCodex,
       lastExpeditionResult: expeditionResult,
