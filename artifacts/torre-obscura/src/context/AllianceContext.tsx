@@ -155,16 +155,17 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const puxarAliadasECaixa = useCallback(async () => {
+    // cache: 'no-store' evita que o browser envie If-None-Match e receba 304.
+    // Express ativa ETags por padrão; uma resposta 304 chega ao customFetch sem
+    // corpo, que retorna null — o que apagaria a lista de aliadas no estado.
     try {
-      const as = await listarAliadas(deviceId.current);
-      // Guard: customFetch retorna null para respostas 304 sem corpo em cache miss.
-      // Em browsers normais isso não ocorre (304 é transparente), mas em edge cases
-      // (modo privado, cache frio) pode retornar null em vez de [].
-      setAliadas(Array.isArray(as) ? as : []);
+      const as = await listarAliadas(deviceId.current, { cache: 'no-store' });
+      if (Array.isArray(as)) setAliadas(as);
+      // null = 304 edge case; mantém estado anterior
     } catch { /* mantém estado anterior */ }
     try {
-      const c = await listarCaixa(deviceId.current);
-      setCaixa(Array.isArray(c) ? c : []);
+      const c = await listarCaixa(deviceId.current, { cache: 'no-store' });
+      if (Array.isArray(c)) setCaixa(c);
     } catch { /* mantém estado anterior */ }
   }, []);
 
