@@ -4,7 +4,7 @@ import { useGame } from '../context/GameContext';
 import { Onboarding } from '../components/Onboarding';
 import { LancamentoModal } from '../components/LancamentoModal';
 import { LANCAMENTO_ATIVO } from '../lib/lancamento';
-import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_PENDING } from '../lib/onboarding-keys';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_RESULT } from '../lib/onboarding-keys';
 
 export function TitleScreen() {
   const { hasSave, startNewGame, continueGame } = useGame();

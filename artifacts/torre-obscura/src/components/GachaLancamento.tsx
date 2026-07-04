@@ -63,7 +63,6 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
   const [cartaEscolhida, setCartaEscolhida] = useState<number | null>(null);
 
   // Ao abrir: tenta recuperar resultado de um ritual incompleto (refresh mid-gacha).
-  // Se não houver resultado salvo, sorteia agora e persiste para suportar refreshes.
   useEffect(() => {
     if (!open) return;
 
@@ -73,14 +72,13 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
         const recuperado = JSON.parse(saved) as NpcLancamento;
         setNpcResultado(recuperado);
         setCartasViradas([true, true, true]);
-        setFase('lore'); // Pula o ritual — resultado já conhecido
+        setFase('lore');
         return;
       } catch {
         localStorage.removeItem(GACHA_LANCAMENTO_RESULT);
       }
     }
 
-    // Sorteio fresco: persiste antes de qualquer interação para garantir recovery
     const npc = sortearNpc(lancamento);
     setNpcResultado(npc);
     localStorage.setItem(GACHA_LANCAMENTO_RESULT, JSON.stringify(npc));
@@ -93,8 +91,6 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
     if (fase !== 'ritual' || cartaEscolhida !== null) return;
     setCartaEscolhida(idx);
     setFase('revelando');
-
-    // Carta escolhida vira imediatamente; as outras após pequeno delay
     const parcial = [false, false, false];
     parcial[idx] = true;
     setCartasViradas(parcial);
@@ -104,7 +100,6 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
 
   const confirmarLore = () => setFase('stats');
 
-  // Ordem correta: NPC adicionado → DONE gravado → RESULT limpo → fechar
   const confirmarStats = () => {
     if (!npcResultado) return;
     adicionarNpcLancamento(npcResultado);
@@ -122,7 +117,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
         <Dialog.Content className="fixed inset-0 flex items-center justify-center z-[80] p-4 outline-none">
           <AnimatePresence mode="wait">
 
-            {/* ── FASE: Ritual (escolha uma carta) ─────────────────────── */}
+            {/* ── FASE: Ritual ─────────────────────────────────────────── */}
             {(fase === 'ritual' || fase === 'revelando') && (
               <motion.div key="ritual"
                 initial={{ opacity: 0, y: 20 }}
@@ -160,7 +155,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
               </motion.div>
             )}
 
-            {/* ── FASE: Card de lore ────────────────────────────────────── */}
+            {/* ── FASE: Card de lore ───────────────────────────────────── */}
             {fase === 'lore' && npcResultado && (
               <motion.div key="lore"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -169,29 +164,43 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-sm"
               >
-                <div className={`rounded-sm border overflow-hidden shadow-[0_0_60px_rgba(212,175,55,0.2)] ${
+                <div className={`rounded-sm border overflow-hidden ${
                   isPrimordial
-                    ? 'border-primary bg-gradient-to-b from-[#2A2010] via-[#1A1508] to-[#0E0D0B]'
-                    : 'border-primary/40 bg-gradient-to-b from-[#1C1808] to-[#0E0D0B]'
+                    ? 'border-primary shadow-[0_0_80px_rgba(212,175,55,0.25)] bg-gradient-to-b from-[#2A2010] via-[#1A1508] to-[#0E0D0B]'
+                    : 'border-[#3A5080] shadow-[0_0_40px_rgba(80,140,220,0.15)] bg-gradient-to-b from-[#0E1420] via-[#0C1118] to-[#080C12]'
                 }`}>
-                  <div className="relative px-6 pt-8 pb-5 text-center border-b border-primary/20">
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
-                    {isPrimordial && (
+                  <div className={`relative px-6 pt-8 pb-5 text-center border-b ${isPrimordial ? 'border-primary/20' : 'border-[#3A5080]/30'}`}>
+                    <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent to-transparent ${
+                      isPrimordial ? 'via-primary/80' : 'via-[#5090D0]/60'
+                    }`} />
+
+                    {/* Badge de raridade */}
+                    {isPrimordial ? (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-[9px] text-primary/60 tracking-[0.3em] font-cinzel mb-2"
+                        transition={{ delay: 0.2 }}
+                        className="text-[9px] text-primary/70 tracking-[0.3em] font-cinzel mb-2"
                       >
-                        ✦ PRIMORDIAL ✦
+                        ✦ ÚNICO · PRIMORDIAL ✦
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-[9px] text-[#5090D0]/70 tracking-[0.3em] font-cinzel mb-2"
+                      >
+                        ◆ RARO · SOBREVIVENTE MARCADO ◆
                       </motion.div>
                     )}
+
                     <h2 className={`font-cinzel font-bold tracking-[0.15em] leading-tight mb-1 ${
-                      isPrimordial ? 'text-xl text-primary' : 'text-base text-primary/90'
+                      isPrimordial ? 'text-xl text-primary' : 'text-base text-[#7DB0E8]'
                     }`}>
                       {npcResultado.nome}
                     </h2>
-                    <p className="text-[9px] text-secondary/50 tracking-widest">
+                    <p className={`text-[9px] tracking-widest ${isPrimordial ? 'text-secondary/50' : 'text-[#5090D0]/50'}`}>
                       {npcResultado.titulo}
                     </p>
                   </div>
@@ -203,7 +212,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 + i * 0.15 }}
-                        className="text-[11px] text-white/60 leading-relaxed italic"
+                        className={`text-[11px] leading-relaxed italic ${isPrimordial ? 'text-white/60' : 'text-white/50'}`}
                       >
                         {p}
                       </motion.p>
@@ -223,7 +232,11 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                   <div className="px-6 pb-6">
                     <button
                       onClick={confirmarLore}
-                      className="w-full h-11 border border-primary/50 text-primary font-cinzel text-[11px] tracking-[0.2em] hover:bg-primary/10 transition-all touch-manipulation"
+                      className={`w-full h-11 border font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation ${
+                        isPrimordial
+                          ? 'border-primary/50 text-primary hover:bg-primary/10'
+                          : 'border-[#3A5080]/60 text-[#7DB0E8] hover:bg-[#1A2840]'
+                      }`}
                     >
                       VER ATRIBUTOS
                     </button>
@@ -232,7 +245,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
               </motion.div>
             )}
 
-            {/* ── FASE: Stats + confirmar ───────────────────────────────── */}
+            {/* ── FASE: Stats + confirmar ──────────────────────────────── */}
             {fase === 'stats' && npcResultado && (
               <motion.div key="stats"
                 initial={{ opacity: 0, y: 12 }}
@@ -240,23 +253,38 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                 exit={{ opacity: 0 }}
                 className="w-full max-w-sm"
               >
-                <div className={`rounded-sm border overflow-hidden shadow-[0_0_60px_rgba(212,175,55,0.15)] ${
-                  isPrimordial ? 'border-primary' : 'border-primary/40'
-                } bg-gradient-to-b from-[#1C1808] to-[#0E0D0B]`}>
-                  <div className="px-5 py-4 border-b border-primary/20 flex items-center justify-between gap-2">
+                <div className={`rounded-sm border overflow-hidden ${
+                  isPrimordial
+                    ? 'border-primary shadow-[0_0_60px_rgba(212,175,55,0.15)] bg-gradient-to-b from-[#1C1808] to-[#0E0D0B]'
+                    : 'border-[#3A5080] shadow-[0_0_30px_rgba(80,140,220,0.1)] bg-gradient-to-b from-[#0E1420] to-[#080C12]'
+                }`}>
+
+                  {/* Header */}
+                  <div className={`px-5 py-4 border-b flex items-center justify-between gap-2 ${
+                    isPrimordial ? 'border-primary/20' : 'border-[#3A5080]/30'
+                  }`}>
                     <div className="min-w-0">
-                      <div className="font-cinzel font-bold text-primary text-sm truncate">{npcResultado.nome}</div>
-                      <div className="text-[9px] text-secondary/50 tracking-widest mt-0.5">{npcResultado.titulo}</div>
+                      <div className={`font-cinzel font-bold text-sm truncate ${isPrimordial ? 'text-primary' : 'text-[#7DB0E8]'}`}>
+                        {npcResultado.nome}
+                      </div>
+                      <div className={`text-[9px] tracking-widest mt-0.5 ${isPrimordial ? 'text-secondary/50' : 'text-[#5090D0]/50'}`}>
+                        {npcResultado.titulo}
+                      </div>
                     </div>
-                    <div className={`shrink-0 px-2 py-0.5 rounded-sm text-[9px] font-bold font-cinzel tracking-widest border ${
-                      isPrimordial
-                        ? 'bg-primary/20 border-primary/60 text-primary'
-                        : 'bg-white/5 border-white/20 text-white/60'
-                    }`}>
-                      ÉPICO
-                    </div>
+
+                    {/* Badge de raridade */}
+                    {isPrimordial ? (
+                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-[9px] font-bold font-cinzel tracking-widest border bg-primary/20 border-primary/60 text-primary">
+                        ÚNICO
+                      </div>
+                    ) : (
+                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-[9px] font-bold font-cinzel tracking-widest border bg-[#1A2840] border-[#3A5080]/60 text-[#7DB0E8]">
+                        RARO
+                      </div>
+                    )}
                   </div>
 
+                  {/* Stats */}
                   <div className="grid grid-cols-4 divide-x divide-white/5 border-b border-white/5">
                     {[
                       { label: 'FOR', val: npcResultado.forca },
@@ -266,14 +294,17 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                     ].map(s => (
                       <div key={s.label} className="flex flex-col items-center py-3">
                         <div className="text-[8px] text-white/30 tracking-widest mb-0.5">{s.label}</div>
-                        <div className="text-base font-bold text-primary font-cinzel">{s.val}</div>
+                        <div className={`text-base font-bold font-cinzel ${isPrimordial ? 'text-primary' : 'text-[#7DB0E8]'}`}>
+                          {s.val}
+                        </div>
                       </div>
                     ))}
                   </div>
 
+                  {/* Habilidade + flags */}
                   <div className="px-5 py-3 flex flex-wrap gap-2 border-b border-white/5">
-                    <div className="flex items-center gap-1.5 text-[9px] text-secondary/60">
-                      <div className="w-[5px] h-[5px] rotate-45 bg-primary/40 shrink-0" />
+                    <div className={`flex items-center gap-1.5 text-[9px] ${isPrimordial ? 'text-secondary/60' : 'text-[#5090D0]/60'}`}>
+                      <div className={`w-[5px] h-[5px] rotate-45 shrink-0 ${isPrimordial ? 'bg-primary/40' : 'bg-[#5090D0]/40'}`} />
                       {npcResultado.habilidade.toUpperCase()}
                     </div>
                     {isPrimordial && (
@@ -284,10 +315,26 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                     )}
                   </div>
 
+                  {/* Nota de unicidade */}
+                  <div className={`px-5 py-2.5 border-b text-[9px] leading-relaxed ${
+                    isPrimordial
+                      ? 'border-primary/10 text-primary/40 bg-primary/5'
+                      : 'border-[#3A5080]/20 text-[#5090D0]/40 bg-[#0A1020]'
+                  }`}>
+                    {isPrimordial
+                      ? '✦ Apenas um jogador no mundo pode receber Valdris por temporada.'
+                      : '◆ Outros jogadores também podem ter recebido este sobrevivente.'}
+                  </div>
+
+                  {/* Ação */}
                   <div className="px-5 py-5">
                     <button
                       onClick={confirmarStats}
-                      className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-sm transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)] touch-manipulation"
+                      className={`w-full h-12 font-cinzel font-bold tracking-[0.2em] text-sm transition-all touch-manipulation ${
+                        isPrimordial
+                          ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(212,175,55,0.3)]'
+                          : 'bg-[#1A3060] hover:bg-[#1F3870] text-[#7DB0E8] border border-[#3A5080]/60 shadow-[0_0_20px_rgba(80,140,220,0.1)]'
+                      }`}
                     >
                       ACEITAR E INICIAR
                     </button>
