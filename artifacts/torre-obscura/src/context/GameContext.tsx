@@ -537,7 +537,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       vivo:         true,
       obscuro:      false,
       emExpedicao:  false,
-      raridade:     npcConfig.divino ? 'Divino' : npcConfig.primordial ? 'Lendário' : 'Raro',
+      raridade:     npcConfig.divino ? 'Divino' : npcConfig.primordial ? 'Lendário' : npcConfig.vestigio ? 'Épico' : 'Raro',
       habilidade:   npcConfig.habilidade,
       posto:        null,
       lancamento:   npcConfig.primordial ?? false,
