@@ -33,11 +33,11 @@ export function TitleScreen() {
   };
 
   // Sinaliza ao MainGameArea para abrir o gacha de lançamento após o jogo montar.
-  // O gacha só acontece uma vez por dispositivo (GACHA_LANCAMENTO_DONE no localStorage).
+  // Limpa DONE/RESULT de saves anteriores — cada novo jogo recebe o gacha.
   const agendarGacha = () => {
-    if (!localStorage.getItem(GACHA_LANCAMENTO_DONE)) {
-      sessionStorage.setItem(GACHA_LANCAMENTO_PENDING, '1');
-    }
+    localStorage.removeItem(GACHA_LANCAMENTO_DONE);
+    localStorage.removeItem(GACHA_LANCAMENTO_RESULT);
+    sessionStorage.setItem(GACHA_LANCAMENTO_PENDING, '1');
   };
 
   const handleNovoJogo = () => {
