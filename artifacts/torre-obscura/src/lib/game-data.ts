@@ -271,7 +271,7 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     floor: 4, nome: 'Voz do Cristal', papel: 'Arquivo Vivo', icone: '💎',
     fala: 'Gravei tudo que foi dito neste lugar. Preciso de tempo para verificar se você é real — ou mais um eco dos que já passaram. Volte quando o silêncio confirmar sua presença.',
     falamissão: 'O silêncio ainda analisa. Permaneça. O cristal avalia paciência.',
-    falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental.',
+    falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental. Mas isso levanta uma questão que o cristal não consegue resolver sozinho: o que você é, afinal?',
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 5 dias após descobrir o Cristal',
       dias: 5,
@@ -607,12 +607,12 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
     texto: 'O Susurro do Limiar não está entre você e a entidade. Está entre a entidade e o que ela era antes de aprender a ser paciente.' },
   sus_t4_4: { id: 'sus_t4_4', tipo: 'sussurro',     temporada: 1, capitulo: 4, ordem: 10,
     titulo: 'Sussurro IV · A Vigília',
-    texto: 'A entidade está acordada há mais tempo do que a linguagem existe. Ela aprendeu a esperar observando a paciência dos que esperavam por ela.' },
+    texto: 'A entidade está acordada há mais tempo do que a linguagem existe. Ela aprendeu a esperar observando a paciência dos que esperavam por ela. Os registros mais antigos mencionam uma centena. Não de andares. De algo que ainda não tem nome. A palavra foi apagada. O número permaneceu.' },
 
   // ── Verdade da Temporada I ────────────────────────────────────────────────
   verdade_t1: { id: 'verdade_t1', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 99,
     titulo: 'A Verdade — O Ser Reunificado',
-    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezesseis — cada habitante era um fragmento de algo que nunca deveria ter sido dividido. Os Construtores separaram o que era um. Os Guardiões foram colocados para impedir a reunificação. Você não subiu uma torre. Você remontou um ser. E agora que todos os fragmentos foram ouvidos — agora que cada habitante completou seu ciclo através de você — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?' },
+    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezesseis — cada habitante era um fragmento de algo que nunca deveria ter sido dividido. Os Construtores separaram o que era um. Os Guardiões foram colocados para impedir a reunificação. Você não subiu uma torre. Você remontou um ser. E agora que todos os fragmentos foram ouvidos — agora que cada habitante completou seu ciclo através de você — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.' },
 };
 
 // IDs dos sussurros por capítulo — para sortear durante expedições.

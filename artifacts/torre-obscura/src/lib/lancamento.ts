@@ -52,9 +52,10 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
   titulo: 'TEMPORADA I — A ASCENSÃO',
   subtitulo: 'O Observador desperta. A Torre aguarda.',
   descricao: [
-    'A Torre Obscura abre seus portões pela primeira vez.',
-    'Como sinal de reconhecimento, a Torre concede a você um Ritual gratuito em Trindade — e recursos para começar com vantagem.',
-    'A Torre escolherá quem se une à sua cidadela. Você não escolhe. Ela sim.',
+    'A Torre Obscura desperta pela primeira vez.',
+    'Ela não anunciou sua abertura. Não enviou mensageiros. Simplesmente acordou — e os que estavam à sua sombra sentiram algo mudar no ar.',
+    'Como reconhecimento a quem chega primeiro, a Torre concede um Ritual gratuito em Trindade — e recursos para que você não comece do nada.',
+    'Ela escolherá quem se junta à sua cidadela. Você não escolhe. Ela sim. Sempre foi assim.',
   ],
 
   // ── Primordial: Valdris ───────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
       'Sobreviveu a eras antes da Torre existir. Não sabe o que é cansaço. Não conhece o que é medo.',
       'Chegou ao vigésimo andar uma vez. Voltou diferente. Quando perguntado sobre o que viu lá, olha para o horizonte e cala.',
       'A Torre o reconhece antes de reconhecer você. Isso, sozinho, deveria dizer tudo.',
+      '"Eu esperei antes. Posso esperar de novo." — disse uma vez, sem contexto. Ninguém perguntou pelo quê.',
     ],
     cardLoreFinal: 'Em toda a extensão dos ecos, apenas você o recebeu.',
   },
