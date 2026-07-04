@@ -102,6 +102,10 @@ export interface NPC {
   // true = morador foi mobilizado para o front. Fica indisponível para torre,
   // trabalho, empréstimo e reforço até a guerra terminar.
   emGuerra?: boolean;
+  // ─── Recuperação primordial ───────────────────────────────────────────────
+  // Apenas para NPCs primordiais (lancamento=true). Rastreia quantos níveis de
+  // recuperação de memória foram aplicados; cada nível aumenta atributos em-lugar.
+  primordialNivel?: number;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
@@ -1573,6 +1577,76 @@ export function calcCustoGacha(popViva: number): { comida: number; madeira: numb
     madeira: 12 + popViva * 2,
     ferro:   Math.max(1, Math.floor(popViva / 2)),
   };
+}
+
+// ─── PRIMORDIAL RECOVERY SYSTEM ───────────────────────────────────────────────
+// Valdris (T1 primordial) começa amnésico: ainda muito mais forte que um Épico
+// convencional, mas bem abaixo do pico que teve como ser primordial. Cada vez que
+// o jogador desbloqueia mais fragmentos do Codex, Valdris recupera memórias e
+// seus atributos aumentam permanentemente.
+
+export interface PrimordialRecuperacaoNivel {
+  minFragmentos: number;       // mínimo de fragmentos para atingir este nível
+  nivelAtingido: number;       // valor salvo em npc.primordialNivel
+  bonus: { forca: number; agilidade: number; inteligencia: number; resistencia: number };
+  logMsgCurta: string;         // resumo exibido no log da cidadela
+}
+
+export const PRIMORDIAL_RECUPERACAO_T1: PrimordialRecuperacaoNivel[] = [
+  {
+    minFragmentos: 3,  nivelAtingido: 1,
+    bonus: { forca: 1, agilidade: 1, inteligencia: 1, resistencia: 1 },
+    logMsgCurta: 'Os primeiros fragmentos ressoam com algo antigo nele. Atributos levemente aumentados.',
+  },
+  {
+    minFragmentos: 8,  nivelAtingido: 2,
+    bonus: { forca: 1, agilidade: 1, inteligencia: 1, resistencia: 2 },
+    logMsgCurta: 'Mais memórias emergem. Resistência e vigor voltam mais rápido do que o esperado.',
+  },
+  {
+    minFragmentos: 14, nivelAtingido: 3,
+    bonus: { forca: 2, agilidade: 1, inteligencia: 1, resistencia: 2 },
+    logMsgCurta: 'Lembra de batalhas travadas antes da Torre existir. Força aumentou consideravelmente.',
+  },
+  {
+    minFragmentos: 22, nivelAtingido: 4,
+    bonus: { forca: 2, agilidade: 2, inteligencia: 2, resistencia: 2 },
+    logMsgCurta: 'A maior parte das memórias retornou. Todos os atributos aumentaram.',
+  },
+  {
+    minFragmentos: 32, nivelAtingido: 5,
+    bonus: { forca: 2, agilidade: 2, inteligencia: 1, resistencia: 2 },
+    logMsgCurta: 'Recuperação quase completa. Ainda o mais fraco dos primordiais — mas isso significa pouco para quem enfrenta.',
+  },
+];
+
+/**
+ * Verifica se o primordial da cidadela deve subir de nível de recuperação dado
+ * o número atual de fragmentos do Codex. Muta os atributos do NPC em-lugar e
+ * retorna `{ atualizado, nivelAnterior, novoNivel }`.
+ */
+export function atualizarRecuperacaoPrimordial(
+  npcs: NPC[],
+  codexFragmentos: string[],
+): { atualizado: boolean; nivelAnterior: number; novoNivel: number } {
+  const primordial = npcs.find(n => n.lancamento && n.vivo && !n.emprestado && !n.reforco);
+  if (!primordial) return { atualizado: false, nivelAnterior: 0, novoNivel: 0 };
+
+  const total = codexFragmentos.length;
+  const nivelAtual = primordial.primordialNivel ?? 0;
+  const nivelAlvo = PRIMORDIAL_RECUPERACAO_T1.filter(r => total >= r.minFragmentos).length;
+
+  if (nivelAlvo <= nivelAtual) return { atualizado: false, nivelAnterior: nivelAtual, novoNivel: nivelAtual };
+
+  for (let i = nivelAtual; i < nivelAlvo; i++) {
+    const r = PRIMORDIAL_RECUPERACAO_T1[i];
+    primordial.forca       += r.bonus.forca;
+    primordial.agilidade   += r.bonus.agilidade;
+    primordial.inteligencia += r.bonus.inteligencia;
+    primordial.resistencia += r.bonus.resistencia;
+  }
+  primordial.primordialNivel = nivelAlvo;
+  return { atualizado: true, nivelAnterior: nivelAtual, novoNivel: nivelAlvo };
 }
 
 // ─── POWER CALCULATION (with skill bonuses) ───────────────────────────────────

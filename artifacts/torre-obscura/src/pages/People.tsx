@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1 } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
@@ -168,6 +168,19 @@ export function People() {
                       <Swords size={10}/> NO FRONT
                     </span>
                   )}
+                  {npc.lancamento && (() => {
+                    const totalFrags = state.codexFragmentos.length;
+                    const nivelAtual = npc.primordialNivel ?? 0;
+                    const nivelMax = PRIMORDIAL_RECUPERACAO_T1.length;
+                    const proximoNivel = PRIMORDIAL_RECUPERACAO_T1[nivelAtual];
+                    const completo = nivelAtual >= nivelMax;
+                    return (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border ${completo ? 'bg-primary/20 border-primary text-primary' : 'bg-primary/8 border-primary/40 text-primary/80'}`}>
+                        ✦ PRIMORDIAL · {nivelAtual}/{nivelMax}
+                        {!completo && proximoNivel && ` · ${totalFrags}/${proximoNivel.minFragmentos} frags`}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -211,6 +224,48 @@ export function People() {
                 <div>LEA: <span className="text-foreground">{Math.floor(npc.lealdade)}</span>/100</div>
                 <div>FAD: <span className="text-foreground">{Math.floor(npc.fadiga)}</span>/100</div>
               </div>
+
+              {/* Recuperação primordial */}
+              {npc.lancamento && (() => {
+                const totalFrags = state.codexFragmentos.length;
+                const nivelAtual = npc.primordialNivel ?? 0;
+                const nivelMax = PRIMORDIAL_RECUPERACAO_T1.length;
+                const proximoNivel = PRIMORDIAL_RECUPERACAO_T1[nivelAtual];
+                const completo = nivelAtual >= nivelMax;
+                const progressoFrac = completo ? 1 :
+                  proximoNivel
+                    ? Math.min(1, totalFrags / proximoNivel.minFragmentos)
+                    : 1;
+                return (
+                  <div className="mt-3 pt-3 border-t border-primary/20 bg-primary/5 rounded-sm p-3">
+                    <div className="text-[9px] text-primary/70 tracking-widest mb-2 flex items-center gap-1 font-bold">
+                      ✦ RECUPERAÇÃO PRIMORDIAL — {nivelAtual}/{nivelMax}
+                    </div>
+                    {/* Barra de progresso */}
+                    <div className="w-full h-1 bg-black/40 rounded-full mb-2 overflow-hidden">
+                      <div
+                        className="h-full bg-primary/60 rounded-full transition-all"
+                        style={{ width: `${Math.round(progressoFrac * 100)}%` }}
+                      />
+                    </div>
+                    {completo ? (
+                      <div className="text-[10px] text-primary italic">Recuperação máxima atingida. Ainda o mais fraco dos primordiais — o que, por si só, já diz muito.</div>
+                    ) : proximoNivel ? (
+                      <div className="text-[10px] text-white/60">
+                        <span className="text-primary/90 font-bold">{totalFrags}/{proximoNivel.minFragmentos}</span> fragmentos para Nível {nivelAtual + 1}
+                        {' '} · +{proximoNivel.bonus.forca} FOR · +{proximoNivel.bonus.agilidade} AGI · +{proximoNivel.bonus.inteligencia} INT · +{proximoNivel.bonus.resistencia} RES
+                      </div>
+                    ) : null}
+                    {nivelAtual > 0 && (
+                      <div className="text-[9px] text-primary/40 mt-1">
+                        Níveis aplicados: {PRIMORDIAL_RECUPERACAO_T1.slice(0, nivelAtual).map((r, i) =>
+                          `${i + 1} (${r.minFragmentos}+)`
+                        ).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Alocação de trabalho */}
               <div className="mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>

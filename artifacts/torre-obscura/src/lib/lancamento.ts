@@ -62,7 +62,7 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
   primordial: {
     nome: 'Valdris, o Eterno',
     titulo: 'Primordial da Temporada I',
-    forca: 15, agilidade: 12, inteligencia: 11, resistencia: 15,
+    forca: 22, agilidade: 18, inteligencia: 16, resistencia: 22,
     habilidade: 'guardiao',
     primordial: true,
     cardLore: [
@@ -154,7 +154,7 @@ export const LANCAMENTO_T2: LancamentoTemporada = {
   primordial: {
     nome: 'Thael, a Memória',
     titulo: 'Primordial da Temporada II',
-    forca: 11, agilidade: 13, inteligencia: 16, resistencia: 14,
+    forca: 20, agilidade: 20, inteligencia: 28, resistencia: 22,
     habilidade: 'oraculo',
     primordial: true,
     cardLore: [

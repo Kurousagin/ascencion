@@ -17,8 +17,10 @@ import {
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
   getRandomHabilidade,
   QuestOculta, gerarQuestOculta, verificarQuestOculta,
+  atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
+import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
 
 export interface ExpeditionResult {
   vitoria: boolean;
@@ -418,7 +420,28 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
     }
 
-    // 10. Fim do dia
+    // 10. Recuperação primordial — verifica se Valdris (ou outro primordial) sobe de nível
+    {
+      const rec = atualizarRecuperacaoPrimordial(draft.npcs, draft.codexFragmentos);
+      if (rec.atualizado) {
+        const primordial = draft.npcs.find(n => n.lancamento && n.vivo && !n.emprestado && !n.reforco);
+        const nivel = PRIMORDIAL_RECUPERACAO_T1[rec.novoNivel - 1];
+        if (primordial && nivel) {
+          const b = nivel.bonus;
+          const partes = [
+            b.forca       > 0 ? `+${b.forca} FOR` : '',
+            b.agilidade   > 0 ? `+${b.agilidade} AGI` : '',
+            b.inteligencia > 0 ? `+${b.inteligencia} INT` : '',
+            b.resistencia > 0 ? `+${b.resistencia} RES` : '',
+          ].filter(Boolean).join(' · ');
+          addLog(draft, 'descoberta',
+            `${primordial.nome.toUpperCase()} SE LEMBRA — Nível ${rec.novoNivel}/${PRIMORDIAL_RECUPERACAO_T1.length}: ${nivel.logMsgCurta} (${partes})`
+          );
+        }
+      }
+    }
+
+    // 11. Fim do dia
     draft.dia++;
     if (draft.npcs.filter(n => n.vivo).length === 0) {
       draft.gameOver = true;
@@ -548,6 +571,30 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (parsed.codexNovoFragmento === undefined) parsed.codexNovoFragmento = false;
     // Migração: campo lancamento nos NPCs (saves anteriores não têm)
     parsed.npcs.forEach(n => { if (n.lancamento === undefined) n.lancamento = false; });
+    // Migração: campo primordialNivel + normalização de stats base canônicos.
+    // Saves antigos guardam os stats originais (ex.: Valdris 15/12/11/15). Ao detectar
+    // um primordial sem primordialNivel, reseta seus stats para os valores canônicos
+    // atuais (definidos em lancamento.ts) e zera primordialNivel — o próximo processDay
+    // aplicará os bônus de recuperação correspondentes ao número de fragmentos já obtidos.
+    {
+      const todosLancamentos = [LANCAMENTO_ATIVO, LANCAMENTO_T2].filter(Boolean) as import('../lib/lancamento').LancamentoTemporada[];
+      parsed.npcs.forEach(n => {
+        if (!n.lancamento) return;
+        if (n.primordialNivel !== undefined) return; // já migrado
+        // Encontrar dados canônicos pelo nome do NPC
+        let base: import('../lib/lancamento').NpcLancamento | undefined;
+        for (const lanc of todosLancamentos) {
+          if (lanc.primordial.nome === n.nome) { base = lanc.primordial; break; }
+        }
+        if (base) {
+          n.forca       = base.forca;
+          n.agilidade   = base.agilidade;
+          n.inteligencia = base.inteligencia;
+          n.resistencia = base.resistencia;
+        }
+        n.primordialNivel = 0;
+      });
+    }
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
