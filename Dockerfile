@@ -33,20 +33,28 @@ RUN pnpm --filter @workspace/torre-obscura run build
 RUN pnpm --filter @workspace/api-server run build
 
 # ─── Stage 2: Produção ────────────────────────────────────────────────────────
-# Imagem final enxuta: só os artefatos compilados.
-# O bundle esbuild do API server é autocontido (1.8 MB) — não precisa de node_modules.
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Bundle do servidor Node.js
-COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
+# 1. Copia o necessário para instalar as dependências de produção
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY lib/db/package.json ./lib/db/
+COPY artifacts/api-server/package.json ./artifacts/api-server/
 
-# Arquivos estáticos do frontend (servidos pelo Express em produção)
+# 2. Prepara o pnpm e instala apenas dependências de produção
+RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN pnpm install --prod
+
+# 3. Copia os artefatos compilados do stage anterior
+COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/torre-obscura/dist/public ./artifacts/torre-obscura/dist/public
+# Copia a pasta do banco para que o comando 'push' funcione
+COPY --from=builder /app/lib/db ./lib/db
 
 ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+# 4. Comando único que faz a migração E inicia o servidor
+CMD ["sh", "-c", "pnpm --filter db push && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
