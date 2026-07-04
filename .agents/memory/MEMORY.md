@@ -12,3 +12,4 @@
 
 - [INT training system](int-training-erudito.md) — T1: Templo gate (andar 10+), comida+madeira cost, ×1.3 non-erudito; T2: Arquivo gate (andar 21+), pedra+comida, ×1.5 non-erudito; estudarNpc prefers T2; UI uses discriminated EstudoPath union.
 - [Habitante quest design](habitantes-torre.md) — expedicao quests now support andarMin (floor progression gate) + recurso (mixed possession check); profession matching uses multiset count (not every/some) to enforce duplicate profession requirements.
+- [Quests Ocultas system](quests-ocultas.md) — hidden quests in GameState (optional fields); farm trigger (3rd+ farm, 20%); speed trigger (3+ quests in 5 days, 35%); max 3 active total, 1 per gatilho; UI in Tower.tsx CÂMARAS OCULTAS section.

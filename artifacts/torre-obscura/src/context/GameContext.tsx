@@ -16,6 +16,7 @@ import {
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
   getRandomHabilidade,
+  QuestOculta, gerarQuestOculta, verificarQuestOculta,
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 
@@ -28,9 +29,10 @@ export interface ExpeditionResult {
   loot: { comida: number; madeira: number; pedra: number; ferro: number };
   mortos: Array<{ nome: string }>;
   resgatado: { nome: string; raridade: Raridade } | null;
-  habitanteDescoberto?: string;              // nome do habitante descoberto neste andar
-  bossEco?: { titulo: string; texto: string }; // lore do capítulo desbloqueado ao derrotar boss
-  sussurro?: FragmentoCodex;                 // sussurro da Torre desbloqueado nesta expedição
+  habitanteDescoberto?: string;                    // nome do habitante descoberto neste andar
+  bossEco?: { titulo: string; texto: string };     // lore do capítulo desbloqueado ao derrotar boss
+  sussurro?: FragmentoCodex;                       // sussurro da Torre desbloqueado nesta expedição
+  questOculta?: { titulo: string; icone: string }; // câmara oculta descoberta ao explorar
 }
 
 interface GameContextType {
@@ -69,6 +71,8 @@ interface GameContextType {
   interagirHabitante: (floor: number) => void;
   // Codex Obscuro: marca fragmentos como vistos (limpa badge de notificação).
   abrirCodex: () => void;
+  // Quests Ocultas: concluir evento secreto descoberto na Torre.
+  concluirQuestOculta: (id: string) => void;
   // Resultado da última expedição (exibido em modal; nulo quando fechado).
   lastExpeditionResult: ExpeditionResult | null;
   clearExpeditionResult: () => void;
@@ -704,12 +708,29 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      // Farm: rastrear exploração e potencialmente revelar câmara oculta
+      let novaQuestOculta: { titulo: string; icone: string } | undefined;
+      if (isFarming) {
+        const farmCount = ((s.farmsPerFloor ?? {})[floorData.floor] ?? 0) + 1;
+        s.farmsPerFloor = { ...(s.farmsPerFloor ?? {}), [floorData.floor]: farmCount };
+        // A partir da 3ª exploração bem-sucedida do mesmo andar: 20% de chance por vez
+        if (farmCount >= 3 && Math.random() < 0.20) {
+          const nova = gerarQuestOculta('exploracao', floorData.floor, s);
+          if (nova) {
+            s.questsOcultas = [...(s.questsOcultas ?? []), nova];
+            novaQuestOculta = { titulo: nova.titulo, icone: nova.icone };
+            addLog(s, 'descoberta', `CÂMARA OCULTA — "${nova.titulo}" detectada no andar ${floorData.floor}. Verifique a lista de andares conquistados.`);
+          }
+        }
+      }
+
       // Monta resultado para o card pós-expedição (vitória)
       const resultVitoria: ExpeditionResult = {
         vitoria: true, isFarming, floor: floorData.floor,
         poder: groupPower, dificuldade: floorData.difficulty,
         loot: { comida: comidaG, madeira: madeiraG, pedra: pedraG, ferro: ferroG },
         mortos: [], resgatado, habitanteDescoberto, bossEco, sussurro,
+        questOculta: novaQuestOculta,
       };
 
       // Mortality per NPC (vitória)
@@ -1258,6 +1279,19 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA II DESBLOQUEADA — o Intervalo revelou o que sempre esteve antes. Acesse o Codex Obscuro.');
         }
       }
+      // Velocidade: 3+ quests de habitante concluídas nos últimos 5 dias → chance de evento
+      {
+        const hoje = s.dia;
+        const recentes = (s.questsConcluidasDias ?? []).filter(d => hoje - d < 5);
+        s.questsConcluidasDias = [...recentes, hoje];
+        if (recentes.length >= 2 && Math.random() < 0.35) {
+          const nova = gerarQuestOculta('velocidade', undefined, s);
+          if (nova) {
+            s.questsOcultas = [...(s.questsOcultas ?? []), nova];
+            addLog(s, 'descoberta', `VISÃO DA TORRE — "${nova.titulo}": algo quer falar com você. Verifique a lista de andares conquistados.`);
+          }
+        }
+      }
       saveState(s);
     }
   };
@@ -1266,6 +1300,40 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!state || !state.codexNovoFragmento) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
     s.codexNovoFragmento = false;
+    saveState(s);
+  };
+
+  const concluirQuestOculta = (id: string) => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const q = (s.questsOcultas ?? []).find(q => q.id === id);
+    if (!q || q.estado !== 'ativa') return;
+    if (!verificarQuestOculta(q, s)) return;
+    const ef = getEfeitos(s.edificios, s.npcs);
+    const cap = ef.capacidadeArmazem;
+    // Consumir recurso se o requisito for recurso
+    if (q.req.tipo === 'recurso') s.recursos[q.req.recurso] -= q.req.qtd;
+    // Recompensas
+    if (q.recursosBonus) {
+      if (q.recursosBonus.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + q.recursosBonus.comida);
+      if (q.recursosBonus.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + q.recursosBonus.madeira);
+      if (q.recursosBonus.pedra)   s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + q.recursosBonus.pedra);
+      if (q.recursosBonus.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + q.recursosBonus.ferro);
+    }
+    if (q.moralBonus) s.moral = Math.min(100, s.moral + q.moralBonus);
+    // Registrar relíquia e lore
+    if (q.reliquia) s.reliquias = [...(s.reliquias ?? []), q.reliquia];
+    s.lores.push({ floor: 0, titulo: q.titulo, texto: q.lore });
+    q.estado = 'concluida';
+    const recompStr = [
+      q.moralBonus ? `+${q.moralBonus} Moral` : '',
+      q.recursosBonus?.comida  ? `+${q.recursosBonus.comida} comida`   : '',
+      q.recursosBonus?.madeira ? `+${q.recursosBonus.madeira} madeira` : '',
+      q.recursosBonus?.pedra   ? `+${q.recursosBonus.pedra} pedra`     : '',
+      q.recursosBonus?.ferro   ? `+${q.recursosBonus.ferro} ferro`     : '',
+      q.reliquia ? `Relíquia: ${q.reliquia}` : '',
+    ].filter(Boolean).join(' · ');
+    addLog(s, 'descoberta', `CÂMARA OCULTA CONCLUÍDA — "${q.titulo}". ${recompStr}.`);
     saveState(s);
   };
 
@@ -1313,6 +1381,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       estudarNpc,
       interagirHabitante,
       abrirCodex,
+      concluirQuestOculta,
       lastExpeditionResult: expeditionResult,
       clearExpeditionResult: () => setExpeditionResult(null),
     }}>

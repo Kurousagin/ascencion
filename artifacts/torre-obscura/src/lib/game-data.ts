@@ -1113,6 +1113,166 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
   }
 }
 
+// ─── QUESTS OCULTAS ──────────────────────────────────────────────────────────
+
+export type QuestOcultaReq =
+  | { tipo: 'recurso'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number }
+  | { tipo: 'profissao'; profissao: ProfissaoId }
+  | { tipo: 'temporal'; dias: number }
+  | { tipo: 'moral'; moral: number };
+
+export interface QuestOculta {
+  id: string;
+  gatilho: 'exploracao' | 'velocidade';
+  andar?: number;        // andar onde foi descoberta (gatilho exploracao)
+  titulo: string;
+  icone: string;
+  dialogo: string;       // texto narrativo da descoberta
+  objetivo: string;      // requisito em linguagem legível
+  estado: 'ativa' | 'concluida';
+  dia: number;           // dia em que apareceu
+  req: QuestOcultaReq;
+  reliquia?: string;     // nome do item (inútil agora, útil em T3+)
+  reliquiaDesc?: string;
+  moralBonus?: number;
+  recursosBonus?: { comida?: number; madeira?: number; pedra?: number; ferro?: number };
+  lore: string;          // fragmento revelado ao concluir
+}
+
+type QuestOcultaTemplate = Omit<QuestOculta, 'id' | 'dia' | 'andar' | 'estado' | 'gatilho'>;
+
+const POOL_EXPLORACAO: QuestOcultaTemplate[] = [
+  {
+    titulo: 'Câmara Lacrada',
+    icone: '🔒',
+    dialogo: 'Ao explorar este andar uma vez a mais, notou algo diferente na parede sul — uma fissura que não estava nos registros anteriores. Por trás: uma câmara deliberadamente fechada. Não bloqueada por colapso — lacrada com intenção. O mecanismo de abertura exige pedra como contrapeso.',
+    objetivo: 'Reunir 40 pedra para abrir o mecanismo',
+    req: { tipo: 'recurso', recurso: 'pedra', qtd: 40 },
+    reliquia: 'Selo Original — Fragmento I',
+    reliquiaDesc: 'Uma peça de metal com símbolo que precede qualquer língua conhecida. O Codex registra que este símbolo reaparece em andares acima de 40.',
+    recursosBonus: { pedra: 20 },
+    lore: 'Dentro havia uma lista em pedra — nomes de expedições que passaram por este andar antes de qualquer registro oficial. O último nome está marcado com um símbolo idêntico ao do Selo. A câmara foi lacrada depois que esse último nome foi inscrito.',
+  },
+  {
+    titulo: 'Inscrições em Língua Anterior',
+    icone: '📜',
+    dialogo: 'Uma parede que você passou dezenas de vezes contém texto — texto que não estava visível antes, ou que você não sabia ver. Está em uma língua que precede qualquer idioma catalogado. A disposição dos símbolos sugere urgência. Um Erudito pode não traduzir — mas pode mapear os padrões.',
+    objetivo: 'Ter um Erudito disponível na cidadela',
+    req: { tipo: 'profissao', profissao: 'erudito' },
+    reliquia: 'Tábua da Língua Anterior — Fragmento I',
+    reliquiaDesc: 'Uma cópia do padrão mapeado pelo Erudito. Não é tradução — é estrutura. Algo em andares além de 40 usará esta estrutura de forma que fará sentido retroativo.',
+    moralBonus: 8,
+    lore: 'O Erudito mapeou 74 padrões distintos. O que aparece com mais frequência é traduzível apenas como "antes". O texto é uma advertência sobre o que havia antes da Torre — e sobre o fato de que a Torre foi construída para impedir que voltasse. Não diz se funcionou.',
+  },
+  {
+    titulo: 'Rastros Frescos',
+    icone: '🐾',
+    dialogo: 'Algo passou por aqui recentemente — não há registro de criatura deste tipo. Os rastros não esfriaram. Não seguem direção constante: circulam o mesmo ponto, como se procurassem algo. Aguardar parece mais seguro do que seguir.',
+    objetivo: 'Aguardar 6 dias desde a descoberta',
+    req: { tipo: 'temporal', dias: 6 },
+    reliquia: 'Escama de Algo Sem Catálogo',
+    reliquiaDesc: 'Deixada no ponto exato onde os rastros circulavam. A Torre às vezes absorve coisas antes que possam ser classificadas — esta escama é evidência de que a absorção nem sempre é completa.',
+    recursosBonus: { ferro: 15 },
+    lore: 'Os rastros esfriaram no quarto dia. No sexto, havia apenas a escama — e uma única marca nova na parede: um símbolo idêntico a um dos 74 mapeados pelo Erudito, caso você tenha encontrado as inscrições. A Torre usa o mesmo vocabulário para coisas diferentes.',
+  },
+  {
+    titulo: 'Câmara de Ferro Primordial',
+    icone: '⚙️',
+    dialogo: 'Uma câmara menor — visível apenas porque a parede cedeu levemente nesta exploração. As paredes são ferro fundido nascido assim, não forjado. O compartimento interno reconhece ferro de fora como "autorização".',
+    objetivo: 'Trazer 35 ferro como reconhecimento',
+    req: { tipo: 'recurso', recurso: 'ferro', qtd: 35 },
+    reliquia: 'Núcleo de Ferro Primordial',
+    reliquiaDesc: 'Uma esfera mais pesada do que ferro comum. Não é ferro — é o que o ferro seria se tivesse escolhido ser outra coisa. Em temporadas futuras, sua natureza ficará clara.',
+    recursosBonus: { ferro: 20 },
+    lore: 'O compartimento continha apenas o Núcleo — e uma impressão em metal da palavra "antes" na língua que o Erudito mapeou. A câmara foi colocada aqui por alguém que sabia que você chegaria. Não como profecia: como planejamento.',
+  },
+  {
+    titulo: 'Ossos de Expedição Anterior',
+    icone: '💀',
+    dialogo: 'Escondido em uma passagem lateral: restos de uma expedição. Mochila, ferramentas, um diário parcialmente queimado. Os ossos estão em posição de descanso — não de queda. Quem estava aqui escolheu parar. Um Batedor pode rastrear de onde vieram.',
+    objetivo: 'Ter um Batedor disponível na cidadela',
+    req: { tipo: 'profissao', profissao: 'batedor' },
+    reliquia: 'Diário da Expedição Sem Retorno — Página Restante',
+    reliquiaDesc: 'Uma única página que sobreviveu ao fogo. A última linha foi arrancada à mão antes que o diário fosse queimado.',
+    moralBonus: 12,
+    lore: 'A última entrada legível diz: "Encontramos o que não devíamos ter encontrado. Não é mal — é apenas maior do que qualquer intenção que possamos ter. A Torre perguntou se queríamos ficar. Dissemos sim." O Batedor identificou de onde vieram: uma cidadela que não existe em nenhum mapa atual.',
+  },
+  {
+    titulo: 'Câmara de Água Quieta',
+    icone: '🌊',
+    dialogo: 'Uma câmara alagada com água completamente imóvel — sem corrente, sem reflexo, sem som. A água reconhece o estado de quem a encontra. Cidadelas em paz genuína veem reflexos. Para que o reflexo apareça: moral mínima de 60.',
+    objetivo: 'Manter a moral da cidadela acima de 60',
+    req: { tipo: 'moral', moral: 60 },
+    reliquia: 'Gota de Água Quieta — Selada em Cristal',
+    reliquiaDesc: 'A água solidificou em cristal ao ser retirada. Algo sobre sua composição a torna estável fora da câmara. Útil para algo que ainda não foi construído.',
+    recursosBonus: { comida: 20 },
+    lore: 'O reflexo mostrou a cidadela — mais cheia do que está agora, com faces que você ainda não conhece. A água quieta não prevê: registra futuros que já existem como possibilidade. O que você viu é o futuro mais próximo se você continuar como está.',
+  },
+];
+
+const POOL_VELOCIDADE: QuestOcultaTemplate[] = [
+  {
+    titulo: 'Visitante da Terceira Hora',
+    icone: '🌑',
+    dialogo: 'Algo bateu na entrada da cidadela durante a terceira hora. Quando chegaram: nenhuma presença visível — apenas uma marca na porta que não estava antes. A marca diz, para quem sabe ler: "voltarei em três dias".',
+    objetivo: 'Aguardar 3 dias desde o contato',
+    req: { tipo: 'temporal', dias: 3 },
+    reliquia: 'Mensagem Cifrada em Sombra — Documento I',
+    reliquiaDesc: 'Um documento legível apenas sob condições de luz que ainda não existem na Torre. Nas temporadas seguintes, quando as condições mudarem, o conteúdo ficará visível.',
+    moralBonus: 10,
+    lore: 'O visitante voltou — mas saiu antes de ser visto. Deixou apenas o documento. Uma voz sem corpo disse antes de partir: "Notei que vocês se movem rápido. Isso interessa a alguém que ainda não se apresentou. Quando o tempo for certo, a apresentação acontecerá."',
+  },
+  {
+    titulo: 'Eco Agradecido',
+    icone: '✨',
+    dialogo: 'Um dos habitants que você ajudou recentemente enviou algo — não diretamente, mas através de uma mudança no padrão de ressonância do seu andar. O padrão diz, para quem sabe ouvir: "Você foi rápido. Isso importa aqui. Se trouxer comida, tenho algo para dar."',
+    objetivo: 'Reunir 30 comida como oferenda',
+    req: { tipo: 'recurso', recurso: 'comida', qtd: 30 },
+    reliquia: 'Cristal de Gratidão — Fragmento de Ressonância',
+    reliquiaDesc: 'O cristal brilha diferente dependendo do andar onde você está — mais intenso perto de andares onde concluiu quests. Em temporadas futuras, a intensidade indicará algo útil.',
+    recursosBonus: { comida: 20, madeira: 10 },
+    lore: 'O habitante não disse de onde vem o cristal. Disse apenas: "Em algum momento alguém vai reconhecer o que é isso. Quando isso acontecer, mostre. Eles saberão o que fazer." Depois: "A velocidade que você demonstrou não é irrelevante. A Torre mede tudo. Velocidade pesa diferente de resistência — mas pesa."',
+  },
+  {
+    titulo: 'Mensageiro Sem Forma',
+    icone: '👁️',
+    dialogo: 'Uma presença sem corpo pediu para falar com você. Não em sonho — acordado, durante o dia. Disse: "Estou observando há mais tempo do que a Torre existe. Vocês são os primeiros que se moveram assim. Em quatro dias, terei algo concreto para dar. Não preciso de nada em troca — só de que você continue."',
+    objetivo: 'Aguardar 4 dias desde o contato',
+    req: { tipo: 'temporal', dias: 4 },
+    reliquia: 'Eco de Uma Presença Anterior à Torre',
+    reliquiaDesc: 'Um objeto sem nome que muda de forma dependendo de quem olha. Cada morador da cidadela vê algo diferente. Isso é intencional.',
+    moralBonus: 15,
+    lore: 'Quatro dias depois, havia algo na entrada que não estava antes. A presença disse: "Sou anterior à Torre. Estava aqui quando o Fundador chegou. Vi o que ele encontrou antes de construir. Não vou contar agora — mas guardarei a história para quando você chegar onde precisa chegar."',
+  },
+];
+
+export function verificarQuestOculta(q: QuestOculta, state: GameState): boolean {
+  const req = q.req;
+  switch (req.tipo) {
+    case 'recurso':   return state.recursos[req.recurso] >= req.qtd;
+    case 'profissao': return state.npcs.some(n => n.vivo && !n.emExpedicao && !n.emGuerra && getProfissao(n) === req.profissao);
+    case 'temporal':  return (state.dia - q.dia) >= req.dias;
+    case 'moral':     return state.moral >= req.moral;
+  }
+}
+
+export function gerarQuestOculta(
+  gatilho: 'exploracao' | 'velocidade',
+  andar: number | undefined,
+  state: GameState,
+): QuestOculta | null {
+  const ativas = (state.questsOcultas ?? []).filter(q => q.estado === 'ativa');
+  if (ativas.length >= 3) return null;
+  if (ativas.some(q => q.gatilho === gatilho)) return null;
+  const pool = gatilho === 'exploracao' ? POOL_EXPLORACAO : POOL_VELOCIDADE;
+  const vistos = new Set((state.questsOcultas ?? []).map(q => q.titulo));
+  const disponiveis = pool.filter(t => !vistos.has(t.titulo));
+  if (disponiveis.length === 0) return null;
+  const template = disponiveis[Math.floor(Math.random() * disponiveis.length)];
+  const id = `${gatilho}_${state.dia}_${Math.random().toString(36).slice(2, 6)}`;
+  return { ...template, id, gatilho, andar, estado: 'ativa', dia: state.dia };
+}
+
 export interface GameState {
   dia: number;
   moral: number;
@@ -1151,6 +1311,12 @@ export interface GameState {
   // ─── Codex Obscuro ───────────────────────────────────────────────────────
   codexFragmentos: string[];   // IDs de FragmentoCodex desbloqueados
   codexNovoFragmento: boolean; // true = há fragmento novo não visualizado (badge no ícone)
+
+  // ─── Quests Ocultas ──────────────────────────────────────────────────────
+  farmsPerFloor?: Record<number, number>; // farms vitoriosos por andar (gatilho exploracao)
+  questsOcultas?: QuestOculta[];           // eventos secretos descobertos na Torre
+  reliquias?: string[];                     // relíquias coletadas (úteis em T3+)
+  questsConcluidasDias?: number[];         // dias de conclusão de quests de habitante (gatilho velocidade)
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen } from 'lucide-react';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta } from '../lib/game-data';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
@@ -12,7 +12,7 @@ interface TowerProps {
 }
 
 export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerProps) {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, abrirCodex } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, abrirCodex, concluirQuestOculta } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
@@ -828,6 +828,56 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
         </Dialog.Portal>
       </Dialog.Root>
 
+      {/* ── Câmaras Ocultas ─────────────────────────────────────────────── */}
+      {state.questsOcultas?.some(q => q.estado === 'ativa') && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+            <Eye size={11} className="text-primary/50" />
+            <span className="text-[9px] text-secondary tracking-[0.3em] font-cinzel">CÂMARAS OCULTAS</span>
+          </div>
+          {(state.questsOcultas ?? []).filter(q => q.estado === 'ativa').map(q => {
+            const podeConc = verificarQuestOculta(q, state);
+            return (
+              <div key={q.id} className={`bg-gradient-to-b from-[#10101A] to-[#0C0C14] border rounded-sm p-4 space-y-3 ${
+                podeConc ? 'border-primary/40 shadow-[0_0_8px_rgba(212,175,55,0.08)]' : 'border-white/[0.08]'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-[9px] text-secondary/50 tracking-[0.2em] mb-0.5 font-cinzel">
+                      {q.gatilho === 'exploracao' ? `CÂMARA · ANDAR ${q.andar}` : 'VISÃO DA TORRE'} · DIA {q.dia}
+                    </div>
+                    <div className="font-cinzel font-bold text-primary/85 tracking-wide text-sm">
+                      {q.icone} {q.titulo}
+                    </div>
+                  </div>
+                  {podeConc && (
+                    <button
+                      onClick={() => concluirQuestOculta(q.id)}
+                      className="shrink-0 px-3 py-1.5 bg-primary/10 border border-primary/40 text-primary font-cinzel text-[10px] tracking-widest rounded-sm hover:bg-primary/20 active:scale-95 touch-manipulation"
+                    >
+                      CONCLUIR
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-white/50 leading-relaxed italic border-l border-primary/15 pl-3">
+                  {q.dialogo}
+                </p>
+                <div className={`text-[10px] flex items-start gap-1.5 ${podeConc ? 'text-primary/90' : 'text-white/35'}`}>
+                  <span className="shrink-0 mt-0.5">{podeConc ? '✓' : '◦'}</span>
+                  <span><span className="font-bold tracking-wide">REQUISITO:</span> {q.objetivo}</span>
+                </div>
+                {q.reliquia && (
+                  <div className="text-[9px] text-secondary/40 flex items-center gap-1.5 pt-1 border-t border-white/5">
+                    <span>◆</span>
+                    <span>RELÍQUIA: {q.reliquia}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      )}
+
     </div>
 
     {/* ── Modal de resultado pós-expedição ─────────────────────────────── */}
@@ -846,7 +896,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 // ── Componente de card de resultado ──────────────────────────────────────────
 
 function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; onClose: () => void }) {
-  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado, habitanteDescoberto, bossEco, sussurro } = result;
+  const { vitoria, isFarming, floor, poder, dificuldade, loot, mortos, resgatado, habitanteDescoberto, bossEco, sussurro, questOculta } = result;
   const pct = Math.min(100, Math.round((poder / dificuldade) * 100));
 
   return (
@@ -960,6 +1010,21 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
           <div className="text-[9px] text-white/35 font-cinzel mb-1.5">{sussurro.titulo}</div>
           <p className="text-[11px] text-white/55 italic leading-relaxed border-l border-white/10 pl-3">{sussurro.texto}</p>
           <div className="text-[8px] text-white/25 mt-2 tracking-widest">Registrado no Codex Obscuro.</div>
+        </div>
+      )}
+
+      {/* Câmara Oculta descoberta */}
+      {questOculta && (
+        <div className="bg-[#0C0C18] border border-primary/20 rounded-sm p-4">
+          <div className="text-[9px] text-primary/55 tracking-[0.25em] mb-2 font-cinzel">
+            🔍 CÂMARA OCULTA DETECTADA
+          </div>
+          <div className="font-cinzel font-bold text-primary/80 text-sm tracking-wide mb-1">
+            {questOculta.icone} {questOculta.titulo}
+          </div>
+          <div className="text-[9px] text-white/35 mt-1 leading-relaxed">
+            Verifique a lista de andares conquistados para interagir com a câmara.
+          </div>
         </div>
       )}
 
