@@ -1,4 +1,4 @@
-const CACHE_NAME = 'torre-obscura-v2';
+const CACHE_NAME = 'torre-obscura-v3';
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_URLS = ['/'];
@@ -37,6 +37,13 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
+  // Chamadas de API nunca devem ser respondidas com cache: dados de aliança,
+  // caixa, perfil etc. mudam a cada poll e o `cache: 'no-store'` do fetch do
+  // client não tem efeito aqui (o SW intercepta antes da camada de cache HTTP).
+  // Sem este bypass, a primeira resposta de uma URL de API (ex.: lista de
+  // aliadas vazia antes de parear) fica presa no cache pra sempre.
+  if (url.pathname.startsWith('/api/')) return;
 
   // Static assets (JS, CSS, fonts, images): cache-first
   event.respondWith(
