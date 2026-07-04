@@ -53,4 +53,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Migra o banco (push) e inicia a aplicação
-CMD ["sh", "-c", "pnpm --filter db push && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+CMD ["sh", "-c", "npx drizzle-kit push --config ./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
