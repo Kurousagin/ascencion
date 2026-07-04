@@ -61,8 +61,10 @@ if (process.env["NODE_ENV"] === "production") {
     },
   }));
 
-  // SPA fallback: qualquer rota não-/api serve o index.html
-  app.get("*", (_req, res) => {
+  // SPA fallback: rotas não-/api servem o index.html (client-side routing).
+  // O padrão exclui /api/* explicitamente para que rotas de API inexistentes
+  // retornem 404 JSON em vez de HTML.
+  app.get(/^(?!\/api(?:\/|$))/, (_req, res) => {
     res.sendFile(path.join(staticDir, "index.html"));
   });
 }

@@ -16,9 +16,9 @@ COPY lib/api-spec/package.json          ./lib/api-spec/
 COPY lib/api-zod/package.json           ./lib/api-zod/
 COPY lib/db/package.json                ./lib/db/
 COPY scripts/package.json               ./scripts/
-COPY artifacts/api-server/package.json  ./artifacts/api-server/
+COPY artifacts/api-server/package.json    ./artifacts/api-server/
 COPY artifacts/torre-obscura/package.json ./artifacts/torre-obscura/
-COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/
+# mockup-sandbox é dev-only e está no .dockerignore — não incluído aqui
 
 # Instala todas as dependências (dev incluído — necessário para builds)
 RUN pnpm install --frozen-lockfile
