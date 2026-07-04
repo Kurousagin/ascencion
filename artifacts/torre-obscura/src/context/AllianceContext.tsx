@@ -7,7 +7,7 @@ import {
 } from '@workspace/api-client-react';
 import { useGame, Recursos } from './GameContext';
 import { getProfissao, GameState, NPC, MoradorBase, moradorBase } from '../lib/game-data';
-import { getDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
+import { getDeviceId, resetDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
 
 // ─── Histórico de empréstimos (persistido em localStorage) ────────────────────
 
@@ -27,8 +27,6 @@ export interface EmprestimoRegistro {
 
 const HISTORICO_KEY = 'torre_obscura_emprestimos_historico';
 const MAX_HISTORICO = 50;
-// IDs de aliadas que precisam ser desfeitas no servidor (dissolve offline pendente)
-const PENDING_DISSOLVE_KEY = 'torre_obscura_pending_dissolve';
 
 function carregarHistorico(): EmprestimoRegistro[] {
   try {
@@ -39,21 +37,6 @@ function carregarHistorico(): EmprestimoRegistro[] {
 
 function salvarHistoricoStorage(h: EmprestimoRegistro[]): void {
   try { localStorage.setItem(HISTORICO_KEY, JSON.stringify(h)); } catch { /* quota */ }
-}
-
-function salvarPendingDissolve(ids: string[]): void {
-  try { localStorage.setItem(PENDING_DISSOLVE_KEY, JSON.stringify(ids)); } catch { /* quota */ }
-}
-
-function carregarPendingDissolve(): string[] {
-  try {
-    const raw = localStorage.getItem(PENDING_DISSOLVE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function limparPendingDissolve(): void {
-  try { localStorage.removeItem(PENDING_DISSOLVE_KEY); } catch { /* noop */ }
 }
 
 // ─── Tipo do contexto ─────────────────────────────────────────────────────────
@@ -174,30 +157,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const puxarAliadasECaixa = useCallback(async () => {
     try {
       const as = await listarAliadas(deviceId.current);
-      // Se há um dissolve pendente (offline durante startNewGame), retentar agora
-      const pendingIds = carregarPendingDissolve();
-      if (pendingIds.length > 0) {
-        const paraDesfazer = as.filter(a => pendingIds.includes(a.deviceId));
-        const resultados = await Promise.allSettled(
-          paraDesfazer.map(a => desfazerAlianca({ deviceId: deviceId.current, aliadaDeviceId: a.deviceId }))
-        );
-        const todosOk = resultados.every(r => r.status === 'fulfilled');
-        if (todosOk) {
-          limparPendingDissolve();
-          // Não exibir aliadas que foram dissolvidas
-          setAliadas(as.filter(a => !pendingIds.includes(a.deviceId)));
-        } else {
-          // Parcialmente falhou — mantém os que ainda não foram dissolvidos
-          const dissolvidosIds = paraDesfazer
-            .filter((_, i) => resultados[i].status === 'fulfilled')
-            .map(a => a.deviceId);
-          const restanteIds = pendingIds.filter(id => !dissolvidosIds.includes(id));
-          salvarPendingDissolve(restanteIds);
-          setAliadas(as.filter(a => !dissolvidosIds.includes(a.deviceId)));
-        }
-      } else {
-        setAliadas(as);
-      }
+      setAliadas(as);
     } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current);
@@ -386,31 +346,18 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     vencidos.forEach(n => { void devolver(n); });
   }, [state?.dia, state?.npcs, devolver]);
 
-  // ─── Dissolver todas as alianças (chamado ao iniciar novo jogo) ────────────
-  // Chamado antes de startNewGame para garantir que a cidadela que morreu não
-  // mantenha vínculos de aliança que pertenciam ao ciclo anterior.
+  // ─── Novo jogo: rotacionar deviceId ────────────────────────────────────────
+  // Gera um novo código de aliança — as alianças do ciclo anterior ficam
+  // órfãs no servidor automaticamente, sem precisar de chamadas de rede.
+  // Robusto a offline: funciona sempre, independente de conectividade.
   const dissolveAll = useCallback(async () => {
-    const todas = aliadasRef.current;
-    const ids = todas.map(a => a.deviceId);
-
-    // Limpa estado local imediatamente — cidadela nova, ciclo novo
+    const novoId = resetDeviceId();
+    deviceId.current = novoId;
+    setPerfil(null);
     setAliadas([]);
     setCaixa([]);
     setHistorico([]);
     salvarHistoricoStorage([]);
-    limparPendingDissolve();
-
-    if (ids.length === 0) return;
-
-    // Tenta desfazer no servidor — se offline/falha, marca para retentar
-    const resultados = await Promise.allSettled(
-      ids.map(id => desfazerAlianca({ deviceId: deviceId.current, aliadaDeviceId: id }))
-    );
-    const pendentes = ids.filter((_, i) => resultados[i].status === 'rejected');
-    if (pendentes.length > 0) {
-      // Dissolve pendente: será reexecutado na próxima vez que puxarAliadasECaixa rodar com conexão
-      salvarPendingDissolve(pendentes);
-    }
   }, []);
 
   // ─── Renomear cidadela ─────────────────────────────────────────────────────

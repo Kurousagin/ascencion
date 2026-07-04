@@ -13,6 +13,15 @@ export function getDeviceId(): string {
   return id;
 }
 
+// Gera um novo deviceId — chamado ao iniciar novo jogo.
+// O código de aliança muda, desvinculando automaticamente todas as alianças
+// do ciclo anterior sem precisar de chamadas ao servidor.
+export function resetDeviceId(): string {
+  const id = crypto.randomUUID();
+  localStorage.setItem(DEVICE_KEY, id);
+  return id;
+}
+
 export function getNomeLocal(): string | null {
   return localStorage.getItem(NOME_KEY);
 }
