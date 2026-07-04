@@ -8,7 +8,7 @@ import {
   podeEmprestar, debitarArmazem, creditarArmazem,
   RivalCidadela, GuerraPendente, avancarGuerra, podeGuerrear, calcCustoMobilizacao,
   GUERRA_DURACAO, GUERRA_MIN_TROPA, gerarRivalAgressor, chanceBotWar,
-  podeTreinarNpc, podeEstudarNpc, calcCustoTreinamento, calcCustoEstudo,
+  podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1,
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
@@ -1136,8 +1136,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
-  // ─── ESTUDO NO ARQUIVO (INT — qualquer profissão, T2) ────────────────────
-  // Separado de treinarNpc para não interferir com o path do Quartel.
+  // ─── ESTUDO (INT — qualquer profissão, T1 via Templo ≥ andar 10 / T2 via Arquivo ≥ andar 21) ──
+  // Prefere Arquivo (T2) quando disponível; cai para Templo (T1) caso contrário.
   const estudarNpc = (npcId: string) => {
     if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
@@ -1146,19 +1146,34 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const arquivoEd = s.edificios.find(e => e.tipo === 'Arquivo');
     const arquivoNivel = arquivoEd?.nivel ?? 0;
-    if (!podeEstudarNpc(npc, arquivoNivel, s.andarAtual)) return;
+    const temploEd = s.edificios.find(e => e.tipo === 'Templo');
+    const temploNivel = temploEd?.nivel ?? 0;
+
+    const podeT2 = podeEstudarNpc(npc, arquivoNivel, s.andarAtual);
+    const podeT1 = podeEstudarNpcT1(npc, temploNivel, s.andarAtual);
+    if (!podeT2 && !podeT1) return;
 
     const isErudito = getProfissao(npc) === 'erudito';
     const treinamentos = npc.treinamentos ?? 0;
-    const custo = calcCustoEstudo(treinamentos, isErudito);
-    if (s.recursos.pedra < custo.pedra || s.recursos.comida < custo.comida) return;
-
     const instrutor = calcInstrutor(npcId, s.npcs, 'inteligencia');
     const instrutorStat = instrutor ? instrutor.inteligencia : 0;
     const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
 
-    s.recursos.pedra  -= custo.pedra;
-    s.recursos.comida -= custo.comida;
+    let local: string;
+    if (podeT2) {
+      const custo = calcCustoEstudo(treinamentos, isErudito);
+      if (s.recursos.pedra < custo.pedra || s.recursos.comida < custo.comida) return;
+      s.recursos.pedra  -= custo.pedra;
+      s.recursos.comida -= custo.comida;
+      local = 'ARQUIVO';
+    } else {
+      const custo = calcCustoEstudoT1(treinamentos, isErudito);
+      if (s.recursos.comida < custo.comida || s.recursos.madeira < custo.madeira) return;
+      s.recursos.comida  -= custo.comida;
+      s.recursos.madeira -= custo.madeira;
+      local = 'TEMPLO';
+    }
+
     npc.inteligencia  += ganho;
     npc.fadiga = Math.min(100, npc.fadiga + 25);
     npc.treinamentos = treinamentos + 1;
@@ -1168,7 +1183,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       ? ` orientado por ${instrutor.nome} (INT:${instrutor.inteligencia})`
       : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} ESTUDOU NO ARQUIVO — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     saveState(s);
     setState(s);

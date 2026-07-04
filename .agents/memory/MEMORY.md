@@ -10,4 +10,5 @@
 - [Combatant training system](combatant-training.md) — treinarNpc in GameContext; podeTreinarNpc/calcCustoTreinamento in game-data; UI in People.tsx expanded card; treinamentos optional field defaults via ?? 0.
 - [Temporada 2 — O Intervalo](t2-season.md) — andares 21-40, 16 habitants, codex T2, pioneer system (backend+frontend), Thael gacha, Arquivo/Mirante; vitoria movida para >40; LANCAMENTO_T2 exportado mas não ativo ainda.
 
-- [INT training for Erudito](int-training-erudito.md) — Arquivo building gate (T2 andar 21+), pedra+comida cost; buildingOrder in Citadel must include Arquivo/Mirante.
+- [INT training system](int-training-erudito.md) — T1: Templo gate (andar 10+), comida+madeira cost, ×1.3 non-erudito; T2: Arquivo gate (andar 21+), pedra+comida, ×1.5 non-erudito; estudarNpc prefers T2; UI uses discriminated EstudoPath union.
+- [Habitante quest design](habitantes-torre.md) — expedicao quests now support andarMin (floor progression gate) + recurso (mixed possession check); profession matching uses multiset count (not every/some) to enforce duplicate profession requirements.

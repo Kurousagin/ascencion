@@ -199,12 +199,14 @@ export type HabitanteEstado = 'oculto' | 'descoberto' | 'quest_ativa' | 'conclui
 export interface HabitanteQuest {
   tipo: QuestTipo;
   descricaoObj: string;                // objetivo exibido na UI
-  // recurso: ter X de um tipo (pode ter até dois recursos exigidos simultaneamente)
-  recurso?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
-  recurso2?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
+  // recurso (tipo='recurso'): ter X de um tipo (pode ter até dois recursos exigidos)
   // expedicao: ter NPCs dessas profissões vivos na cidadela
   profissoes?: ProfissaoId[];
   npcsMinCombate?: number;             // mínimo de NPCs de combate vivos (floor 12)
+  andarMin?: number;                   // player deve ter conquistado pelo menos este andar
+  // expedicao pode ter recursos adicionais (quest mista profissão + recurso)
+  recurso?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
+  recurso2?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
   // temporal: dias CONSECUTIVOS de paz (ou simples dias) desde a descoberta / último reset
   dias?: number;
   semGuerra?: boolean;                 // guerra durante o intervalo reseta o contador (floor 19)
@@ -236,8 +238,8 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'Um Batedor poderia percorrer os rastros da névoa e encontrar o destinatário. Ou o que sobrou dele.',
     falaConcluso: 'A mensagem foi entregue. O destinatário era você. Desde o início.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Batedor vivo na cidadela',
-      profissoes: ['batedor'],
+      tipo: 'expedicao', descricaoObj: 'Ter um Batedor e conquistar o Andar 5',
+      profissoes: ['batedor'], andarMin: 5,
       ecoBonus: 20, moralBonus: 5,
       lore: 'A mensagem que nunca chegou era uma ordem para abrir o selo — não para mantê-lo. Alguém a interceptou antes do destinatário a receber. Esse alguém ainda está aqui.',
       recompensaDesc: '+20% loot neste andar · +5 Moral',
@@ -285,11 +287,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   6: {
     floor: 6, nome: 'Sentinela Sem Nome', papel: 'Guardião Perdido', icone: '🗿',
     fala: 'Última ordem recebida: não deixar ninguém passar. A autoridade que a deu não existe mais. Mas a ordem existe. Se você pode provar que tem força suficiente para disputar passagem, posso reconhecer sua autoridade em substituição.',
-    falamissão: 'Um combatente legítimo. É o que a ordem exige para reconhecer mudança de comando.',
+    falamissão: 'Um combatente legítimo — e prova de que chegou ao décimo andar. A autoridade exige demonstração, não promessa.',
     falaConcluso: 'Autoridade reconhecida. Nova ordem registrada: facilitar passagem dos que chegam com propósito. O que é propósito? Ainda estou processando.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Combatente vivo na cidadela',
-      profissoes: ['combatente'],
+      tipo: 'expedicao', descricaoObj: 'Ter um Combatente e conquistar o Andar 10',
+      profissoes: ['combatente'], andarMin: 10,
       ecoBonus: 25, recursosBonus: { madeira: 10 },
       lore: 'Sua última ordem era "não deixes ninguém passar" — mas não especificou em qual direção. A Sentinela cumpre ordens de uma autoridade que a Torre corroeu. Ainda aguarda a contraordem.',
       recompensaDesc: '+25% loot neste andar · +10 Madeira',
@@ -350,11 +352,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   12: {
     floor: 12, nome: 'Percussão Profunda', papel: 'Pulso da Torre', icone: '🥁',
     fala: 'Não sou um ser. Sou o ritmo. O pulso do que você está dentro. Para sincronizar comigo, você precisa de um grupo suficientemente numeroso — a vibração de muitos corpos em um só lugar.',
-    falamissão: 'Mais. A vibração de muitos. Três ao menos. Para que o ritmo reconheça presença humana suficiente.',
+    falamissão: 'Mais. A vibração de muitos. Três ao menos — e pedra. O ritmo exige peso e presença simultâneos.',
     falaConcluso: 'Sincronizado. O minério deste andar vibra na mesma frequência agora. Será mais fácil extraí-lo. Ou mais assustador. Depende de como você ouve o ritmo.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter 3 ou mais NPCs de combate vivos',
-      npcsMinCombate: 3,
+      tipo: 'expedicao', descricaoObj: 'Ter 3+ NPCs de combate vivos e 50 pedra',
+      npcsMinCombate: 3, recurso: { tipo: 'pedra', qtd: 50 },
       ecoBonus: 30, recursosBonus: { pedra: 20 },
       lore: 'A Percussão não é um ser — é o coração da Torre. Ela está viva há mais tempo do que o conceito de tempo existe. O ritmo que você ouve nas paredes é ela respirando.',
       recompensaDesc: '+30% loot neste andar · +20 Pedra',
@@ -376,11 +378,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   14: {
     floor: 14, nome: 'Comandante de Mármore', papel: 'General do Vazio', icone: '⚔️',
     fala: 'Protejo esta posição por ordem da Cidadela de Ardenas. Se você puder apresentar um combatente e um sentinela — os dois pilares de qualquer força militar legítima — reconhecerei sua cidadela como aliada e abrirei passagem.',
-    falamissão: 'Um combatente e um sentinela. Os dois pilares. É protocolo.',
+    falamissão: 'Um combatente e um sentinela — e prova de que chegaram ao décimo oitavo andar. Os dois pilares de qualquer força que resiste até o fim.',
     falaConcluso: 'Cidadela reconhecida como aliada. Para que conste no registro: Ardenas afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Mas a aliança permanece válida.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Combatente e um Sentinela vivos',
-      profissoes: ['combatente', 'sentinela'],
+      tipo: 'expedicao', descricaoObj: 'Ter Combatente + Sentinela e conquistar o Andar 18',
+      profissoes: ['combatente', 'sentinela'], andarMin: 18,
       ecoBonus: 35, recursosBonus: { ferro: 20 },
       lore: 'A cidadela que ele protegia afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Ele ainda protege uma posição acima de algo que não existe mais. E faz isso perfeitamente.',
       recompensaDesc: '+35% loot neste andar · +20 Ferro',
@@ -445,11 +447,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   21: {
     floor: 21, nome: 'Vestígio da Voz', papel: 'Memória que Reconhece', icone: '👁️',
     fala: 'Eu sei quem você é. Não de antes — de depois. A memória aqui não segue a direção do tempo. Preciso que me traga um Batedor. Alguém que entenda como rastrear o que ainda não aconteceu.',
-    falamissão: 'O rastro do que você será passa por aqui. Um Batedor pode lê-lo. Traga-me um.',
+    falamissão: 'O rastro do que você será passa por além do que já explorou. Um Batedor pode lê-lo — mas você precisa chegar ao Andar 26 primeiro.',
     falaConcluso: 'O Batedor leu o rastro. Não disse o que viu. Apenas disse que eu estava certo em reconhecer você. Isso é tudo que precisava confirmar. Cuide-se — o que vem a seguir te lembra de algo que você ainda não viveu.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Batedor vivo na cidadela',
-      profissoes: ['batedor'],
+      tipo: 'expedicao', descricaoObj: 'Ter um Batedor e conquistar o Andar 26',
+      profissoes: ['batedor'], andarMin: 26,
       ecoBonus: 20, moralBonus: 8,
       lore: 'O Vestígio existe na memória de um momento que ainda não aconteceu. Ele te reconheceu porque já te viu chegar — de um futuro que pode ou não se tornar real. O rastro que o Batedor leu não era do passado. Era uma possibilidade.',
       recompensaDesc: '+20% loot neste andar · +8 Moral',
@@ -497,11 +499,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   26: {
     floor: 26, nome: 'Eco da Expedição Perdida', papel: 'Memória de Quem Não Voltou', icone: '🗺️',
     fala: 'Somos o eco de um grupo que desceu até aqui e não conseguiu subir de volta. Não morremos — ficamos. A Torre não nos deixou partir. Se você tem combatentes suficientes, talvez consiga o que nós não conseguimos: força em número.',
-    falamissão: 'Combatentes. E batedores. Os dois que nossa expedição não tinha em número suficiente.',
+    falamissão: 'Combatentes. E batedores. E prova de que chegaram além do que nós chegamos — Andar 30. É o que nossa expedição não conseguiu alcançar.',
     falaConcluso: 'Você tem o que nós não tínhamos. Use isso. E quando chegar ao topo — se chegar — lembre que passamos por aqui primeiro. Não como aviso. Como encorajamento.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Combatente e um Batedor vivos na cidadela',
-      profissoes: ['combatente', 'batedor'],
+      tipo: 'expedicao', descricaoObj: 'Ter Combatente + Batedor e conquistar o Andar 30',
+      profissoes: ['combatente', 'batedor'], andarMin: 30,
       ecoBonus: 25, recursosBonus: { madeira: 30 },
       lore: 'A expedição que se tornou este eco tinha dezessete membros. Desceram com provisões para quarenta dias. A Torre os deixou descer. Não os deixou subir. O Eco não sabe por quê — apenas que, quando tentaram, as escadas haviam mudado de lugar.',
       recompensaDesc: '+25% loot neste andar · +30 Madeira',
@@ -562,11 +564,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   32: {
     floor: 32, nome: 'Memória da Primeira Pedra', papel: 'Eco do Ato Fundador', icone: '🪨',
     fala: 'Lembro do momento em que a primeira pedra foi colocada. Não como testemunha — como consequência. Fui criado naquele momento, sem querer. Se você trouxer alguém que entenda estruturas — erudito ou sentinela — eles podem me ajudar a entender o que sou.',
-    falamissão: 'Um Erudito ou Sentinela. Alguém que entenda o que é ser construído em vez de nascido.',
+    falamissão: 'Um Erudito ou Sentinela — e prova de que chegaram ao Andar 36. Só alguém que construiu chegando até lá pode me ajudar a entender o que sou.',
     falaConcluso: 'O Erudito me disse: você é o eco de uma intenção, não de uma ação. A pedra foi colocada — mas o que você é é o propósito que havia antes da pedra. O ato foi consequência. Você é a razão. Isso muda tudo sobre o que penso que sou.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Erudito ou Sentinela vivo na cidadela',
-      profissoes: ['erudito', 'sentinela'],
+      tipo: 'expedicao', descricaoObj: 'Ter Erudito ou Sentinela e conquistar o Andar 36',
+      profissoes: ['erudito', 'sentinela'], andarMin: 36,
       ecoBonus: 28, recursosBonus: { pedra: 20, ferro: 15 },
       lore: 'A Memória da Primeira Pedra não registra o ato de colocá-la — registra a razão pela qual foi colocada ali e não em outro lugar. E a razão era: porque o que havia abaixo pediu para ser coberto por algo específico. A pedra foi colocada onde foi porque o que estava abaixo escolheu aquele ponto.',
       recompensaDesc: '+28% loot neste andar · +20 Pedra +15 Ferro',
@@ -615,11 +617,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   37: {
     floor: 37, nome: 'Memória Nomeada', papel: 'Rastro de um Construtor Específico', icone: '🧑‍🔧',
     fala: 'Fui um Construtor com nome. O único cujo nome sobreviveu — não por acidente, mas porque escondi meu nome dentro do projeto antes de ele ser apagado. Preciso de força para revelar onde o escondi. Combatentes e batedores — os que se movem com propósito.',
-    falamissão: 'Combatentes e batedores. Preciso da energia de quem age, não de quem pensa. O esconderijo está em movimento — precisa ser alcançado.',
+    falamissão: 'Combatentes e batedores — e que chegaram ao Andar 39. O esconderijo está em movimento, próximo ao topo. Só os que chegaram lá podem alcançá-lo.',
     falaConcluso: 'O nome está aqui. Não vou dizê-lo em voz alta — seria apagado novamente. Mas você o sentiu, não sentiu? Uma vibração específica quando os batedores chegaram perto. Era o nome. Ainda existe. Ainda ressoa. Isso é suficiente para mim.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter dois Combatentes e um Batedor vivos na cidadela',
-      profissoes: ['combatente', 'combatente', 'batedor'],
+      tipo: 'expedicao', descricaoObj: 'Ter 2 Combatentes + Batedor e conquistar o Andar 39',
+      profissoes: ['combatente', 'combatente', 'batedor'], andarMin: 39,
       ecoBonus: 32, recursosBonus: { ferro: 30, madeira: 20 },
       lore: 'O Construtor escondeu seu nome no projeto porque sabia que os nomes seriam apagados. Não para ser lembrado — para provar que a apagação era sistemática, não natural. Um nome que sobrevive ao processo de apagação é evidência de que o processo existiu. E processo exige intenção. E intenção exige alguém que a ordenou.',
       recompensaDesc: '+32% loot neste andar · +30 Ferro +20 Madeira',
@@ -1022,6 +1024,11 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
       return !!(q.recurso || q.recurso2);
     }
     case 'expedicao': {
+      // andarMin: player deve ter avançado além deste andar
+      if (q.andarMin && state.andarAtual <= q.andarMin) return false;
+      // recurso misto (expedicao + recurso obrigatório)
+      if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
+      if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;
       const vivosAtivos = state.npcs.filter(n => n.vivo);
       if (q.npcsMinCombate) {
         const combate = vivosAtivos.filter(n =>
@@ -1030,7 +1037,18 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
         if (combate.length < q.npcsMinCombate) return false;
       }
       if (q.profissoes) {
-        return q.profissoes.every(p => vivosAtivos.some(n => getProfissao(n) === p));
+        // Multiset: conta quantas de cada profissão são exigidas e verifica se há vivos suficientes.
+        // Ex: ['combatente','combatente','batedor'] exige 2 combatentes distintos.
+        const needed: Partial<Record<ProfissaoId, number>> = {};
+        for (const p of q.profissoes) needed[p] = (needed[p] ?? 0) + 1;
+        const available: Partial<Record<ProfissaoId, number>> = {};
+        for (const n of vivosAtivos) {
+          const p = getProfissao(n);
+          available[p] = (available[p] ?? 0) + 1;
+        }
+        for (const [prof, cnt] of Object.entries(needed) as [ProfissaoId, number][]) {
+          if ((available[prof] ?? 0) < cnt) return false;
+        }
       }
       return true;
     }
@@ -1145,6 +1163,32 @@ export function calcCustoTreinamento(treinamentos: number): { madeira: number; f
     madeira: 10 + treinamentos * 8,
     ferro:   5  + treinamentos * 4,
   };
+}
+
+// Custo de estudo no TEMPLO (T1, andar 10+). Usa comida + madeira.
+// Erudito paga custo base; outras profissões pagam 1,3× (mais acessível que T2).
+export function calcCustoEstudoT1(treinamentos: number, isErudito = true): { comida: number; madeira: number } {
+  const base = {
+    comida:  18 + treinamentos * 8,
+    madeira: 12 + treinamentos * 6,
+  };
+  if (isErudito) return base;
+  return {
+    comida:  Math.ceil(base.comida  * 1.3),
+    madeira: Math.ceil(base.madeira * 1.3),
+  };
+}
+
+// Retorna true se o NPC pode estudar no TEMPLO agora (T1, qualquer profissão, andar 10+).
+export function podeEstudarNpcT1(npc: NPC, temploNivel: number, andarAtual: number): boolean {
+  if (andarAtual < 10) return false;
+  if (temploNivel < 1) return false;
+  if (!npc.vivo) return false;
+  if (npc.emExpedicao || npc.emGuerra) return false;
+  if (npc.emprestado || npc.reforco) return false;
+  if (npc.fadiga >= 60) return false;
+  if ((npc.treinamentos ?? 0) >= MAX_TREINAMENTOS) return false;
+  return true;
 }
 
 // Custo de treinamento intelectual no Arquivo.

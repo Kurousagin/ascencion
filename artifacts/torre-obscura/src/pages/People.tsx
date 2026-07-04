@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, calcCustoTreinamento, calcCustoEstudo, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento } from '../lib/game-data';
 
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
@@ -330,35 +330,63 @@ export function People() {
                 );
               })()}
 
-              {/* Estudo no Arquivo (INT) — qualquer profissão, T2 (andar 21+) */}
+              {/* Estudo INT — T1 via Templo (andar 10+) · T2 via Arquivo (andar 21+) */}
               {(() => {
-                const profNpc = getProfissao(npc);
-                const isErudito = profNpc === 'erudito';
+                type EstudoPath =
+                  | { local: 'ARQUIVO'; custo: { pedra: number; comida: number }; podeE: boolean; semRecursos: boolean; mult: string }
+                  | { local: 'TEMPLO';  custo: { comida: number; madeira: number }; podeE: boolean; semRecursos: boolean; mult: string };
+
+                const isErudito = getProfissao(npc) === 'erudito';
                 const arquivoEd = state.edificios.find(e => e.tipo === 'Arquivo');
                 const arquivoNivel = arquivoEd?.nivel ?? 0;
+                const temploEd = state.edificios.find(e => e.tipo === 'Templo');
+                const temploNivel = temploEd?.nivel ?? 0;
                 const treinamentos = npc.treinamentos ?? 0;
-                const custo = calcCustoEstudo(treinamentos, isErudito);
-                const podeE = podeEstudarNpc(npc, arquivoNivel, state.andarAtual);
+
+                // Não exibir se ainda longe do threshold e nenhum prédio construído
+                if (state.andarAtual < 10 && temploNivel < 1 && arquivoNivel < 1) return null;
+
+                // Resolve caminho ativo — Arquivo (T2) tem prioridade quando disponível para exibição
+                const path: EstudoPath = (state.andarAtual >= 21 && arquivoNivel >= 1)
+                  ? (() => {
+                      const custo = calcCustoEstudo(treinamentos, isErudito);
+                      return {
+                        local: 'ARQUIVO',
+                        custo,
+                        podeE: podeEstudarNpc(npc, arquivoNivel, state.andarAtual),
+                        semRecursos: state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida,
+                        mult: isErudito ? '' : '×1,5',
+                      };
+                    })()
+                  : (() => {
+                      const custo = calcCustoEstudoT1(treinamentos, isErudito);
+                      return {
+                        local: 'TEMPLO',
+                        custo,
+                        podeE: podeEstudarNpcT1(npc, temploNivel, state.andarAtual),
+                        semRecursos: state.recursos.comida < custo.comida || state.recursos.madeira < custo.madeira,
+                        mult: isErudito ? '' : '×1,3',
+                      };
+                    })();
+
                 const instrutor = calcInstrutor(npc.id, state.npcs, 'inteligencia');
                 const instrutorStat = instrutor ? instrutor.inteligencia : 0;
                 const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
 
                 let bloqueio: string | null = null;
-                if (state.andarAtual < 21) bloqueio = 'Disponível na Temporada 2 (andar 21+).';
-                else if (arquivoNivel < 1) bloqueio = 'Requer Arquivo construído.';
+                if (state.andarAtual < 10) bloqueio = 'Disponível a partir do Andar 10.';
+                else if (path.local === 'TEMPLO' && temploNivel < 1) bloqueio = 'Requer Templo construído (ou Arquivo na T2).';
                 else if (treinamentos >= MAX_TREINAMENTOS) bloqueio = 'Limite de sessões atingido.';
                 else if (npc.emGuerra) bloqueio = 'Mobilizado na guerra — retorna ao fim da campanha.';
                 else if (npc.emExpedicao) bloqueio = 'Em expedição — aguarde o retorno.';
                 else if (npc.fadiga >= 60) bloqueio = 'Fadiga alta demais (< 60 para estudar).';
                 else if (npc.emprestado || npc.reforco) bloqueio = 'Só moradores próprios podem estudar.';
 
-                // Não exibir se ainda longe de T2 e arquivo não construído
-                if (state.andarAtual < 18 && arquivoNivel < 1) return null;
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
                     <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
-                      <Brain size={10} className="text-primary" /> ESTUDO — ARQUIVO
-                      {!isErudito && <span className="text-[8px] text-warning/70 normal-case tracking-normal font-inter">(custo ×1,5)</span>}
+                      <Brain size={10} className="text-primary" /> ESTUDO — {path.local}
+                      {path.mult && <span className="text-[8px] text-warning/70 normal-case tracking-normal font-inter">(custo {path.mult})</span>}
                       <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
@@ -367,8 +395,17 @@ export function People() {
                       <>
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-[10px] text-secondary flex items-center gap-3">
-                            <span className="flex items-center gap-1"><span>🪨</span> {custo.pedra} pedra</span>
-                            <span className="flex items-center gap-1"><span>🌾</span> {custo.comida} comida</span>
+                            {path.local === 'ARQUIVO' ? (
+                              <>
+                                <span className="flex items-center gap-1"><span>🪨</span> {path.custo.pedra} pedra</span>
+                                <span className="flex items-center gap-1"><span>🌾</span> {path.custo.comida} comida</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="flex items-center gap-1"><span>🌾</span> {path.custo.comida} comida</span>
+                                <span className="flex items-center gap-1"><span>🪵</span> {path.custo.madeira} madeira</span>
+                              </>
+                            )}
                           </div>
                           <span className="text-[9px] text-primary/80 font-bold">+{ganho} INT</span>
                         </div>
@@ -386,11 +423,11 @@ export function People() {
                         )}
                         <button
                           onClick={() => estudarNpc(npc.id)}
-                          disabled={!podeE || state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida}
+                          disabled={!path.podeE || path.semRecursos}
                           className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
                         >
                           <Brain size={12} /> ESTUDAR
-                          {(state.recursos.pedra < custo.pedra || state.recursos.comida < custo.comida) && (
+                          {path.semRecursos && (
                             <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
