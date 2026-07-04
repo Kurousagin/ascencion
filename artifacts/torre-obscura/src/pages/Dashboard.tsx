@@ -1,9 +1,9 @@
 import { useGame } from '../context/GameContext';
-import { FastForward, ShieldAlert, Users } from 'lucide-react';
+import { ShieldAlert, Users } from 'lucide-react';
 import { getEfeitos, POP_BASE } from '../lib/game-data';
 
 export function Dashboard() {
-  const { state, setSpeed, advanceDay } = useGame();
+  const { state, setSpeed } = useGame();
 
   const getMoralColor = (m: number) => {
     if (m > 60) return 'text-success';
@@ -38,9 +38,9 @@ export function Dashboard() {
         <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 p-4 flex flex-col justify-between rounded shadow-lg">
           <span className="text-[10px] text-secondary tracking-widest mb-2">ANDARES</span>
           <div className="flex flex-col gap-1">
-            <span className="text-xl text-foreground font-bold font-cinzel">{state.andarAtual - 1} / 20</span>
+            <span className="text-xl text-foreground font-bold font-cinzel">{state.andarAtual - 1} / 40</span>
             <div className="flex gap-0.5 mt-1">
-              {Array.from({length: 20}).map((_, i) => (
+              {Array.from({length: 40}).map((_, i) => (
                 <div key={i} className={`flex-1 h-1.5 ${i < state.andarAtual - 1 ? 'bg-primary' : 'bg-background border border-primary/20'}`} />
               ))}
             </div>
@@ -129,15 +129,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <button
-        onClick={advanceDay}
-        className="w-full h-[60px] bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-lg flex items-center justify-center gap-3 mt-4 hover:bg-opacity-90 active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(212,175,55,0.2)] rounded-sm touch-manipulation"
-      >
-        <FastForward size={20} />
-        AVANÇAR DIA
-      </button>
-
-      <div className="mt-8 space-y-3">
+      <div className="mt-4 space-y-3">
         <h3 className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-2 border-b border-primary/20 pb-2">
           <ShieldAlert size={14} /> INTEL FEED
         </h3>

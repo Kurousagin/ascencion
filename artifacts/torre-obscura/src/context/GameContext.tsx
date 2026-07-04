@@ -235,7 +235,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Superlotação reduz a recuperação: cada NPC excedente corta 4 pontos de rec.
     // (excedente=1 → -4 rec, excedente=3 → rec zerada, excedente≥3+ sem recuperação)
     vivos.filter(n => !n.emGuerra).forEach(n => {
-      let rec = 12 + ef.fadigaRec;
+      let rec = 10 + ef.fadigaRec;
       if (n.habilidade === 'curandeiro') rec += 15;
       if (excedente > 0) rec = Math.max(0, rec - excedente * 4);
       n.fadiga = Math.max(0, n.fadiga - rec);
@@ -727,7 +727,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
           resultVitoria.mortos.push({ nome: n.nome });
         } else {
-          let fatigueGain = getRandomInt(20, 35);
+          let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
@@ -779,7 +779,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
           resultFalha.mortos.push({ nome: n.nome });
         } else {
-          let fatigueGain = getRandomInt(20, 35);
+          let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
