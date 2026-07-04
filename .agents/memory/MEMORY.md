@@ -11,5 +11,5 @@
 - [Temporada 2 — O Intervalo](t2-season.md) — andares 21-40, 16 habitants, codex T2, pioneer system (backend+frontend), Thael gacha, Arquivo/Mirante; vitoria movida para >40; LANCAMENTO_T2 exportado mas não ativo ainda.
 
 - [INT training system](int-training-erudito.md) — T1: Templo gate (andar 10+), comida+madeira cost, ×1.3 non-erudito; T2: Arquivo gate (andar 21+), pedra+comida, ×1.5 non-erudito; estudarNpc prefers T2; UI uses discriminated EstudoPath union.
-- [Habitante quest design](habitantes-torre.md) — expedicao quests now support andarMin (floor progression gate) + recurso (mixed possession check); profession matching uses multiset count (not every/some) to enforce duplicate profession requirements.
+- [Habitante quest design](habitantes-torre.md) — farmsMin (floor farm count gate) added to HabitanteQuest; 9 resource quests now require farming that specific floor N times; single-profession quests (floors 1,6,21) now require 2 of that profession.
 - [Quests Ocultas system](quests-ocultas.md) — hidden quests in GameState (optional fields); farm trigger (3rd+ farm, 20%); speed trigger (3+ quests in 5 days, 35%); max 3 active total, 1 per gatilho; UI in Tower.tsx CÂMARAS OCULTAS section.

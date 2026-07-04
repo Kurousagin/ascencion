@@ -204,6 +204,7 @@ export interface HabitanteQuest {
   profissoes?: ProfissaoId[];
   npcsMinCombate?: number;             // mínimo de NPCs de combate vivos (floor 12)
   andarMin?: number;                   // player deve ter conquistado pelo menos este andar
+  farmsMin?: { andar: number; vezes: number }; // mínimo de farms vitoriosos no andar (extração comprovada)
   // expedicao pode ter recursos adicionais (quest mista profissão + recurso)
   recurso?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
   recurso2?: { tipo: 'comida' | 'madeira' | 'pedra' | 'ferro'; qtd: number };
@@ -235,11 +236,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   1: {
     floor: 1, nome: 'Arauto da Névoa', papel: 'Mensageiro Selado', icone: '🌫️',
     fala: 'Aguardo há séculos carregando uma mensagem que nunca deveria ter saído daqui. Se você tem alguém ágil o suficiente para decifrar o símbolo de entrega... talvez valha a pena.',
-    falamissão: 'Um Batedor poderia percorrer os rastros da névoa e encontrar o destinatário. Ou o que sobrou dele.',
+    falamissão: 'Dois Batedores — um segue o símbolo de entrega, o outro confirma que o encontrado chega de volta. Nenhum pode ir sozinho. E precisam ter chegado ao Andar 5.',
     falaConcluso: 'A mensagem foi entregue. O destinatário era você. Desde o início.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Batedor e conquistar o Andar 5',
-      profissoes: ['batedor'], andarMin: 5,
+      tipo: 'expedicao', descricaoObj: 'Ter 2 Batedores e conquistar o Andar 5',
+      profissoes: ['batedor', 'batedor'], andarMin: 5,
       ecoBonus: 20, moralBonus: 5,
       lore: 'A mensagem que nunca chegou era uma ordem para abrir o selo — não para mantê-lo. Alguém a interceptou antes do destinatário a receber. Esse alguém ainda está aqui.',
       recompensaDesc: '+20% loot neste andar · +5 Moral',
@@ -248,11 +249,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   2: {
     floor: 2, nome: 'Eco dos Construtores', papel: 'Memória Coletiva', icone: '⚒️',
     fala: 'Somos muitos em um. Escavamos este lugar sabendo que nunca sairíamos. Dê-nos pedra — para que possamos lembrar o peso do que construímos.',
-    falamissão: 'Pedra. Apenas pedra. Para que nossa memória seja completa.',
+    falamissão: 'Pedra deste andar — extraída daqui, não carregada de longe. Somos memória deste lugar específico. Volte mais de uma vez. Prove que este andar importa além de passagem.',
     falaConcluso: 'Agora lembramos tudo. O que construímos. Por que construímos. E quem nos mentiu sobre o propósito.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 45 pedra',
-      recurso: { tipo: 'pedra', qtd: 45 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 2 ao menos 3 vezes e ter 45 pedra',
+      recurso: { tipo: 'pedra', qtd: 45 }, farmsMin: { andar: 2, vezes: 3 },
       ecoBonus: 25, recursosBonus: { pedra: 10 },
       lore: 'Os Construtores sabiam que seriam selados. Aceitaram porque a criatura dentro prometeu libertá-los depois. Nunca os libertou. O Eco lembra — e aguarda alguém que possa.',
       recompensaDesc: '+25% loot neste andar · +10 Pedra',
@@ -300,11 +301,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   6: {
     floor: 6, nome: 'Sentinela Sem Nome', papel: 'Guardião Perdido', icone: '🗿',
     fala: 'Última ordem recebida: não deixar ninguém passar. A autoridade que a deu não existe mais. Mas a ordem existe. Se você pode provar que tem força suficiente para disputar passagem, posso reconhecer sua autoridade em substituição.',
-    falamissão: 'Um combatente legítimo — e prova de que chegou ao décimo andar. A autoridade exige demonstração, não promessa.',
+    falamissão: 'Dois combatentes — não um. Autoridade militar legítima exige hierarquia, não bravura individual. E demonstração do Andar 10 como prova de alcance real.',
     falaConcluso: 'Autoridade reconhecida. Nova ordem registrada: facilitar passagem dos que chegam com propósito. O que é propósito? Ainda estou processando.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Combatente e conquistar o Andar 10',
-      profissoes: ['combatente'], andarMin: 10,
+      tipo: 'expedicao', descricaoObj: 'Ter 2 Combatentes e conquistar o Andar 10',
+      profissoes: ['combatente', 'combatente'], andarMin: 10,
       ecoBonus: 25, recursosBonus: { madeira: 10 },
       lore: 'Sua última ordem era "não deixes ninguém passar" — mas não especificou em qual direção. A Sentinela cumpre ordens de uma autoridade que a Torre corroeu. Ainda aguarda a contraordem.',
       recompensaDesc: '+25% loot neste andar · +10 Madeira',
@@ -313,11 +314,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   7: {
     floor: 7, nome: 'Jardineira Esquecida', papel: 'Curadora do Impossível', icone: '🌿',
     fala: 'Curo com o que a Torre me dá, mas a Torre não dá comida — dá crescimento. Crescimento sem nutrição. Traga-me algo do mundo exterior. Lembro do que comida real era.',
-    falamissão: 'Comida do mundo exterior. Não do que a Torre produz. Há diferença — mesmo que você não consiga sentir.',
+    falamissão: 'Comida trazida de expedições neste andar — não do armazém em repouso. Consigo sentir a diferença: carregada pelas mãos de quem esteve aqui tem outra textura. Volte mais de uma vez.',
     falaConcluso: 'Lembro. A diferença entre crescer e ser nutrido. Obrigada por trazer a memória de volta junto com a comida.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 55 comida',
-      recurso: { tipo: 'comida', qtd: 55 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 7 ao menos 3 vezes e ter 55 comida',
+      recurso: { tipo: 'comida', qtd: 55 }, farmsMin: { andar: 7, vezes: 3 },
       ecoBonus: 25, moralBonus: 8,
       lore: 'Ela ainda cura. Tudo que toca cresce de volta — diferente. Mais parecido com a Torre do que com o que era antes. Mas ela luta contra isso todo dia. E até agora, está vencendo.',
       recompensaDesc: '+25% loot neste andar · +8 Moral',
@@ -326,11 +327,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   8: {
     floor: 8, nome: 'Estudioso do Infinito', papel: 'Arquivista Exilado', icone: '📚',
     fala: 'Cataloguei cada manuscrito nesta biblioteca. Cada um, exceto um. Escrito em ferro. Não é um idioma que reconheço — mas reconheço os nomes. Se você trouxer ferro puro, posso terminar a tradução.',
-    falamissão: 'Ferro. Para terminar o que o Arquivista lá em cima não quer que eu termine.',
+    falamissão: 'Ferro extraído das profundezas deste andar — não fundido lá embaixo e carregado até aqui. O que vem daqui tem impurezas específicas que preciso para a tradução. Explore aqui de verdade.',
     falaConcluso: 'Tradução concluída. Era uma lista de nomes. O último nome era o meu. Penúltimo... era o seu.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 30 ferro',
-      recurso: { tipo: 'ferro', qtd: 30 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 8 ao menos 3 vezes e ter 30 ferro',
+      recurso: { tipo: 'ferro', qtd: 30 }, farmsMin: { andar: 8, vezes: 3 },
       ecoBonus: 30, recursosBonus: { pedra: 15 },
       lore: 'O único livro que ele não conseguia ler estava escrito em ferro. Não era um idioma — era uma lista de nomes de todos que chegariam ao ápice. Seu nome estava lá antes de você nascer.',
       recompensaDesc: '+30% loot neste andar · +15 Pedra',
@@ -339,11 +340,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   9: {
     floor: 9, nome: 'Ferreiro Espectral', papel: 'Forjador das Correntes', icone: '🔥',
     fala: 'Forjei as correntes que prendem a entidade no ápice. Elas ainda seguram — mas ficam um pouco menores cada vez que alguém conquista um andar. Precisaria de ferro real para reforçá-las. Se você se importa com isso.',
-    falamissão: 'Ferro real. Do mundo que ainda existe fora daqui.',
+    falamissão: 'Ferro extraído repetidamente deste andar — as correntes distinguem ferro de expedição de ferro parado em armazém. Quatro vezes ao menos. O que vem de esforço constante tem outra têmpera.',
     falaConcluso: 'Reforçadas. Por enquanto. Mas você vai continuar subindo, não vai? E as correntes vão continuar diminuindo. Eu sei. Apenas... saiba o que está desfazendo.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 40 ferro',
-      recurso: { tipo: 'ferro', qtd: 40 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 9 ao menos 4 vezes e ter 40 ferro',
+      recurso: { tipo: 'ferro', qtd: 40 }, farmsMin: { andar: 9, vezes: 4 },
       ecoBonus: 30, recursosBonus: { ferro: 15 },
       lore: 'Ele forjou as correntes que prendem a entidade. Elas ainda seguram. Mas ficam um pouco menores a cada andar conquistado. O Ferreiro sabe. E forja assim mesmo, porque é tudo que sabe fazer.',
       recompensaDesc: '+30% loot neste andar · +15 Ferro',
@@ -430,11 +431,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   16: {
     floor: 16, nome: 'Eco Faminto', papel: 'Apetite da Entidade', icone: '🌀',
     fala: 'Não sou ela. Sou o que ela perdeu quando aprendeu a ser paciente. Seu apetite. Dê-me comida e mostro o caminho pelo abismo sem que ele me use para te consumir no processo.',
-    falamissão: 'Comida. Muita comida. O apetite não é negociável em quantidade.',
+    falamissão: 'Comida em quantidade — mas trazida de expedições aqui. O apetite distingue comida de expedição de comida de armazém parado: a diferença entre ser nutrido e ser distraído. Três vezes aqui, ao menos.',
     falaConcluso: 'Satisfeito. Por um momento. O apetite voltará — sempre volta. Mas agora você passou e ele estava distraído. Use isso.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 70 comida',
-      recurso: { tipo: 'comida', qtd: 70 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 16 ao menos 3 vezes e ter 70 comida',
+      recurso: { tipo: 'comida', qtd: 70 }, farmsMin: { andar: 16, vezes: 3 },
       ecoBonus: 35, recursosBonus: { comida: 25 },
       lore: 'Não é a entidade. É seu apetite — o único fragmento que ela deixou vagar livremente quando aprendeu paciência. O apetite não conhece intenção. Apenas fome.',
       recompensaDesc: '+35% loot neste andar · +25 Comida',
@@ -486,11 +487,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   21: {
     floor: 21, nome: 'Vestígio da Voz', papel: 'Memória que Reconhece', icone: '👁️',
     fala: 'Eu sei quem você é. Não de antes — de depois. A memória aqui não segue a direção do tempo. Preciso que me traga um Batedor. Alguém que entenda como rastrear o que ainda não aconteceu.',
-    falamissão: 'O rastro do que você será passa por além do que já explorou. Um Batedor pode lê-lo — mas você precisa chegar ao Andar 26 primeiro.',
-    falaConcluso: 'O Batedor leu o rastro. Não disse o que viu. Apenas disse que eu estava certo em reconhecer você. Isso é tudo que precisava confirmar. Cuide-se — o que vem a seguir te lembra de algo que você ainda não viveu.',
+    falamissão: 'Um futuro exige dois leitores — um para seguir a direção, outro para confirmar que a leitura não é ilusão. Dois Batedores, e que chegaram ao Andar 26.',
+    falaConcluso: 'Os Batedores leram o rastro. Não disseram o que viram. Apenas confirmaram que eu estava certo em reconhecer você. Cuide-se — o que vem a seguir te lembra de algo que você ainda não viveu.',
     quest: {
-      tipo: 'expedicao', descricaoObj: 'Ter um Batedor e conquistar o Andar 26',
-      profissoes: ['batedor'], andarMin: 26,
+      tipo: 'expedicao', descricaoObj: 'Ter 2 Batedores e conquistar o Andar 26',
+      profissoes: ['batedor', 'batedor'], andarMin: 26,
       ecoBonus: 20, moralBonus: 8,
       lore: 'O Vestígio existe na memória de um momento que ainda não aconteceu. Ele te reconheceu porque já te viu chegar — de um futuro que pode ou não se tornar real. O rastro que o Batedor leu não era do passado. Era uma possibilidade.',
       recompensaDesc: '+20% loot neste andar · +8 Moral',
@@ -499,11 +500,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   22: {
     floor: 22, nome: 'Fragmento Coletivo', papel: 'Eco dos Que Construíram', icone: '⚒️',
     fala: 'Somos o que sobrou depois que o Eco dos Construtores lá embaixo ficou para trás. A memória mais bruta — antes de ganhar forma, antes de ter palavras. Dê-nos ferro. Para sentirmos o peso do que seguramos antes de ser pedra.',
-    falamissão: 'Ferro. Não pedra — ferro. O que construímos era mais pesado do que qualquer parede.',
+    falamissão: 'Ferro deste andar — não de qualquer fonte. O peso que segurávamos vinha daqui especificamente. Explore aqui repetidamente. O Fragmento sente a origem do que é trazido.',
     falaConcluso: 'O ferro faz sentido. Agora lembramos o que era antes de ser lembrança. Havia intenção primeiro. Depois veio a pedra. A ordem importa mais do que qualquer um nos disse.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 85 ferro',
-      recurso: { tipo: 'ferro', qtd: 85 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 22 ao menos 4 vezes e ter 85 ferro',
+      recurso: { tipo: 'ferro', qtd: 85 }, farmsMin: { andar: 22, vezes: 4 },
       ecoBonus: 25, recursosBonus: { ferro: 20 },
       lore: 'O Fragmento Coletivo é a memória dos Construtores antes de terem linguagem — pura intenção, puro peso. Eles não sabiam o que construíam. Sabiam apenas que precisavam construir. A razão chegou depois, quando já era tarde para mudar a direção.',
       recompensaDesc: '+25% loot neste andar · +20 Ferro',
@@ -551,11 +552,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   27: {
     floor: 27, nome: 'Memória do Traidor', papel: 'Eco de uma Decisão', icone: '🗡️',
     fala: 'Fui um Construtor. E fiz algo que os outros não fizeram: concordei com o que encontramos aqui. Troquei nosso propósito pelo que a Torre prometeu. Os outros chamaram de traição. Eu chamei de entendimento. Traga-me madeira — o material dos que constroem para os outros.',
-    falamissão: 'Madeira. Não pedra nem ferro — madeira. O material que dura apenas o suficiente para ser útil antes de apodrecer.',
+    falamissão: 'Madeira deste andar — não carregada de baixo. A memória do que construímos vem daqui. Quatro expedições no mínimo. O que vem de trabalho constante carrega a intenção que buscamos.',
     falaConcluso: 'A madeira confirma minha teoria: você também está aqui por uma razão que não é completamente sua. Isso não te faz traidor. Te faz o tipo de pessoa que a Torre consegue trabalhar. Como eu. Não é insulto — é observação.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 100 madeira',
-      recurso: { tipo: 'madeira', qtd: 100 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 27 ao menos 4 vezes e ter 100 madeira',
+      recurso: { tipo: 'madeira', qtd: 100 }, farmsMin: { andar: 27, vezes: 4 },
       ecoBonus: 25, recursosBonus: { madeira: 25 },
       lore: 'O Construtor que traiu não vendeu os outros por fraqueza. Entendeu algo que eles não conseguiram: a Torre não era inimiga. Era uma oportunidade que exigia um preço que os outros não estavam dispostos a pagar. Ele pagou. E ficou aqui, como memória, como prova de que entendeu.',
       recompensaDesc: '+25% loot neste andar · +25 Madeira',
@@ -590,11 +591,11 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   31: {
     floor: 31, nome: 'Raiz de Origem', papel: 'Ponto de Partida', icone: '🌿',
     fala: 'Aqui foi colocada a primeira pedra. Não a primeira pedra da Torre — a primeira pedra de tudo que a Torre substituiu. Este é o lugar onde o propósito original foi enterrado antes de começar. Traga pedra — para que eu sinta o que separa o que foi colocado aqui do que deveria ter sido.',
-    falamissão: 'Pedra real. Para que a Raiz compare o peso do que foi com o peso do que é.',
+    falamissão: 'Pedra deste andar — a Raiz compara o peso do que foi com o peso do que é, e a origem importa. Não traga de qualquer lugar. Explore aqui ao menos quatro vezes antes.',
     falaConcluso: 'A pedra que você trouxe pesa diferente. É de fora. O que foi colocado aqui primeiro também era de fora — mas de um fora que não existe mais. Você é a prova de que o exterior ainda produz coisas reais. Isso importa mais do que parece.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 90 pedra',
-      recurso: { tipo: 'pedra', qtd: 90 },
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 31 ao menos 4 vezes e ter 90 pedra',
+      recurso: { tipo: 'pedra', qtd: 90 }, farmsMin: { andar: 31, vezes: 4 },
       ecoBonus: 27, recursosBonus: { pedra: 30 },
       lore: 'A primeira pedra colocada neste ponto não era de construção — era de fundação. Havia algo abaixo que precisava ser selado antes que qualquer estrutura pudesse existir. O que foi selado não era perigoso. Era o acordo original entre os Construtores e o que havia aqui antes.',
       recompensaDesc: '+27% loot neste andar · +30 Pedra',
@@ -642,12 +643,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   36: {
     floor: 36, nome: 'Habitante do Intervalo', papel: 'Ser Exclusivo desta Estação', icone: '🌙',
     fala: 'Só existo nesta temporada da Torre. Quando os andares superiores forem alcançados, vou embora — não morro, apenas deixo de ser necessário aqui. Enquanto estou, preciso de comida e ferro. O que existe antes do primeiro andar também precisa de sustento.',
-    falamissão: 'Comida e ferro. O que vem antes do começo não tem fazenda nem forja — depende do que passa por aqui.',
+    falamissão: 'Comida e ferro deste andar — trazidos de expedições reais aqui, não de armazém. O que existe antes do início não aceita reaproveitamento. Quatro expedições antes de trazer.',
     falaConcluso: 'Sustentado. Há algo que posso te dizer antes de ir — algo que os registros acima nunca vão mencionar porque não sabem: antes do Andar 1, havia um número. Um número específico de câmaras que foi alterado antes do primeiro visitante chegar. O número original era maior. Quanto maior, os registros não dizem. Apenas que foi maior, e que foi mudado, e que ninguém perguntou por quê.',
     quest: {
-      tipo: 'recurso', descricaoObj: 'Trazer 110 comida e 55 ferro',
+      tipo: 'recurso', descricaoObj: 'Explorar o Andar 36 ao menos 4 vezes, ter 110 comida e 55 ferro',
       recurso: { tipo: 'comida', qtd: 110 },
       recurso2: { tipo: 'ferro', qtd: 55 },
+      farmsMin: { andar: 36, vezes: 4 },
       ecoBonus: 30, recursosBonus: { comida: 30, ferro: 15 },
       lore: 'O Habitante do Intervalo existe apenas nesta janela de tempo específica — quando os andares 21–40 são acessíveis mas ainda não foram completamente explorados. Não é um ser da Torre. É um ser do Intervalo entre o que a Torre foi e o que ainda não se tornou. Quando o intervalo fechar, ele simplesmente não estará mais aqui para ser encontrado.',
       recompensaDesc: '+30% loot neste andar · +30 Comida +15 Ferro',
@@ -1066,11 +1068,14 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
     case 'recurso': {
       if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
       if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;
+      if (q.farmsMin && (state.farmsPerFloor?.[q.farmsMin.andar] ?? 0) < q.farmsMin.vezes) return false;
       return !!(q.recurso || q.recurso2);
     }
     case 'expedicao': {
       // andarMin: player deve ter avançado além deste andar
       if (q.andarMin && state.andarAtual <= q.andarMin) return false;
+      // farmsMin: mínimo de farms vitoriosos no andar indicado
+      if (q.farmsMin && (state.farmsPerFloor?.[q.farmsMin.andar] ?? 0) < q.farmsMin.vezes) return false;
       // recurso misto (expedicao + recurso obrigatório)
       if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
       if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;

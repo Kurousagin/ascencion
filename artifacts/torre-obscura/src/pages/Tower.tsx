@@ -621,12 +621,19 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         )}
                         {q.tipo === 'expedicao' && (
                           <span>
-                            {q.profissoes ? q.profissoes.map(p => {
-                              const temProf = state.npcs.some(n => n.vivo && getProfissao(n) === p);
-                              return <span key={p} className={temProf ? 'text-success' : 'text-destructive/70'}>
-                                {temProf ? '✓' : '✗'} {p}
-                              </span>;
-                            }).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, ' · ', el], []) : null}
+                            {q.profissoes ? (() => {
+                              // multiset: conta o total exigido e o disponível por profissão
+                              const needed: Record<string, number> = {};
+                              for (const p of q.profissoes!) needed[p] = (needed[p] ?? 0) + 1;
+                              const avail: Record<string, number> = {};
+                              for (const n of state.npcs.filter(n => n.vivo)) { const p = getProfissao(n); avail[p] = (avail[p] ?? 0) + 1; }
+                              return Object.entries(needed).map(([prof, cnt]) => {
+                                const ok = (avail[prof] ?? 0) >= cnt;
+                                return <span key={prof} className={ok ? 'text-success' : 'text-destructive/70'}>
+                                  {ok ? '✓' : '✗'} {cnt > 1 ? `${cnt}× ` : ''}{prof}
+                                </span>;
+                              }).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, ' · ', el], []);
+                            })() : null}
                             {q.npcsMinCombate && (
                               <span>
                                 {state.npcs.filter(n => n.vivo && (getProfissao(n) === 'combatente' || getProfissao(n) === 'batedor' || getProfissao(n) === 'sentinela')).length}
@@ -635,6 +642,17 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             )}
                           </span>
                         )}
+                        {/* Progresso de farms (farmsMin) */}
+                        {q.farmsMin && (() => {
+                          const atual = state.farmsPerFloor?.[q.farmsMin!.andar] ?? 0;
+                          const ok = atual >= q.farmsMin!.vezes;
+                          return (
+                            <span className={ok ? 'text-success' : 'text-white/50'}>
+                              {(q.tipo === 'recurso') && ' · '}
+                              ⟳ {atual}/{q.farmsMin!.vezes}× Andar {q.farmsMin!.andar}{ok ? ' ✓' : ''}
+                            </span>
+                          );
+                        })()}
                       </div>
                       {/* Recompensa */}
                       <div className="flex items-center gap-2 border-t border-white/5 pt-2">
