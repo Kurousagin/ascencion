@@ -131,7 +131,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
                     RITUAL EM TRINDADE
                   </Dialog.Title>
                   <p className="text-[10px] text-secondary/60 tracking-widest italic">
-                    {fase === 'ritual' ? 'Escolha uma carta. A Torre decide.' : 'A Torre revela sua escolha…'}
+                    {fase === 'ritual' ? 'Três cartas. Escolha uma — só ela responderá.' : 'A Torre revela sua escolha…'}
                   </p>
                 </div>
 

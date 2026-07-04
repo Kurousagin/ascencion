@@ -54,8 +54,8 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
   descricao: [
     'A Torre Obscura desperta pela primeira vez.',
     'Ela não anunciou sua abertura. Não enviou mensageiros. Simplesmente acordou — e os que estavam à sua sombra sentiram algo mudar no ar.',
-    'Como reconhecimento a quem chega primeiro, a Torre concede um Ritual gratuito em Trindade — e recursos para que você não comece do nada.',
-    'Ela escolherá quem se junta à sua cidadela. Você não escolhe. Ela sim. Sempre foi assim.',
+    'Como reconhecimento a quem chega primeiro, a Torre concede um Ritual gratuito em Trindade — três cartas, um chamado. Apenas uma será atendida.',
+    'Ela escolherá quem se junta à sua cidadela entre os que se apresentarem. Você revela as cartas. A Torre decide qual responde.',
   ],
 
   // ── Primordial: Valdris ───────────────────────────────────────────────────
