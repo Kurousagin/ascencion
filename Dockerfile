@@ -34,7 +34,7 @@ COPY lib/api-zod/package.json ./lib/api-zod/
 COPY lib/db/package.json      ./lib/db/
 COPY artifacts/api-server/package.json ./artifacts/api-server/
 
-# Instalando tudo para garantir que o drizzle-orm esteja disponível para o drizzle-kit
+# Instala todas as dependências no container de prod para não quebrar links do workspace
 RUN pnpm install
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
@@ -45,5 +45,6 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-# O --prefix /app garante que o npx procure os pacotes na raiz onde o pnpm instalou tudo
-CMD ["sh", "-c", "npx --prefix /app drizzle-kit push --config ./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+# Usamos o 'pnpm exec' a partir da raiz. Ele usa a árvore de módulos nativa do pnpm
+# e resolve o 'drizzle-orm' sem precisar baixar cópias temporárias pelo npm.
+CMD ["sh", "-c", "pnpm exec drizzle-kit push --config=./lib/db/drizzle.config.ts && node --enable-source-maps artifacts/api-server/dist/index.mjs"]
