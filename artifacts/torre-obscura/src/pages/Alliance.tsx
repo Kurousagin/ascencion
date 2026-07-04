@@ -165,7 +165,11 @@ export function Alliance() {
     }
   };
 
-  const temAliadas = aliadas.length > 0;
+  // Considera tanto a lista carregada quanto o contador do perfil.
+  // Sem isso, se puxarAliadasECaixa ainda não completou mas sincronizarPerfil
+  // já voltou com numAliadas > 0, as seções de ação ficam escondidas.
+  const aliadasCarregando = aliadas.length === 0 && (perfil?.numAliadas ?? 0) > 0;
+  const temAliadas = aliadas.length > 0 || aliadasCarregando;
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
@@ -259,69 +263,77 @@ export function Alliance() {
           <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
             <Users size={13} /> SUAS ALIADAS
           </h3>
-          <div className="space-y-3">
-            {aliadas.map(aliada => (
-              <div key={aliada.deviceId} className="bg-gradient-to-b from-[#231A2E] to-[#161B22] border border-primary/30 rounded-sm p-4 relative overflow-hidden">
-                <Handshake className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
-                <div className="flex items-start justify-between gap-2 relative z-10">
-                  <div className="font-cinzel font-bold text-lg text-foreground">{aliada.nome}</div>
-                  {confirmarDesfazer === aliada.deviceId ? (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleDesfazer(aliada.deviceId)}
-                        disabled={desfazendo === aliada.deviceId}
-                        className="min-h-[32px] px-2.5 text-[10px] font-bold rounded-sm border border-destructive text-destructive hover:bg-destructive hover:text-background transition-all active:scale-95 disabled:opacity-40 touch-manipulation"
-                      >
-                        {desfazendo === aliada.deviceId ? '...' : 'CONFIRMAR'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmarDesfazer(null)}
-                        disabled={desfazendo === aliada.deviceId}
-                        className="min-h-[32px] w-8 flex items-center justify-center rounded-sm border border-card-border text-muted-foreground hover:text-foreground transition-all active:scale-95 touch-manipulation"
-                        aria-label="Cancelar"
-                      >
-                        <X size={13} />
-                      </button>
+          {aliadasCarregando ? (
+            <div className="text-center text-[11px] text-muted-foreground py-6 border border-dashed border-card-border rounded-sm animate-pulse">
+              Sincronizando aliadas...
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {aliadas.map(aliada => (
+                  <div key={aliada.deviceId} className="bg-gradient-to-b from-[#231A2E] to-[#161B22] border border-primary/30 rounded-sm p-4 relative overflow-hidden">
+                    <Handshake className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
+                    <div className="flex items-start justify-between gap-2 relative z-10">
+                      <div className="font-cinzel font-bold text-lg text-foreground">{aliada.nome}</div>
+                      {confirmarDesfazer === aliada.deviceId ? (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleDesfazer(aliada.deviceId)}
+                            disabled={desfazendo === aliada.deviceId}
+                            className="min-h-[32px] px-2.5 text-[10px] font-bold rounded-sm border border-destructive text-destructive hover:bg-destructive hover:text-background transition-all active:scale-95 disabled:opacity-40 touch-manipulation"
+                          >
+                            {desfazendo === aliada.deviceId ? '...' : 'CONFIRMAR'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmarDesfazer(null)}
+                            disabled={desfazendo === aliada.deviceId}
+                            className="min-h-[32px] w-8 flex items-center justify-center rounded-sm border border-card-border text-muted-foreground hover:text-foreground transition-all active:scale-95 touch-manipulation"
+                            aria-label="Cancelar"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmarDesfazer(aliada.deviceId)}
+                          className="min-h-[32px] px-2.5 flex items-center gap-1 text-[10px] font-bold rounded-sm border border-destructive/40 text-destructive/80 hover:border-destructive hover:text-destructive transition-all active:scale-95 touch-manipulation shrink-0"
+                        >
+                          <Link2Off size={12} /> DESFAZER
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmarDesfazer(aliada.deviceId)}
-                      className="min-h-[32px] px-2.5 flex items-center gap-1 text-[10px] font-bold rounded-sm border border-destructive/40 text-destructive/80 hover:border-destructive hover:text-destructive transition-all active:scale-95 touch-manipulation shrink-0"
-                    >
-                      <Link2Off size={12} /> DESFAZER
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-4 flex-wrap mt-3 text-[11px] relative z-10">
-                  <span className="flex items-center gap-1 text-secondary"><CalendarDays size={12} className="text-primary/70" /> Dia <span className="text-foreground font-bold">{aliada.resumo?.dia ?? '—'}</span></span>
-                  <span className="flex items-center gap-1 text-secondary"><Users size={12} className="text-primary/70" /> Pop. <span className="text-foreground font-bold">{aliada.resumo?.populacao ?? '—'}</span></span>
-                  <span className="flex items-center gap-1 text-secondary"><Building2 size={12} className="text-primary/70" /> Andar <span className="text-foreground font-bold">{aliada.resumo?.andarAtual ?? '—'}</span></span>
-                </div>
-                {aliada.resumo && (
-                  <div className="flex gap-2 flex-wrap mt-3 relative z-10">
-                    {(Object.keys(aliada.resumo.profissoes) as ProfissaoId[]).map(p => (
-                      <span key={p} className={`text-[10px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background/40 border-card-border text-muted-foreground'}`}>
-                        {PROFISSOES[p].nome} <span className="font-bold">{aliada.resumo!.profissoes[p]}</span>
-                      </span>
-                    ))}
+                    <div className="flex gap-4 flex-wrap mt-3 text-[11px] relative z-10">
+                      <span className="flex items-center gap-1 text-secondary"><CalendarDays size={12} className="text-primary/70" /> Dia <span className="text-foreground font-bold">{aliada.resumo?.dia ?? '—'}</span></span>
+                      <span className="flex items-center gap-1 text-secondary"><Users size={12} className="text-primary/70" /> Pop. <span className="text-foreground font-bold">{aliada.resumo?.populacao ?? '—'}</span></span>
+                      <span className="flex items-center gap-1 text-secondary"><Building2 size={12} className="text-primary/70" /> Andar <span className="text-foreground font-bold">{aliada.resumo?.andarAtual ?? '—'}</span></span>
+                    </div>
+                    {aliada.resumo && (
+                      <div className="flex gap-2 flex-wrap mt-3 relative z-10">
+                        {(Object.keys(aliada.resumo.profissoes) as ProfissaoId[]).map(p => (
+                          <span key={p} className={`text-[10px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background/40 border-card-border text-muted-foreground'}`}>
+                            {PROFISSOES[p].nome} <span className="font-bold">{aliada.resumo!.profissoes[p]}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {confirmarDesfazer === aliada.deviceId && (
+                      <p className="text-[10px] text-destructive/90 mt-3 relative z-10">
+                        Desfazer encerra a troca de recursos e moradores com {aliada.nome}. Empréstimos já em curso ainda retornam normalmente.
+                      </p>
+                    )}
                   </div>
-                )}
-                {confirmarDesfazer === aliada.deviceId && (
-                  <p className="text-[10px] text-destructive/90 mt-3 relative z-10">
-                    Desfazer encerra a troca de recursos e moradores com {aliada.nome}. Empréstimos já em curso ainda retornam normalmente.
-                  </p>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="text-[9px] text-muted-foreground mt-3">
-            Resumos sincronizados periodicamente — não é tempo real.
-          </p>
+              <p className="text-[9px] text-muted-foreground mt-3">
+                Resumos sincronizados periodicamente — não é tempo real.
+              </p>
+            </>
+          )}
         </section>
       )}
 
       {/* Ações com aliada: seletor de alvo + envio/reforço/empréstimo */}
-      {temAliadas && (
+      {temAliadas && !aliadasCarregando && (
         <>
           {/* Seletor de aliada-alvo */}
           <section>

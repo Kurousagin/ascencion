@@ -157,11 +157,14 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const puxarAliadasECaixa = useCallback(async () => {
     try {
       const as = await listarAliadas(deviceId.current);
-      setAliadas(as);
+      // Guard: customFetch retorna null para respostas 304 sem corpo em cache miss.
+      // Em browsers normais isso não ocorre (304 é transparente), mas em edge cases
+      // (modo privado, cache frio) pode retornar null em vez de [].
+      setAliadas(Array.isArray(as) ? as : []);
     } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current);
-      setCaixa(c);
+      setCaixa(Array.isArray(c) ? c : []);
     } catch { /* mantém estado anterior */ }
   }, []);
 
