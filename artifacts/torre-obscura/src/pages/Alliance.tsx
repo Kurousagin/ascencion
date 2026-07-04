@@ -252,7 +252,8 @@ export function Alliance() {
   const aliadasCarregando =
     aliadas.length === 0 && (perfil?.numAliadas ?? 0) > 0;
 
-  const temAliadas = aliadas.length > 0 || (perfil?.numAliadas ?? 0) > 0;
+  const temAliadas = aliadas.length > 0 || (perfil?.numAliadas ?? 0) > 0; //[span_1](start_span)[span_1](end_span)
+
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
