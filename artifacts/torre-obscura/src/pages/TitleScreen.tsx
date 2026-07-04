@@ -4,13 +4,12 @@ import { useGame } from '../context/GameContext';
 import { Onboarding } from '../components/Onboarding';
 import { LancamentoModal } from '../components/LancamentoModal';
 import { LANCAMENTO_ATIVO } from '../lib/lancamento';
-import { ONBOARDING_KEY, ONBOARDING_PENDING } from '../lib/onboarding-keys';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_PENDING } from '../lib/onboarding-keys';
 
 export function TitleScreen() {
   const { hasSave, startNewGame, continueGame } = useGame();
 
   const [lancamentoOpen, setLancamentoOpen] = useState(false);
-  // Onboarding local: apenas para o botão "COMO JOGAR" (enquanto no menu, sem jogo ativo)
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   let saveDay = 0;
@@ -26,11 +25,18 @@ export function TitleScreen() {
     } catch(e) {}
   }
 
-  // Se primeira vez, deixa sinal no sessionStorage para o MainGameArea abrir o onboarding
-  // quando o jogo montar (o TitleScreen desmonta ao iniciar jogo, por isso o sinal).
+  // Sinaliza ao MainGameArea para abrir o onboarding após o jogo montar
   const agendarOnboarding = () => {
     if (!localStorage.getItem(ONBOARDING_KEY)) {
       sessionStorage.setItem(ONBOARDING_PENDING, '1');
+    }
+  };
+
+  // Sinaliza ao MainGameArea para abrir o gacha de lançamento após o jogo montar.
+  // O gacha só acontece uma vez por dispositivo (GACHA_LANCAMENTO_DONE no localStorage).
+  const agendarGacha = () => {
+    if (!localStorage.getItem(GACHA_LANCAMENTO_DONE)) {
+      sessionStorage.setItem(GACHA_LANCAMENTO_PENDING, '1');
     }
   };
 
@@ -43,7 +49,9 @@ export function TitleScreen() {
     }
   };
 
-  const handleReceberBonus = () => {
+  // Chamado ao clicar "REALIZAR O RITUAL E INICIAR" no LancamentoModal
+  const handleIniciarRitual = () => {
+    agendarGacha();
     agendarOnboarding();
     startNewGame(LANCAMENTO_ATIVO!);
   };
@@ -67,7 +75,6 @@ export function TitleScreen() {
 
             <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-primary/80 to-transparent glow-gold mb-6" />
 
-            {/* Badge de temporada ativa */}
             {LANCAMENTO_ATIVO && (
               <div className="flex items-center gap-2 px-3 py-1 border border-primary/40 bg-primary/5 rounded-sm mb-3">
                 <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
@@ -117,7 +124,6 @@ export function TitleScreen() {
               </button>
             </div>
 
-            {/* Como Jogar — abre onboarding diretamente no menu (sem precisar iniciar jogo) */}
             <button
               onClick={() => setOnboardingOpen(true)}
               className="w-full flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation"
@@ -129,17 +135,15 @@ export function TitleScreen() {
         </div>
       </div>
 
-      {/* Modal de lançamento de temporada */}
       {LANCAMENTO_ATIVO && (
         <LancamentoModal
           open={lancamentoOpen}
           lancamento={LANCAMENTO_ATIVO}
-          onReceberBonus={handleReceberBonus}
+          onIniciarRitual={handleIniciarRitual}
           onClose={() => setLancamentoOpen(false)}
         />
       )}
 
-      {/* Onboarding via "COMO JOGAR" (exibido enquanto no menu, sem estado de jogo) */}
       <Onboarding
         open={onboardingOpen}
         onClose={() => {

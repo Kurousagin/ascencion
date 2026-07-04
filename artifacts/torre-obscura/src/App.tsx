@@ -13,7 +13,9 @@ import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
-import { ONBOARDING_KEY, ONBOARDING_PENDING } from './lib/onboarding-keys';
+import { GachaLancamento } from './components/GachaLancamento';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT } from './lib/onboarding-keys';
+import { LANCAMENTO_ATIVO } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
 
 function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
@@ -40,11 +42,28 @@ function MainGameArea() {
   const { state } = useGame();
   const [tab, setTab] = useState('obs');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [gachaOpen, setGachaOpen] = useState(false);
 
-  // Abre o onboarding quando o state passa de null → não-nulo (jogo recém-iniciado)
-  // e há um sinal pendente de sessionStorage deixado pelo TitleScreen.
+  // Quando o jogo inicia (state null→não-nulo), verifica sinais de pending/recovery.
   useEffect(() => {
-    if (state && sessionStorage.getItem(ONBOARDING_PENDING)) {
+    if (!state) return;
+    // 1. Gacha first-launch (sessionStorage signal)
+    if (sessionStorage.getItem(GACHA_LANCAMENTO_PENDING)) {
+      sessionStorage.removeItem(GACHA_LANCAMENTO_PENDING);
+      setGachaOpen(true);
+      return;
+    }
+    // 2. Recovery após refresh mid-ritual: resultado persiste em localStorage mas DONE ausente
+    if (
+      LANCAMENTO_ATIVO &&
+      !localStorage.getItem(GACHA_LANCAMENTO_DONE) &&
+      localStorage.getItem(GACHA_LANCAMENTO_RESULT)
+    ) {
+      setGachaOpen(true);
+      return;
+    }
+    // 3. Onboarding
+    if (sessionStorage.getItem(ONBOARDING_PENDING)) {
       sessionStorage.removeItem(ONBOARDING_PENDING);
       setOnboardingOpen(true);
     }
@@ -61,10 +80,8 @@ function MainGameArea() {
         className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        {/* Alerta de invasão pendente */}
         <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />
 
-        {/* Content area */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -86,16 +103,30 @@ function MainGameArea() {
           </AnimatePresence>
         </div>
 
-        {/* Nav always on top */}
         <div className="relative z-50 flex-shrink-0">
           <BottomNav currentTab={tab} onTabChange={setTab} />
         </div>
       </div>
-
     </WarProvider>
     </AllianceProvider>
 
-    {/* Onboarding fora dos providers — não precisa de contexto de aliança/guerra */}
+    {/* Gacha de lançamento — abre ao iniciar novo jogo na temporada ativa */}
+    {LANCAMENTO_ATIVO && (
+      <GachaLancamento
+        open={gachaOpen}
+        lancamento={LANCAMENTO_ATIVO}
+        onClose={() => {
+          setGachaOpen(false);
+          // Após gacha, abre onboarding se pendente
+          if (sessionStorage.getItem(ONBOARDING_PENDING)) {
+            sessionStorage.removeItem(ONBOARDING_PENDING);
+            setOnboardingOpen(true);
+          }
+        }}
+      />
+    )}
+
+    {/* Onboarding — tutorial da primeira vez */}
     <Onboarding
       open={onboardingOpen}
       onClose={() => {

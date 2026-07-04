@@ -16,7 +16,7 @@ import {
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
   getRandomHabilidade,
 } from '../lib/game-data';
-import type { LancamentoTemporada } from '../lib/lancamento';
+import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 
 export interface ExpeditionResult {
   vitoria: boolean;
@@ -36,6 +36,7 @@ interface GameContextType {
   state: GameState;
   hasSave: boolean;
   startNewGame: (lancamento?: LancamentoTemporada) => void;
+  adicionarNpcLancamento: (npcConfig: NpcLancamento) => void;
   continueGame: () => void;
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
@@ -455,40 +456,46 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const startNewGame = (lancamento?: LancamentoTemporada) => {
     const s = createInitialState();
     if (lancamento) {
-      // Adiciona NPC especial de lançamento (quase imortal)
-      const npcSpec = lancamento.npcEspecial;
-      const especial: NPC = {
-        id:           crypto.randomUUID(),
-        nome:         npcSpec.nome,
-        forca:        npcSpec.forca,
-        agilidade:    npcSpec.agilidade,
-        inteligencia: npcSpec.inteligencia,
-        resistencia:  npcSpec.resistencia,
-        sanidade:     100,
-        lealdade:     100,
-        fadiga:       0,
-        vivo:         true,
-        obscuro:      false,
-        emExpedicao:  false,
-        raridade:     'Épico',
-        habilidade:   npcSpec.habilidade,
-        posto:        null,
-        lancamento:   true,
-      };
-      s.npcs.push(especial);
-      // Aplica bônus de recursos
+      // O NPC especial é adicionado DEPOIS via adicionarNpcLancamento (gacha de lançamento).
+      // Aqui apenas aplicamos bônus de recursos e moral.
       const cap = s.recursos.capacidadeArmazem;
       s.recursos.comida   = Math.min(cap, s.recursos.comida   + (lancamento.bonusRecursos.comida   ?? 0));
       s.recursos.madeira  = Math.min(cap, s.recursos.madeira  + (lancamento.bonusRecursos.madeira  ?? 0));
       s.recursos.pedra    = Math.min(cap, s.recursos.pedra    + (lancamento.bonusRecursos.pedra    ?? 0));
       s.recursos.ferro    = Math.min(cap, s.recursos.ferro    + (lancamento.bonusRecursos.ferro    ?? 0));
-      // Bônus de moral
       if (lancamento.bonusMoral) s.moral = Math.min(100, s.moral + lancamento.bonusMoral);
-      // Logs de boas-vindas (mais recentes primeiro)
       lancamento.logsBoas.forEach(msg => {
         s.log.unshift({ id: crypto.randomUUID(), tipo: 'descoberta', mensagem: msg, dia: 1 });
       });
     }
+    saveState(s);
+  };
+
+  // Adiciona o NPC sorteado no gacha de lançamento ao estado do jogo.
+  // Chamado pelo GachaLancamento após o jogador confirmar o resultado.
+  const adicionarNpcLancamento = (npcConfig: NpcLancamento) => {
+    if (!state) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const npc: NPC = {
+      id:           crypto.randomUUID(),
+      nome:         npcConfig.nome,
+      forca:        npcConfig.forca,
+      agilidade:    npcConfig.agilidade,
+      inteligencia: npcConfig.inteligencia,
+      resistencia:  npcConfig.resistencia,
+      sanidade:     100,
+      lealdade:     100,
+      fadiga:       0,
+      vivo:         true,
+      obscuro:      false,
+      emExpedicao:  false,
+      raridade:     'Épico',
+      habilidade:   npcConfig.habilidade,
+      posto:        null,
+      lancamento:   npcConfig.primordial ?? false,
+    };
+    s.npcs.push(npc);
+    addLog(s, 'descoberta', `${npcConfig.nome.toUpperCase()} une-se à sua cidadela.`);
     saveState(s);
   };
 
@@ -1205,6 +1212,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state: state as GameState,
       hasSave,
       startNewGame,
+      adicionarNpcLancamento,
       continueGame,
       advanceDay,
       setSpeed,
