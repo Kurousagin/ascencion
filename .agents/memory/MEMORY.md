@@ -1,4 +1,5 @@
 - [Torre Obscura game loop](torre-obscura-game-loop.md) — expeditions resolve instantly (emExpedicao flag is vestigial); pop growth is two-step gated (Alojamento cap + rising invoke cost); professions are derived, combatente power baked into calcNpcPower.
+- [Lore Bible](../artifacts/torre-obscura/LORE_BIBLE.md) — fonte de verdade para lore, temporadas, Primordiais, Torres-Eco, Torre Original e seeds já plantadas. Ler antes de qualquer implementação de T2+.
 - [Async multiplayer alliance polling](async-multiplayer-alliance.md) — cross-player inbox/sync must refresh on tab mount + visibilitychange, not only setInterval (background tabs throttle timers).
 - [Resident loan (empréstimo) multiplayer](resident-loan-multiplayer.md) — full async loan flow via exchanges table; idempotency via status transition; auto-return scan in AllianceContext.
 - [Multiple alliances model](multi-alianca.md) — max 3 allies, limits are GLOBAL not per-ally; pairing must be atomic (FOR UPDATE + 23505→409); dissolve removes both directions, in-flight loans survive.
