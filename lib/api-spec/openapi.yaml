@@ -14,6 +14,8 @@ tags:
     description: Aliança assíncrona entre jogadoras (identidade, pareamento e trocas)
   - name: guerra
     description: Guerra entre cidadelas — descoberta de rivais (cidadelas-bot)
+  - name: notificacoes
+    description: Web Push para reengajamento de jogadoras
 paths:
   /healthz:
     get:
@@ -323,6 +325,90 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RivaisResposta"
+  /notificacoes/chave-publica:
+    get:
+      operationId: obterChavePublicaVapid
+      tags: [notificacoes]
+      summary: Obter chave pública VAPID para Web Push
+      description: Retorna a chave pública VAPID necessária para inscrever o cliente em notificações push.
+      responses:
+        "200":
+          description: Chave pública VAPID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChavePublicaVapid"
+        "503":
+          description: Notificações não configuradas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /notificacoes/inscrever:
+    post:
+      operationId: inscreverNotificacoes
+      tags: [notificacoes]
+      summary: Inscrever dispositivo em notificações push
+      description: Registra uma assinatura de push para o dispositivo. Upsert por deviceId.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InscricaoPushInput"
+      responses:
+        "200":
+          description: Inscrição bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResposta"
+  /notificacoes/desinscrever:
+    post:
+      operationId: desinscreverNotificacoes
+      tags: [notificacoes]
+      summary: Desinscrever dispositivo de notificações push
+      description: Remove a assinatura de push do dispositivo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesinscricaoInput"
+      responses:
+        "200":
+          description: Desinscrita bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResposta"
+  /notificacoes/proximo-evento:
+    patch:
+      operationId: atualizarProximoEvento
+      tags: [notificacoes]
+      summary: Atualizar próximo evento para notificação Tier 2
+      description: >
+        Define o próximo evento relevante (e quando ocorrerá) para uma notificação personalizada.
+        Envie null em ambos os campos para limpar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProximoEventoInput"
+      responses:
+        "200":
+          description: Próximo evento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResposta"
+        "404":
+          description: Nenhuma assinatura encontrada para este deviceId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
 components:
   schemas:
     HealthStatus:
@@ -806,3 +892,56 @@ components:
             $ref: "#/components/schemas/Rival"
       required:
         - rivais
+    OkResposta:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+    ChavePublicaVapid:
+      type: object
+      properties:
+        publicKey:
+          type: string
+      required:
+        - publicKey
+    InscricaoPushInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        endpoint:
+          type: string
+        p256dh:
+          type: string
+        auth:
+          type: string
+      required:
+        - deviceId
+        - endpoint
+        - p256dh
+        - auth
+    DesinscricaoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+      required:
+        - deviceId
+    ProximoEventoInput:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        proximoEventoEm:
+          type: string
+          format: date-time
+          nullable: true
+        proximoEventoTexto:
+          type: string
+          nullable: true
+      required:
+        - deviceId
+        - proximoEventoEm
+        - proximoEventoTexto

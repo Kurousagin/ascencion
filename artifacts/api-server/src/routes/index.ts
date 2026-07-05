@@ -4,6 +4,7 @@ import aliancaRouter from "./alianca";
 import guerraRouter from "./guerra";
 import pioneerRouter from "./pioneer";
 import primordialRouter from "./primordial";
+import notificacoesRouter from "./notificacoes";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(aliancaRouter);
 router.use(guerraRouter);
 router.use(pioneerRouter);
 router.use(primordialRouter);
+router.use(notificacoesRouter);
 
 export default router;

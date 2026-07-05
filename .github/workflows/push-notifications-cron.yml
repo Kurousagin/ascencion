@@ -1,0 +1,28 @@
+name: Push Notifications Cron
+
+on:
+  schedule:
+    # Every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  execute-notification-tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger notification tick
+        run: |
+          curl -X POST \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail \
+            https://ascencion.onrender.com/internal/notificacoes/executar-ciclo
+
+      - name: Log status
+        if: success()
+        run: echo "Notification tick completed successfully"
+
+      - name: Log failure
+        if: failure()
+        run: echo "Notification tick failed"

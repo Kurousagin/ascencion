@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { runNotificationTick } from "./lib/push-tick";
 
 const app: Express = express();
 
@@ -35,6 +36,25 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ─── Internal cron endpoint (protected) ────────────────────────────────────────
+app.post("/internal/notificacoes/executar-ciclo", async (req, res): Promise<void> => {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers["x-cron-secret"];
+
+  if (!cronSecret || cronSecret !== authHeader) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const result = await runNotificationTick();
+    res.json(result);
+  } catch (error) {
+    logger.error(error, "Error running notification tick");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 // Cache-Control: no-store apenas nas rotas de API (dados mutáveis).

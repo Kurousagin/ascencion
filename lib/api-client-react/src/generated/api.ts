@@ -23,8 +23,10 @@ import type {
   Aliada,
   AliadasResposta,
   CaixaResposta,
+  ChavePublicaVapid,
   DesfazerInput,
   DesfazerResultado,
+  DesinscricaoInput,
   DevolucaoInput,
   DevolucaoResultado,
   EmprestimoInput,
@@ -33,9 +35,12 @@ import type {
   EnvioResultado,
   ErroResposta,
   HealthStatus,
+  InscricaoPushInput,
+  OkResposta,
   PareamentoInput,
   Perfil,
   PerfilInput,
+  ProximoEventoInput,
   Recebimento,
   RecebimentoInput,
   ReforcoInput,
@@ -937,5 +942,296 @@ export const useListarRivais = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getListarRivaisMutationOptions(options));
+    }
+
+export const getObterChavePublicaVapidUrl = () => {
+
+
+
+
+  return `/api/notificacoes/chave-publica`
+}
+
+/**
+ * Retorna a chave pública VAPID necessária para inscrever o cliente em notificações push.
+ * @summary Obter chave pública VAPID para Web Push
+ */
+export const obterChavePublicaVapid = async ( options?: RequestInit): Promise<ChavePublicaVapid> => {
+
+  return customFetch<ChavePublicaVapid>(getObterChavePublicaVapidUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getObterChavePublicaVapidQueryKey = () => {
+    return [
+    `/api/notificacoes/chave-publica`
+    ] as const;
+    }
+
+
+export const getObterChavePublicaVapidQueryOptions = <TData = Awaited<ReturnType<typeof obterChavePublicaVapid>>, TError = ErrorType<ErroResposta>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof obterChavePublicaVapid>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getObterChavePublicaVapidQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof obterChavePublicaVapid>>> = ({ signal }) => obterChavePublicaVapid({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof obterChavePublicaVapid>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ObterChavePublicaVapidQueryResult = NonNullable<Awaited<ReturnType<typeof obterChavePublicaVapid>>>
+export type ObterChavePublicaVapidQueryError = ErrorType<ErroResposta>
+
+
+/**
+ * @summary Obter chave pública VAPID para Web Push
+ */
+
+export function useObterChavePublicaVapid<TData = Awaited<ReturnType<typeof obterChavePublicaVapid>>, TError = ErrorType<ErroResposta>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof obterChavePublicaVapid>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getObterChavePublicaVapidQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getInscreverNotificacoesUrl = () => {
+
+
+
+
+  return `/api/notificacoes/inscrever`
+}
+
+/**
+ * Registra uma assinatura de push para o dispositivo. Upsert por deviceId.
+ * @summary Inscrever dispositivo em notificações push
+ */
+export const inscreverNotificacoes = async (inscricaoPushInput: InscricaoPushInput, options?: RequestInit): Promise<OkResposta> => {
+
+  return customFetch<OkResposta>(getInscreverNotificacoesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(inscricaoPushInput)
+  }
+);}
+
+
+
+
+export const getInscreverNotificacoesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inscreverNotificacoes>>, TError,{data: BodyType<InscricaoPushInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inscreverNotificacoes>>, TError,{data: BodyType<InscricaoPushInput>}, TContext> => {
+
+const mutationKey = ['inscreverNotificacoes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inscreverNotificacoes>>, {data: BodyType<InscricaoPushInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  inscreverNotificacoes(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InscreverNotificacoesMutationResult = NonNullable<Awaited<ReturnType<typeof inscreverNotificacoes>>>
+    export type InscreverNotificacoesMutationBody = BodyType<InscricaoPushInput>
+    export type InscreverNotificacoesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Inscrever dispositivo em notificações push
+ */
+export const useInscreverNotificacoes = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inscreverNotificacoes>>, TError,{data: BodyType<InscricaoPushInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof inscreverNotificacoes>>,
+        TError,
+        {data: BodyType<InscricaoPushInput>},
+        TContext
+      > => {
+      return useMutation(getInscreverNotificacoesMutationOptions(options));
+    }
+
+export const getDesinscreverNotificacoesUrl = () => {
+
+
+
+
+  return `/api/notificacoes/desinscrever`
+}
+
+/**
+ * Remove a assinatura de push do dispositivo.
+ * @summary Desinscrever dispositivo de notificações push
+ */
+export const desinscreverNotificacoes = async (desinscricaoInput: DesinscricaoInput, options?: RequestInit): Promise<OkResposta> => {
+
+  return customFetch<OkResposta>(getDesinscreverNotificacoesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(desinscricaoInput)
+  }
+);}
+
+
+
+
+export const getDesinscreverNotificacoesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desinscreverNotificacoes>>, TError,{data: BodyType<DesinscricaoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desinscreverNotificacoes>>, TError,{data: BodyType<DesinscricaoInput>}, TContext> => {
+
+const mutationKey = ['desinscreverNotificacoes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desinscreverNotificacoes>>, {data: BodyType<DesinscricaoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  desinscreverNotificacoes(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesinscreverNotificacoesMutationResult = NonNullable<Awaited<ReturnType<typeof desinscreverNotificacoes>>>
+    export type DesinscreverNotificacoesMutationBody = BodyType<DesinscricaoInput>
+    export type DesinscreverNotificacoesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Desinscrever dispositivo de notificações push
+ */
+export const useDesinscreverNotificacoes = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desinscreverNotificacoes>>, TError,{data: BodyType<DesinscricaoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof desinscreverNotificacoes>>,
+        TError,
+        {data: BodyType<DesinscricaoInput>},
+        TContext
+      > => {
+      return useMutation(getDesinscreverNotificacoesMutationOptions(options));
+    }
+
+export const getAtualizarProximoEventoUrl = () => {
+
+
+
+
+  return `/api/notificacoes/proximo-evento`
+}
+
+/**
+ * Define o próximo evento relevante (e quando ocorrerá) para uma notificação personalizada. Envie null em ambos os campos para limpar.
+ * @summary Atualizar próximo evento para notificação Tier 2
+ */
+export const atualizarProximoEvento = async (proximoEventoInput: ProximoEventoInput, options?: RequestInit): Promise<OkResposta> => {
+
+  return customFetch<OkResposta>(getAtualizarProximoEventoUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(proximoEventoInput)
+  }
+);}
+
+
+
+
+export const getAtualizarProximoEventoMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof atualizarProximoEvento>>, TError,{data: BodyType<ProximoEventoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof atualizarProximoEvento>>, TError,{data: BodyType<ProximoEventoInput>}, TContext> => {
+
+const mutationKey = ['atualizarProximoEvento'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof atualizarProximoEvento>>, {data: BodyType<ProximoEventoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  atualizarProximoEvento(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AtualizarProximoEventoMutationResult = NonNullable<Awaited<ReturnType<typeof atualizarProximoEvento>>>
+    export type AtualizarProximoEventoMutationBody = BodyType<ProximoEventoInput>
+    export type AtualizarProximoEventoMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Atualizar próximo evento para notificação Tier 2
+ */
+export const useAtualizarProximoEvento = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof atualizarProximoEvento>>, TError,{data: BodyType<ProximoEventoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof atualizarProximoEvento>>,
+        TError,
+        {data: BodyType<ProximoEventoInput>},
+        TContext
+      > => {
+      return useMutation(getAtualizarProximoEventoMutationOptions(options));
     }
 
