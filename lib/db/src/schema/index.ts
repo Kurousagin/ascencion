@@ -23,3 +23,4 @@ export * from "./exchanges";
 export * from "./botCitadels";
 export * from "./milestones";
 export * from "./primordialClaims";
+export * from "./pushSubscriptions";

@@ -1,6 +1,15 @@
 import { useGame } from '../context/GameContext';
-import { ShieldAlert, Users } from 'lucide-react';
+import { ShieldAlert, Users, Bell } from 'lucide-react';
 import { getEfeitos, POP_BASE } from '../lib/game-data';
+import {
+  isPushSupported,
+  getPermissionState,
+  isPushEnabled,
+  subscribeToPush,
+  unsubscribeFromPush
+} from '../lib/push-notifications';
+import { getDeviceId } from '../lib/alliance-identity';
+import { useState } from 'react';
 
 interface DashboardProps {
   t2Desbloqueado: boolean;
@@ -8,11 +17,32 @@ interface DashboardProps {
 
 export function Dashboard({ t2Desbloqueado }: DashboardProps) {
   const { state, setSpeed } = useGame();
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushEnabled, setPushEnabledState] = useState(isPushEnabled());
 
   const getMoralColor = (m: number) => {
     if (m > 60) return 'text-success';
     if (m < 40) return 'text-destructive';
     return 'text-warning';
+  };
+
+  const handlePushToggle = async () => {
+    if (!isPushSupported()) return;
+
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush(getDeviceId());
+        setPushEnabledState(false);
+      } else {
+        await subscribeToPush(getDeviceId());
+        setPushEnabledState(true);
+      }
+    } catch (error) {
+      console.error("Push toggle failed:", error);
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const vivos        = state.npcs.filter(n => n.vivo).length;
@@ -132,6 +162,24 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
           ))}
         </div>
       </div>
+
+      {isPushSupported() && (
+        <div className="space-y-3">
+          <span className="text-[10px] text-secondary tracking-widest border-b border-primary/20 pb-1 block w-max">NOTIFICAÇÕES</span>
+          <button
+            onClick={handlePushToggle}
+            disabled={pushLoading}
+            className={`w-full h-12 flex items-center justify-center gap-2 rounded font-cinzel font-bold tracking-widest transition-all touch-manipulation ${
+              pushEnabled
+                ? 'border border-primary text-primary-foreground bg-primary/20'
+                : 'border border-card-border text-secondary bg-[#161B22] hover:border-primary/50'
+            } ${pushLoading ? 'opacity-50' : ''}`}
+          >
+            <Bell size={16} />
+            {pushLoading ? 'Atualizando...' : pushEnabled ? 'Notificações ativas' : 'Ativar notificações'}
+          </button>
+        </div>
+      )}
 
       <div className="mt-4 space-y-3">
         <h3 className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-2 border-b border-primary/20 pb-2">

@@ -16,6 +16,8 @@ import { Onboarding } from './components/Onboarding';
 import { GachaLancamento } from './components/GachaLancamento';
 import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
+import { useNotificationsHeartbeat } from './hooks/useNotificationsHeartbeat';
+import { useTier2EventUpdate } from './hooks/useTier2EventUpdate';
 import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT } from './lib/onboarding-keys';
 import { LANCAMENTO_ATIVO } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -52,6 +54,10 @@ function MainGameInner() {
 
   const andarAtual = state?.andarAtual ?? 0;
   const pioneer = usePioneer(andarAtual);
+
+  // Push notifications hooks
+  useNotificationsHeartbeat();
+  useTier2EventUpdate();
 
   // Quando o jogo inicia (state null→não-nulo), verifica sinais de pending/recovery.
   useEffect(() => {

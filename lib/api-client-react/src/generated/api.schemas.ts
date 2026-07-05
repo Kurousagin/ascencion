@@ -223,3 +223,28 @@ export interface RivaisResposta {
   rivais: Rival[];
 }
 
+export interface OkResposta {
+  ok: boolean;
+}
+
+export interface ChavePublicaVapid {
+  publicKey: string;
+}
+
+export interface InscricaoPushInput {
+  deviceId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export interface DesinscricaoInput {
+  deviceId: string;
+}
+
+export interface ProximoEventoInput {
+  deviceId: string;
+  proximoEventoEm: string | null;
+  proximoEventoTexto: string | null;
+}
+

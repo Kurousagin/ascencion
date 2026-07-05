@@ -1,4 +1,4 @@
-const CACHE_NAME = 'torre-obscura-v3';
+const CACHE_NAME = 'torre-obscura-v4';
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_URLS = ['/'];
@@ -55,6 +55,31 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return res;
       });
+    })
+  );
+});
+
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? 'Torre Obscura', {
+      body: data.body ?? 'Sua cidadela precisa de você.',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: 'torre-obscura-reminder',
+      data: { url: data.url ?? '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
     })
   );
 });

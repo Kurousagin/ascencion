@@ -368,3 +368,56 @@ export const ListarRivaisResponse = zod.object({
 })
 
 
+/**
+ * Retorna a chave pública VAPID necessária para inscrever o cliente em notificações push.
+ * @summary Obter chave pública VAPID para Web Push
+ */
+export const ObterChavePublicaVapidResponse = zod.object({
+  "publicKey": zod.string()
+})
+
+
+/**
+ * Registra uma assinatura de push para o dispositivo. Upsert por deviceId.
+ * @summary Inscrever dispositivo em notificações push
+ */
+export const InscreverNotificacoesBody = zod.object({
+  "deviceId": zod.string(),
+  "endpoint": zod.string(),
+  "p256dh": zod.string(),
+  "auth": zod.string()
+})
+
+export const InscreverNotificacoesResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * Remove a assinatura de push do dispositivo.
+ * @summary Desinscrever dispositivo de notificações push
+ */
+export const DesinscreverNotificacoesBody = zod.object({
+  "deviceId": zod.string()
+})
+
+export const DesinscreverNotificacoesResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * Define o próximo evento relevante (e quando ocorrerá) para uma notificação personalizada. Envie null em ambos os campos para limpar.
+ * @summary Atualizar próximo evento para notificação Tier 2
+ */
+export const AtualizarProximoEventoBody = zod.object({
+  "deviceId": zod.string(),
+  "proximoEventoEm": zod.coerce.date().nullable(),
+  "proximoEventoTexto": zod.string().nullable()
+})
+
+export const AtualizarProximoEventoResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
