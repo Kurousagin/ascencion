@@ -140,6 +140,11 @@ export interface RecebimentoInput {
   exchangeId: number;
 }
 
+export type RecebimentoPedidoAjuda = {
+  rivalNome: string;
+  diasRestantes: number;
+} | null;
+
 export interface Recebimento {
   id: number;
   tipo: string;
@@ -149,6 +154,7 @@ export interface Recebimento {
   /** @nullable */
   prazoDias?: number | null;
   morreu?: boolean;
+  pedidoAjuda?: RecebimentoPedidoAjuda;
 }
 
 export interface EmprestimoInput {

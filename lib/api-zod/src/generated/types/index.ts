@@ -34,6 +34,7 @@ export * from './perfilInput';
 export * from './proximoEventoInput';
 export * from './recebimento';
 export * from './recebimentoInput';
+export * from './recebimentoPedidoAjuda';
 export * from './recursos';
 export * from './reforcoInput';
 export * from './reforcoResultado';

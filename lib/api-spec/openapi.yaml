@@ -775,6 +775,19 @@ components:
           type: ["integer", "null"]
         morreu:
           type: boolean
+        # Preenchido para tipo="pedido_socorro"
+        pedidoAjuda:
+          oneOf:
+            - type: object
+              properties:
+                rivalNome:
+                  type: string
+                diasRestantes:
+                  type: integer
+              required:
+                - rivalNome
+                - diasRestantes
+            - type: "null"
       required:
         - id
         - tipo

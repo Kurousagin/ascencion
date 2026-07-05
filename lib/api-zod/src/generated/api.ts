@@ -264,30 +264,6 @@ export const ReforcarMoradorResponse = zod.object({
  * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "reforco_guerra" na caixa de entrada da aliada. O morador entra direto no front se a guerra já está ativa, ou fica ocioso até a próxima mobilização. Máximo de 2 reforços de guerra ativos simultâneos.
  * @summary Enviar um morador para lutar na guerra da aliada
  */
-export const ReforcarMoradorGuerraBody = zod.object({
-  "deviceId": zod.string(),
-  "aliadaDeviceId": zod.string(),
-  "morador": zod.object({
-  "id": zod.string(),
-  "nome": zod.string(),
-  "forca": zod.number(),
-  "agilidade": zod.number(),
-  "inteligencia": zod.number(),
-  "resistencia": zod.number(),
-  "sanidade": zod.number(),
-  "lealdade": zod.number(),
-  "fadiga": zod.number(),
-  "vivo": zod.boolean(),
-  "obscuro": zod.boolean(),
-  "emExpedicao": zod.boolean(),
-  "raridade": zod.string(),
-  "habilidade": zod.string(),
-  "posto": zod.string().nullable()
-})
-})
-
-
-
 
 /**
  * @summary Listar itens pendentes na caixa de entrada
@@ -371,7 +347,11 @@ export const ReceberItemResponse = zod.object({
   "posto": zod.string().nullable()
 }),zod.null()]).optional(),
   "prazoDias": zod.number().nullish(),
-  "morreu": zod.boolean().optional()
+  "morreu": zod.boolean().optional(),
+  "pedidoAjuda": zod.union([zod.object({
+  "rivalNome": zod.string(),
+  "diasRestantes": zod.number()
+}),zod.null()]).optional()
 })
 
 

@@ -178,10 +178,11 @@ function mapExchange(it: typeof exchangesTable.$inferSelect) {
     id: it.id,
     tipo: it.tipo,
     remetenteNome: it.remetenteNome,
-    recursos: it.conteudo ?? null,
+    recursos: it.tipo === 'recursos' ? (it.conteudo ?? null) : null,
     morador: it.morador ?? null,
     prazoDias: it.prazoDias ?? null,
     morreu: it.morreu,
+    pedidoAjuda: it.tipo === 'pedido_socorro' ? (it.conteudo ?? null) : null,
     status: it.status,
     criadoEm: it.createdAt,
   };

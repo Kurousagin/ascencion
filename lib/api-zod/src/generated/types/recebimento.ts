@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Morador } from './morador';
+import type { RecebimentoPedidoAjuda } from './recebimentoPedidoAjuda';
 import type { Recursos } from './recursos';
 
 export interface Recebimento {
@@ -17,4 +18,5 @@ export interface Recebimento {
   /** @nullable */
   prazoDias?: number | null;
   morreu?: boolean;
+  pedidoAjuda?: RecebimentoPedidoAjuda;
 }
