@@ -439,6 +439,7 @@ function GuerraAtivaPanel() {
                 const custo = calcCustoSuprimentoGuerra(vivos.length);
                 const comidaSuficiente = state.recursos.comida >= custo.comida;
                 const ferroSuficiente = state.recursos.ferro >= custo.ferro;
+                const suprido = comidaSuficiente && ferroSuficiente;
                 return (
                   <>
                     <span className={comidaSuficiente ? 'text-success' : 'text-destructive'}>
@@ -447,14 +448,14 @@ function GuerraAtivaPanel() {
                     <span className={ferroSuficiente ? 'text-success' : 'text-destructive'}>
                       <Zap className="inline mr-1" size={11} /> {custo.ferro} / {Math.floor(state.recursos.ferro)}
                     </span>
+                    <span className={`text-[10px] flex items-center gap-1 ${suprido ? 'text-success' : 'text-destructive'} ml-auto`}>
+                      {suprido ? <Check size={12} /> : <Flame size={12} />}
+                      {suprido ? 'Firmes' : 'Crítico'}
+                    </span>
                   </>
                 );
               })()}
             </div>
-          </div>
-          <div className={`text-[10px] flex items-center gap-1 ${g.suprido ? 'text-success' : 'text-destructive'}`}>
-            {g.suprido ? <Check size={12} /> : <Flame size={12} />}
-            {g.suprido ? 'Linhas de suprimento firmes' : 'SEM SUPRIMENTO — tropas enfraquecidas'}
           </div>
         </div>
         <div className="mt-2 text-[10px] text-muted-foreground italic">{g.ultimoRelato}</div>
