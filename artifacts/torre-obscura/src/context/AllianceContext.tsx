@@ -98,7 +98,7 @@ const POLL_MS = 15_000;
 
 export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const {
-    state, creditarRecursos,
+    state, creditarRecursos, registrarMetaDiaria,
     removerParaEmprestimo, restaurarMorador, receberEmprestado, removerEmprestado, reintegrarMorador,
     receberReforco, receberReforcoGuerra,
   } = useGame();
@@ -275,11 +275,12 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     try {
       await enviarRecursos({ deviceId: deviceId.current, aliadaDeviceId, recursos: r });
       await sincronizarPerfil();
+      registrarMetaDiaria('aliar');
       return { ok: true };
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [sincronizarPerfil]);
+  }, [sincronizarPerfil, registrarMetaDiaria]);
 
   // ─── Emprestar morador ─────────────────────────────────────────────────────
   const emprestar = useCallback(async (aliadaDeviceId: string, npcId: string, prazoDias: number) => {
@@ -312,9 +313,10 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       aliadaNome: nomeAliada(aliadaDeviceId),
     });
 
+    registrarMetaDiaria('aliar');
     try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada, registrarMetaDiaria]);
 
   // ─── Enviar reforço (fase 3) ──────────────────────────────────────────────
   const reforcar = useCallback(async (aliadaDeviceId: string, npcId: string) => {
@@ -341,9 +343,10 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       aliadaNome: nomeAliada(aliadaDeviceId),
     });
 
+    registrarMetaDiaria('aliar');
     try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada, registrarMetaDiaria]);
 
   // ─── Enviar reforço de guerra ─────────────────────────────────────────────
   const reforcarGuerra = useCallback(async (aliadaDeviceId: string, npcId: string) => {
@@ -370,9 +373,10 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       aliadaNome: nomeAliada(aliadaDeviceId),
     });
 
+    registrarMetaDiaria('aliar');
     try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
     return { ok: true };
-  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada, registrarMetaDiaria]);
 
   // ─── Pedir ajuda em guerra ────────────────────────────────────────────────
   const pedirAjuda = useCallback(async (rivalNome: string, diasRestantes: number) => {

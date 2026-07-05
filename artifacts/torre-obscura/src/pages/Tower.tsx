@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye } from 'lucide-react';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS } from '../lib/game-data';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, Search } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 
@@ -12,13 +12,14 @@ interface TowerProps {
 }
 
 export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerProps) {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, abrirCodex, concluirQuestOculta } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, resolverEscolhaHabitante, vasculharCamaraSecreta, abrirCodex, concluirQuestOculta } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
   const [farmAndar, setFarmAndar] = useState<number | null>(null);
   // Modal do habitante — qual andar está aberto
   const [habitanteModalFloor, setHabitanteModalFloor] = useState<number | null>(null);
+  const [camaraSecretaModalFloor, setCamaraSecretaModalFloor] = useState<number | null>(null);
   // Modal do Codex Obscuro
   const [codexOpen, setCodexOpen] = useState(false);
   // Capítulo expandido no Codex (1-4); null = todos colapsados
@@ -376,6 +377,28 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     {habEstIcon}
                   </button>
                 )}
+                {/* Botão de Câmara Secreta (andares de chefe já conquistados) */}
+                {isBossFloor && CAMARAS_SECRETAS[f.floor] && (() => {
+                  const cam = CAMARAS_SECRETAS[f.floor];
+                  const cEst = state.camarasSecretasEstado?.[f.floor] ?? { tentativas: 0, encontrada: false };
+                  const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
+                  const restantes = cam.maxTentativas - cEst.tentativas;
+                  return (
+                    <button
+                      onClick={() => setCamaraSecretaModalFloor(f.floor)}
+                      title={cEst.encontrada ? `${cam.titulo} — encontrada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} tentativa(s)`}
+                      className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
+                        cEst.encontrada
+                          ? 'bg-primary/10 border-primary/40 text-primary'
+                          : esgotada
+                            ? 'bg-card-border/20 border-card-border text-white/30'
+                            : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
+                      }`}
+                    >
+                      {cEst.encontrada ? cam.icone : <Search size={15} />}
+                    </button>
+                  );
+                })()}
               </div>
             );
           })}
@@ -544,7 +567,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               const diasRestantes = q.tipo === 'temporal' && q.dias && diaDesc
                 ? Math.max(0, q.dias - (state.dia - diaDesc))
                 : 0;
-              const falaAtual = est === 'concluido' ? hab.falaConcluso
+              // Escolha registrada (para exibir o falaResultado correto ao concluir).
+              const escolhaFeita = state.habitantesEscolhaFeita?.[hf];
+              const opcaoFeita = escolhaFeita ? q.escolha?.opcoes.find(o => o.id === escolhaFeita) : undefined;
+              const falaAtual = est === 'concluido'
+                  ? (opcaoFeita?.falaResultado ?? hab.falaConcluso)
+                : est === 'aguardando_escolha'
+                  ? (q.escolha?.prompt ?? hab.falamissão)
                 : est === 'quest_ativa' ? hab.falamissão
                 : hab.fala;
               const loreItem = est === 'concluido' ? state.lores.find(l => l.floor === hf) : null;
@@ -565,10 +594,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-sm border ${
                         est === 'concluido' ? 'border-primary/40 text-primary bg-primary/10'
+                          : est === 'aguardando_escolha' ? 'border-success/50 text-success bg-success/10 animate-pulse'
                           : est === 'quest_ativa' ? 'border-warning/40 text-warning bg-warning/10'
                           : 'border-card-border text-white/40'
                       }`}>
-                        {est === 'concluido' ? '✦ ECO ATIVO' : est === 'quest_ativa' ? '⚡ QUEST ATIVA' : '👁 DESCOBERTO'}
+                        {est === 'concluido' ? '✦ ECO ATIVO'
+                          : est === 'aguardando_escolha' ? '⚖ ESCOLHA PENDENTE'
+                          : est === 'quest_ativa' ? '⚡ QUEST ATIVA' : '👁 DESCOBERTO'}
                       </span>
                       <Dialog.Close asChild>
                         <button className="w-8 h-8 flex items-center justify-center border border-card-border text-secondary hover:text-foreground rounded-sm touch-manipulation">
@@ -584,8 +616,27 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     <p className="text-[12px] text-white/70 italic leading-relaxed">"{falaAtual}"</p>
                   </div>
 
+                  {/* Cards de escolha (estado aguardando_escolha) */}
+                  {est === 'aguardando_escolha' && q.escolha && (
+                    <div className="space-y-2">
+                      <div className="text-[9px] text-success tracking-widest flex items-center gap-1">
+                        <Swords size={9} /> A ESCOLHA É SUA
+                      </div>
+                      {q.escolha.opcoes.map(op => (
+                        <button
+                          key={op.id}
+                          onClick={() => { resolverEscolhaHabitante(hf, op.id); }}
+                          className="w-full text-left rounded-sm p-3 border border-primary/30 bg-black/20 hover:border-primary/70 hover:bg-primary/5 transition-all touch-manipulation"
+                        >
+                          <div className="text-[12px] font-cinzel font-bold text-primary mb-1">{op.label}</div>
+                          <div className="text-[10px] text-white/60 leading-snug">{op.descricao}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Quest info */}
-                  {est !== 'concluido' && (
+                  {est !== 'concluido' && est !== 'aguardando_escolha' && (
                     <div className={`rounded-sm p-4 border ${completavel && est === 'quest_ativa' ? 'border-success/50 bg-success/5' : 'border-white/10 bg-black/20'}`}>
                       <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-1">
                         <Swords size={9} /> MISSÃO
@@ -726,6 +777,104 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     >
                       FECHAR
                     </button>
+                  )}
+                </>
+              );
+            })()}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* ── Modal de Câmara Secreta ─────────────────────────────────────────── */}
+      <Dialog.Root
+        open={camaraSecretaModalFloor !== null}
+        onOpenChange={open => { if (!open) setCamaraSecretaModalFloor(null); }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 transition-opacity" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 p-5 flex flex-col gap-4 z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-y-auto custom-scrollbar">
+            {camaraSecretaModalFloor !== null && (() => {
+              const cf = camaraSecretaModalFloor;
+              const cam = CAMARAS_SECRETAS[cf];
+              if (!cam) return null;
+              const cEst = state.camarasSecretasEstado?.[cf] ?? { tentativas: 0, encontrada: false };
+              const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
+              const restantes = cam.maxTentativas - cEst.tentativas;
+              const r = cam.recompensa;
+              const recompStr = [
+                r.recursosBonus?.comida  ? `+${r.recursosBonus.comida} comida`   : '',
+                r.recursosBonus?.madeira ? `+${r.recursosBonus.madeira} madeira` : '',
+                r.recursosBonus?.pedra   ? `+${r.recursosBonus.pedra} pedra`     : '',
+                r.recursosBonus?.ferro   ? `+${r.recursosBonus.ferro} ferro`     : '',
+                r.moralBonus ? `+${r.moralBonus} moral` : '',
+                r.reliquia ? `Relíquia: ${r.reliquia}` : '',
+              ].filter(Boolean).join(' · ');
+              return (
+                <>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl leading-none">{cEst.encontrada ? cam.icone : '🔍'}</div>
+                      <div>
+                        <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
+                          {cEst.encontrada ? cam.titulo : 'DESTROÇOS DO CHEFE'}
+                        </Dialog.Title>
+                        <div className="text-[9px] text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · CÂMARA SECRETA</div>
+                      </div>
+                    </div>
+                    <Dialog.Close asChild>
+                      <button className="w-8 h-8 flex items-center justify-center border border-card-border text-secondary hover:text-foreground rounded-sm touch-manipulation">
+                        <X size={16} />
+                      </button>
+                    </Dialog.Close>
+                  </div>
+
+                  {cEst.encontrada ? (
+                    <>
+                      <div className="bg-black/30 rounded-sm p-4 border-l-2 border-primary/40">
+                        <p className="text-[12px] text-white/70 italic leading-relaxed">"{cam.descoberta}"</p>
+                      </div>
+                      <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
+                        <div className="text-[9px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
+                          <BookOpen size={9} /> FRAGMENTO REVELADO
+                        </div>
+                        <div className="text-[10px] text-primary/50 mb-1 font-cinzel">{r.loreTitulo}</div>
+                        <p className="text-[11px] text-white/60 italic leading-relaxed">{r.loreTexto}</p>
+                        {recompStr && (
+                          <div className="mt-2 text-[9px] text-success/70 flex items-center gap-1">
+                            <Sparkles size={8} /> {recompStr}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setCamaraSecretaModalFloor(null)}
+                        className="w-full h-12 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm"
+                      >
+                        FECHAR
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-black/30 rounded-sm p-4 border-l-2 border-secondary/40">
+                        <p className="text-[12px] text-white/60 italic leading-relaxed">
+                          Os destroços do chefe do Andar {cf} ainda guardam algo. Vasculhe com cuidado — nem toda busca encontra.
+                        </p>
+                      </div>
+                      <div className="text-[10px] text-secondary/70 text-center">
+                        Tentativas restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
+                        {' · '}chance {Math.round(cam.chancePerTentativa * 100)}% por busca
+                      </div>
+                      <button
+                        onClick={() => vasculharCamaraSecreta(cf)}
+                        disabled={esgotada}
+                        className={`w-full h-12 flex items-center justify-center gap-2 font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm transition-colors ${
+                          esgotada
+                            ? 'bg-card-border/30 text-white/30 border border-card-border cursor-not-allowed'
+                            : 'bg-secondary/20 border border-secondary/50 text-secondary hover:bg-secondary/30'
+                        }`}
+                      >
+                        <Search size={16} /> {esgotada ? 'NADA MAIS RESTA' : 'VASCULHAR OS DESTROÇOS'}
+                      </button>
+                    </>
                   )}
                 </>
               );

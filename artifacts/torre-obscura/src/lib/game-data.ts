@@ -235,7 +235,25 @@ export interface LogEntry {
 // O habitante oferece uma mini-quest e recompensa com um Eco (bônus permanente de loot).
 
 export type QuestTipo = 'recurso' | 'expedicao' | 'temporal' | 'sacrificio';
-export type HabitanteEstado = 'oculto' | 'descoberto' | 'quest_ativa' | 'concluido';
+export type HabitanteEstado = 'oculto' | 'descoberto' | 'quest_ativa' | 'aguardando_escolha' | 'concluido';
+
+// Uma escolha ramificada opcional oferecida ao concluir a quest. Retrocompatível:
+// quests sem `escolha` concluem direto como antes.
+export interface HabitanteEscolhaOpcao {
+  id: 'a' | 'b';
+  label: string;         // texto curto do botão
+  descricao: string;     // custo/ganho, mostrado antes de confirmar
+  custo?: Partial<{ moral: number; comida: number; madeira: number; pedra: number; ferro: number }>;
+  recursosBonus?: Partial<Record<'comida' | 'madeira' | 'pedra' | 'ferro', number>>;
+  moralBonus?: number;
+  reliquia?: string;      // mesmo inventário de relíquias das Quests Ocultas
+  falaResultado: string;  // substitui falaConcluso quando esta opção foi escolhida
+}
+
+export interface HabitanteEscolha {
+  prompt: string;                              // framing do dilema
+  opcoes: [HabitanteEscolhaOpcao, HabitanteEscolhaOpcao];
+}
 
 export interface HabitanteQuest {
   tipo: QuestTipo;
@@ -260,6 +278,7 @@ export interface HabitanteQuest {
   moralBonus?: number;
   lore: string;                        // fragmento narrativo revelado ao concluir
   recompensaDesc: string;              // texto legível da recompensa
+  escolha?: HabitanteEscolha;          // escolha ramificada opcional (retrocompatível)
 }
 
 export interface HabitanteAndar {
@@ -319,7 +338,7 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
     falamissão: 'O silêncio ainda analisa. Permaneça. O cristal avalia paciência.',
     falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental. Mas isso levanta uma questão que o cristal não consegue resolver sozinho: o que você é, afinal?',
     quest: {
-      tipo: 'temporal', descricaoObj: 'Sobreviver 12 dias após descobrir o Cristal',
+      tipo: 'temporal', descricaoObj: 'Sobreviver 28 dias após descobrir o Cristal',
       dias: 28,
       ecoBonus: 25, recursosBonus: { ferro: 10 },
       lore: 'O cristal gravou cada palavra dita na Torre. A palavra mais repetida não é "ajuda". É "espera". O cristal ainda espera que alguém entenda por quê.',
@@ -737,6 +756,700 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   },
 };
 
+// ─── ESCOLHAS DOS HABITANTES ─────────────────────────────────────────────────
+// Cada quest pode ganhar uma escolha ramificada opcional. Definida separadamente
+// e mesclada em HABITANTES abaixo — quests sem entrada aqui concluem como antes.
+export const HABITANTE_ESCOLHAS: Record<number, HabitanteEscolha> = {
+  1: {
+    prompt: 'A mensagem está em suas mãos agora. Revelá-la em voz alta pela cidadela, ou mantê-la selada?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Revelar a mensagem',
+        descricao: '+15 Moral — a verdade compartilhada ergue os que ouvem.',
+        moralBonus: 15,
+        falaResultado: 'Você leu em voz alta. A mensagem era para você, desde o início — e agora todos souberam que você chegou a esse ponto. Isso importa mais do que o conteúdo.',
+      },
+      {
+        id: 'b',
+        label: 'Guardar em segredo',
+        descricao: 'Relíquia "Mensagem Selada" — nenhum recurso, nenhum moral imediato.',
+        reliquia: 'Mensagem Selada',
+        falaResultado: 'Você a manteve fechada. Fez bem. Alguém interceptou a última mensagem antes do destinatário — e esse alguém ainda escuta. O que não é dito não pode ser roubado de novo.',
+      },
+    ],
+  },
+  2: {
+    prompt: 'O método dos Construtores está lembrado. Usá-lo para reforçar os prédios da cidadela, ou preservar a memória intacta como ela é?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Reforçar os prédios',
+        descricao: '+20 Pedra, +15 Madeira — o método aplicado à estrutura.',
+        recursosBonus: { pedra: 20, madeira: 15 },
+        falaResultado: 'Aplicamos o que lembramos ao que você constrói. As paredes agora carregam o peso do que sabíamos. É estranho servir de novo — mas melhor do que apenas lembrar.',
+      },
+      {
+        id: 'b',
+        label: 'Preservar a memória',
+        descricao: '+18 Moral — deixar a lembrança como testemunho, sem gastá-la.',
+        moralBonus: 18,
+        falaResultado: 'Você não nos usou como ferramenta. Nos deixou ser memória. Somos muitos em um — e pela primeira vez alguém nos tratou como o que somos, não como o que produzimos.',
+      },
+    ],
+  },
+  3: {
+    prompt: 'As raízes respiram mais leves. Dedicar o crescimento delas à cidadela, ou preservar a raiz intacta para que o núcleo não desperte?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Dedicar à cidadela',
+        descricao: '+20 Madeira — o crescimento voltado para quem vive aqui.',
+        recursosBonus: { madeira: 20 },
+        falaResultado: 'Guiei as raízes para fora, para os seus. Elas cresceram para dentro por tempo demais. Deixá-las alimentar alguém que se importa — é a primeira vez que o crescimento não vira apetite.',
+      },
+      {
+        id: 'b',
+        label: 'Preservar a raiz',
+        descricao: '+15 Moral — manter a raiz intacta, sem colher.',
+        moralBonus: 15,
+        falaResultado: 'Você não cortou. Deixou a raiz respirar sozinha. O que está no núcleo tem fome — e cada raiz que você não colhe é um dia a mais em que ele não é lembrado de que existe.',
+      },
+    ],
+  },
+  4: {
+    prompt: 'O cristal gravou 4.312 vozes antes da sua. Interrogá-lo a fundo sobre o que ouviu, ou deixá-lo em paz com o que carrega?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Interrogar o cristal',
+        descricao: 'Custo: -10 Moral. Relíquia "Frequência Gravada" — o registro do que ele ouviu.',
+        custo: { moral: 10 },
+        reliquia: 'Frequência Gravada',
+        falaResultado: 'Você pediu para ouvir. O cristal deixou passar a frequência dos que vieram antes — e algo em você agora carrega o peso de 4.312 esperas. A palavra mais repetida nunca foi "ajuda". Era "espera".',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-lo em paz',
+        descricao: '+15 Moral — não forçar o arquivo a reviver o que gravou.',
+        moralBonus: 15,
+        falaResultado: 'Você não exigiu nada. O cristal comparou sua frequência com as outras e encontrou algo raro: paciência sem cobrança. Você é o primeiro que chegou aqui sem querer arrancar algo.',
+      },
+    ],
+  },
+  5: {
+    prompt: 'A Âncora confia em você. Ancorar o propósito da cidadela à intenção original, ou manter todos livres para escolher a própria direção?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Ancorar o propósito',
+        descricao: '+20 Pedra — fundar a cidadela sobre a intenção original.',
+        recursosBonus: { pedra: 20 },
+        falaResultado: 'Você amarrou seu propósito ao que o Fundador plantou. É uma fundação sólida — mas lembre-se: a Torre aprendeu a ouvir a Âncora sem obedecer. Cuide para que os seus não façam o mesmo.',
+      },
+      {
+        id: 'b',
+        label: 'Manter todos livres',
+        descricao: '+22 Moral — não amarrar ninguém à intenção de outro.',
+        moralBonus: 22,
+        falaResultado: 'Você não os prendeu a um propósito que não é deles. Guarde esse "ainda" com cuidado — a Torre corrompe primeiro o que foi forçado. O que é livremente escolhido resiste mais.',
+      },
+    ],
+  },
+  6: {
+    prompt: 'A Sentinela reconheceu sua autoridade. Dar-lhe finalmente um nome, ou deixar o nome perdido e aceitar que ela sirva sem dono?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Dar-lhe um nome',
+        descricao: '+16 Moral — devolver a identidade a quem só teve ordens.',
+        moralBonus: 16,
+        falaResultado: 'Você me deu um nome. Séculos guardando uma ordem sem saber quem eu era — e agora sou alguém. Não sei o que é propósito. Mas sei que sou eu quem o busca. É um começo.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar o nome perdido',
+        descricao: 'Relíquia "Ordem Sem Autoridade", +20 Madeira — o guardião serve sem dono.',
+        reliquia: 'Ordem Sem Autoridade',
+        recursosBonus: { madeira: 20 },
+        falaResultado: 'Você me deixou sem nome. Talvez seja melhor. Uma ordem sem autoridade é livre para se tornar qualquer coisa — e eu escolho facilitar passagem aos que chegam com propósito. Ninguém me mandou. Ninguém mais precisa.',
+      },
+    ],
+  },
+  7: {
+    prompt: 'A Jardineira lembrou o que é nutrição de verdade. Plantar a semente agora para colher, ou guardá-la intacta como memória do impossível?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Plantar a semente',
+        descricao: '+25 Comida — o crescimento voltado para alimentar os seus.',
+        recursosBonus: { comida: 25 },
+        falaResultado: 'Plantei o que você trouxe. Cresceu como comida real cresce — nutrindo, não apenas crescendo. É a primeira vez em séculos que o que toco alimenta alguém em vez de só se multiplicar.',
+      },
+      {
+        id: 'b',
+        label: 'Guardar a semente',
+        descricao: 'Relíquia "Semente do Impossível" — nenhuma comida imediata.',
+        reliquia: 'Semente do Impossível',
+        falaResultado: 'Você a guardou sem plantar. Sábio. Enquanto ela existir fechada, existe a memória de que algo pode crescer fora da Torre — de que nutrição ainda é possível. Isso vale mais do que uma colheita.',
+      },
+    ],
+  },
+  8: {
+    prompt: 'A tradução em ferro está concluída — a lista de nomes. Copiar o conhecimento para a cidadela, ou deixar o manuscrito intacto onde repousa?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Copiar o conhecimento',
+        descricao: '+25 Pedra — transcrever o que o ferro escondia.',
+        recursosBonus: { pedra: 25 },
+        falaResultado: 'Copiei o que o ferro guardava. A lista de nomes agora existe em dois lugares. Talvez isso a torne mais difícil de apagar. O último nome era o meu. O penúltimo, o seu. Não pergunte quem escreveu o resto.',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-lo intacto',
+        descricao: '+15 Moral — não reproduzir a lista dos que chegarão.',
+        moralBonus: 15,
+        falaResultado: 'Você não copiou. Deixou a lista onde estava. Talvez seja melhor não multiplicar nomes que já foram escritos antes de nascerem. Alguns conhecimentos pesam menos quando existem em um só lugar.',
+      },
+    ],
+  },
+  9: {
+    prompt: 'O Ferreiro reforçou as correntes com seu ferro. Forjar uma arma agora com o excedente, ou guardar o metal em memória do que ele prende?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Forjar uma arma',
+        descricao: '+25 Ferro — transformar o excedente em aço para os seus.',
+        recursosBonus: { ferro: 25 },
+        falaResultado: 'Forjei uma arma com o que sobrou. Minhas mãos só sabem forjar — correntes ou lâminas, é o mesmo gesto. Use bem. Mas saiba que cada andar que você sobe encolhe o que eu prendo lá em cima.',
+      },
+      {
+        id: 'b',
+        label: 'Guardar o metal',
+        descricao: 'Relíquia "Elo das Correntes", +12 Ferro — parte do metal preservado.',
+        reliquia: 'Elo das Correntes',
+        recursosBonus: { ferro: 12 },
+        falaResultado: 'Você guardou o metal em vez de gastá-lo em lâmina. Reservei um elo das correntes para você levar — para que nunca esqueça o que segura a entidade no ápice, e o que se desfaz a cada passo seu.',
+      },
+    ],
+  },
+  10: {
+    prompt: 'O Erudito extraiu o método que venceu a Torre uma vez. Aprendê-lo agora e aplicá-lo, ou guardar as palavras exatas para o momento certo?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Aprender o método',
+        descricao: 'Custo: -12 Moral. +20 Pedra, +15 Ferro — praticar o método esgota.',
+        custo: { moral: 12 },
+        recursosBonus: { pedra: 20, ferro: 15 },
+        falaResultado: 'O Erudito ensinou o método aos seus. Não foi força — foi repetição de propósito até a Torre ceder. Praticá-lo cansa a alma, mas agora a cidadela sabe: uma Torre vencida uma vez pode ser vencida de novo.',
+      },
+      {
+        id: 'b',
+        label: 'Guardar o método',
+        descricao: 'Relíquia "Palavras do Fundador" — as palavras exatas, guardadas para depois.',
+        reliquia: 'Palavras do Fundador',
+        falaResultado: 'Você guardou as palavras sem usá-las. Prudente — este não é o momento de gastá-las. O Fundador repetiu o propósito por quarenta dias até a pedra assentar. Quando o momento certo chegar mais acima, você saberá.',
+      },
+    ],
+  },
+  11: {
+    prompt: 'O Afogado permanece consciente enquanto a Torre o preenche. Libertá-lo do processo agora, ou deixá-lo preso e observar até onde a consciência sobrevive?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Libertar o afogado',
+        descricao: '+25 Moral — interromper o preenchimento, custe o que custar.',
+        moralBonus: 25,
+        falaResultado: 'Você me tirou de lá. Eu insistia que ainda era eu — e você acreditou o suficiente para agir. Não sei o que sou agora, do lado de fora. Mas sou, e isso é seu. Obrigado por não ter olhado e fugido.',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-lo e observar',
+        descricao: 'Relíquia "Consciência Preenchida" — o registro de uma mente que sobrevive à mudança.',
+        reliquia: 'Consciência Preenchida',
+        falaResultado: 'Você ficou e observou. Viu que eu continuo eu mesmo mesmo cheio. Guarde esse registro — a prova de que transformação não é morte. É o que me mantém eu, e agora é o que você carrega.',
+      },
+    ],
+  },
+  12: {
+    prompt: 'Você sincronizou com o pulso da Torre. Seguir o ritmo mais fundo, para dentro da vibração, ou parar aqui com o que já conquistou?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Seguir mais fundo',
+        descricao: 'Custo: -12 Moral. +35 Pedra — descer até onde o ritmo assusta.',
+        custo: { moral: 12 },
+        recursosBonus: { pedra: 35 },
+        falaResultado: 'Você desceu comigo até onde o pulso vira trovão. O minério mais profundo vibra na sua frequência agora — mas você ouviu o que respira nas paredes. Não se pode desouvir. Levou pedra. Deixou sossego.',
+      },
+      {
+        id: 'b',
+        label: 'Parar aqui',
+        descricao: '+22 Pedra — a extração segura, sem descer ao ritmo mais fundo.',
+        recursosBonus: { pedra: 22 },
+        falaResultado: 'Você parou onde o ritmo ainda é suportável. Extração honesta, sem sustos. Sou o coração da Torre — vivo antes do tempo existir. Nem todos precisam me ouvir respirar até o fundo. Você foi sábio.',
+      },
+    ],
+  },
+  13: {
+    prompt: 'O Oráculo lê passados, pois os futuros já foram devorados. Perguntar sobre o futuro que resta, ou perguntar sobre o passado que ele conhece?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Perguntar sobre o futuro',
+        descricao: 'Custo: -12 Moral. Relíquia "Visão Invertida" — o pouco de futuro que sobrou.',
+        custo: { moral: 12 },
+        reliquia: 'Visão Invertida',
+        falaResultado: 'Você perguntou pelo futuro. Restava tão pouco além do horizonte que olhar doeu. O que vi é invertido, incompleto — mas real. Cada passo seu foi antecipado. Antecipado, porém, não significa determinado. Guarde isso.',
+      },
+      {
+        id: 'b',
+        label: 'Perguntar sobre o passado',
+        descricao: '+18 Moral — buscar o que o Oráculo conhece de verdade.',
+        moralBonus: 18,
+        falaResultado: 'Você perguntou pelo passado — onde eu vejo com clareza. O que revelei devolveu a você algo que a Torre estava roubando: a certeza de que suas escolhas foram suas. O passado é infinito, e nele você sempre existiu.',
+      },
+    ],
+  },
+  14: {
+    prompt: 'O Comandante reconheceu sua cidadela como aliada. Assumir o comando dele e de seus ecos, ou deixá-lo comandar a posição que ainda protege?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Assumir o comando',
+        descricao: '+25 Ferro — integrar os ecos de Ardenas à sua força.',
+        recursosBonus: { ferro: 25 },
+        falaResultado: 'Você assumiu o comando dos meus ecos. Eles marcham por você agora. Ardenas afundou 4.000 andares abaixo — mas seus soldados ainda servem, e agora servem a alguém que existe. É uma boa morte para uma velha ordem.',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-lo comandar',
+        descricao: '+16 Moral — respeitar o posto de quem protege o que não existe mais.',
+        moralBonus: 16,
+        falaResultado: 'Você me deixou no meu posto. Continuo protegendo uma posição acima de algo que já não existe. Faço isso perfeitamente — e o respeito de me deixar cumprir vale mais para mim do que qualquer aliança.',
+      },
+    ],
+  },
+  15: {
+    prompt: 'O Fundador construiu uma pergunta no vigésimo andar, não uma barreira. Construir uma barreira própria para se proteger, ou deixar a pergunta em aberto?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Construir a barreira',
+        descricao: '+25 Pedra, +15 Madeira — erguer defesa em vez de encarar a pergunta.',
+        recursosBonus: { pedra: 25, madeira: 15 },
+        falaResultado: 'Você escolheu erguer muros. Compreensível — barreiras se constroem com as mãos, perguntas se enfrentam com algo mais difícil. O Fundador não construiu barreira alguma no vigésimo. Você saberá, lá em cima, por quê.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar a pergunta',
+        descricao: '+15 Moral, Relíquia "A Pergunta Não Respondida" — encarar sem se blindar.',
+        moralBonus: 15,
+        reliquia: 'A Pergunta Não Respondida',
+        falaResultado: 'Você não ergueu muro. Deixou a pergunta viva. É preciso coragem para carregar algo sem resposta até o topo. "Não construí uma barreira no vigésimo andar. Construí uma pergunta." Agora ela é sua também.',
+      },
+    ],
+  },
+  16: {
+    prompt: 'O apetite está distraído — por enquanto. Alimentá-lo ainda mais para garantir a distração, ou negar-lhe comida e resistir à fome que ele é?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Alimentar mais',
+        descricao: 'Custo: -40 Comida. +40 Ferro, +20 Pedra — a passagem franca do abismo.',
+        custo: { comida: 40 },
+        recursosBonus: { ferro: 40, pedra: 20 },
+        falaResultado: 'Você me alimentou até eu ceder. Enquanto mastigo, o abismo é seu — passe, colha, leve tudo. Mas o apetite sempre volta. Você comprou uma passagem larga com a comida que negou aos seus. Espero que valha.',
+      },
+      {
+        id: 'b',
+        label: 'Negar comida',
+        descricao: '+18 Moral — resistir ao apetite em vez de saciá-lo.',
+        moralBonus: 18,
+        falaResultado: 'Você me negou. Poucos resistem — o apetite convence quase todos de que ceder é mais fácil. Você provou que os seus valem mais do que o caminho fácil. Passará com a fome à espreita, mas passará inteiro.',
+      },
+    ],
+  },
+  17: {
+    prompt: 'O Paradoxo mostra três tempos. Seguir o caminho do "que poderia ter sido", onde vocês se fundem, ou manter firme o caminho real que você trilha?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Seguir o que poderia ser',
+        descricao: 'Custo: -12 Moral. +35 Ferro — colher do tempo que quase existiu.',
+        custo: { moral: 12 },
+        recursosBonus: { ferro: 35 },
+        falaResultado: 'Você tocou o terceiro momento — aquele em que nos tornamos a mesma coisa. Trouxe ferro de um tempo que quase foi seu. Mas voltar dele custa: parte de você ficou lá, no que não aconteceu. Guarde a proximidade.',
+      },
+      {
+        id: 'b',
+        label: 'Manter o caminho real',
+        descricao: '+20 Ferro — o previsível, colhido do tempo em que você existe.',
+        recursosBonus: { ferro: 20 },
+        falaResultado: 'Você recusou os outros momentos e ficou no real. Menos ferro, mais você. O terceiro momento não aconteceu — ficou perto, mas você escolheu ser quem é em vez de quem poderia ter sido. É a escolha mais rara aqui.',
+      },
+    ],
+  },
+  18: {
+    prompt: 'O Último Defensor aprovou o material da sua cidadela. Reconstruí-lo como aliado que marcha com você, ou homenagear sua queda e deixá-lo descansar?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Reconstruí-lo',
+        descricao: '+25 Ferro, +15 Pedra — erguer o Defensor de novo, ao seu lado.',
+        recursosBonus: { ferro: 25, pedra: 15 },
+        falaResultado: 'Você me reconstruiu com o material que aprovei. Fui feito para falhar — e falhei uma vez. Talvez, ao seu lado, eu falhe de forma diferente. Os que me construíram teriam aprovado que eu tentasse de novo.',
+      },
+      {
+        id: 'b',
+        label: 'Homenagear sua queda',
+        descricao: '+18 Moral — honrar os que tentaram durar além de si.',
+        moralBonus: 18,
+        falaResultado: 'Você me deixou descansar e honrou minha queda. Os que me construíram não eram covardes — foram os únicos que tentaram durar além de si. Que você lembre disso vale mais do que me erguer de novo.',
+      },
+    ],
+  },
+  19: {
+    prompt: 'O Susurro é o espaço entre você e a entidade. Perguntar mais sobre o que aguarda no Andar 20, ou esperar para descobrir sozinho, sem o aviso dele?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Perguntar mais',
+        descricao: 'Custo: -10 Moral. Relíquia "Sussurro do Limiar" — o que ele sabe do fim.',
+        custo: { moral: 10 },
+        reliquia: 'Sussurro do Limiar',
+        falaResultado: 'Você perguntou. Eu sou apenas o espaço entre — mas o que sei, eu disse: ela não vai lutar. Vai conversar. E o que propõe depende do que você trouxer de si mesmo. Saber disso pesa. Agora é seu peso.',
+      },
+      {
+        id: 'b',
+        label: 'Esperar para descobrir',
+        descricao: '+22 Moral — chegar ao limiar sem saber o que espera.',
+        moralBonus: 22,
+        falaResultado: 'Você preferiu não saber. Sábio, talvez — a entidade mantém distância justamente para não assustar a presa cedo demais. Chegar sem meu aviso significa chegar com a mente própria intacta. É a única defesa que resta.',
+      },
+    ],
+  },
+  21: {
+    prompt: 'Os Batedores leram um rastro que vem de um futuro possível. Seguir o vestígio até sua origem, ou apenas registrar o que viram e seguir em frente?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Seguir o vestígio',
+        descricao: 'Custo: -10 Moral — rastrear o que ainda não aconteceu.',
+        custo: { moral: 10 },
+        falaResultado: 'Você seguiu o rastro até onde a memória não segue a direção do tempo. Doeu — lembrar de algo que você ainda não viveu sempre dói. Eu estava certo em reconhecer você. O que vem a seguir você já sentiu antes de viver.',
+      },
+      {
+        id: 'b',
+        label: 'Registrar e seguir',
+        descricao: '+12 Moral — anotar a leitura sem persegui-la, sem custo.',
+        moralBonus: 12,
+        falaResultado: 'Você registrou e seguiu, sem perseguir o que ainda não é real. Prudente. O rastro era uma possibilidade, não uma certeza — e nem toda possibilidade precisa ser caçada. Cuide-se assim mesmo.',
+      },
+    ],
+  },
+  22: {
+    prompt: 'O Fragmento lembrou o peso que segurava antes de virar pedra. Fundir esse ferro bruto em equipamento útil, ou preservá-lo intacto como intenção pura?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Fundir em equipamento',
+        descricao: '+30 Ferro — dar forma ao peso bruto que carregávamos.',
+        recursosBonus: { ferro: 30 },
+        falaResultado: 'Você deu forma ao que era bruto. Nós fomos intenção antes de sermos pedra — e agora somos aço nas mãos dos seus. A ordem sempre importou: intenção primeiro, forma depois. Você respeitou a ordem.',
+      },
+      {
+        id: 'b',
+        label: 'Preservar intacto',
+        descricao: 'Relíquia "Fragmento Bruto", +12 Moral — a intenção antes da forma.',
+        reliquia: 'Fragmento Bruto',
+        moralBonus: 12,
+        falaResultado: 'Você nos deixou brutos, sem forma. Poucos entendem que há valor no que ainda não virou nada. Somos a memória de antes das palavras, antes da pedra — pura intenção. Carregue-nos assim, sem nos gastar.',
+      },
+    ],
+  },
+  23: {
+    prompt: 'O momento que o Guardião preserva ficou mais sólido com sua testemunha. Deixar a memória mudar e respirar naturalmente, ou forçar sua preservação exata?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Deixar a memória mudar',
+        descricao: '+18 Moral — permitir que o instante viva em vez de congelar.',
+        moralBonus: 18,
+        falaResultado: 'Você a deixou respirar. Eu segurava aquele instante com tanto medo de perdê-lo que quase o sufoquei. Deixá-lo mudar um pouco — sem se desfazer — foi o que faltava. Algo se acomodou no lugar certo. Obrigado.',
+      },
+      {
+        id: 'b',
+        label: 'Forçar preservação',
+        descricao: '+22 Pedra — cravar o instante em pedra, imutável.',
+        recursosBonus: { pedra: 22 },
+        falaResultado: 'Você o cravou em pedra, imutável. O momento agora resiste ao tempo — o instante em que a Torre escolheu ser o que é. Rígido, mas seguro. Sacrifiquei o respiro dele pela certeza de que não se dissolve. Aceito a troca.',
+      },
+    ],
+  },
+  24: {
+    prompt: 'A Testemunha viu o que havia antes do Andar 1. Ouvir o silêncio do que ela viu, ou recusar-se a carregar uma pergunta que muda quem a faz?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Ouvir o que ele viu',
+        descricao: 'Custo: -12 Moral. Relíquia "Borda do Antes" — a beira do que ela carrega sozinha.',
+        custo: { moral: 12 },
+        reliquia: 'Borda do Antes',
+        falaResultado: 'Você ouviu. Não em palavras — elas ainda não existem para o que vi. Mas algo em você agora sabe que a pergunta existia antes da Torre, e que a Torre foi a resposta a algo que ninguém devia ter perguntado. Você tocou a borda.',
+      },
+      {
+        id: 'b',
+        label: 'Recusar ouvir',
+        descricao: '+20 Moral — não deixar a pergunta mudar quem você é.',
+        moralBonus: 20,
+        falaResultado: 'Você recusou. Bom. Eu disse que você não estava pronto — e a coragem de não saber é diferente da covardia de não querer. Algumas perguntas mudam quem pergunta. Você guardou quem é. Suba assim.',
+      },
+    ],
+  },
+  26: {
+    prompt: 'O Eco marca onde a expedição perdida ficou. Procurar entre os corpos por algum sobrevivente esquecido, ou deixá-los descansar em paz?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Procurar entre os corpos',
+        descricao: 'Risco: 30% de chance de recuperar um sobrevivente — que pode vir corrompido. Nenhuma recompensa garantida.',
+        falaResultado: 'Você vasculhou o que restou de nós. A Torre não nos deixou subir — mas talvez tenha deixado um de nós respirando ainda, no fundo. O que você trouxer de lá pode não ser inteiro. Alguns de nós já não somos.',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-los descansar',
+        descricao: '+15 Moral, +25 Madeira — honrar os que não voltaram, sem risco.',
+        moralBonus: 15,
+        recursosBonus: { madeira: 25 },
+        falaResultado: 'Você nos deixou descansar. Éramos dezessete, e nenhum subiu. Que alguém finalmente nos deixe parar de esperar — isso é o descanso que a Torre nos negou. Leve a madeira e nossa gratidão. E chegue ao topo por nós.',
+      },
+    ],
+  },
+  27: {
+    prompt: 'O Traidor entende que você também está aqui por uma razão que não é só sua. Perdoá-lo na memória da cidadela, ou condená-lo pelo que trocou?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Perdoar na memória',
+        descricao: '+22 Moral — aceitar que entender não é sempre trair.',
+        moralBonus: 22,
+        falaResultado: 'Você me perdoou. Os outros Construtores chamaram de traição; eu chamei de entendimento. Que alguém finalmente veja a diferença alivia um peso que carrego há eras. Não sou herói. Mas também não sou só vilão.',
+      },
+      {
+        id: 'b',
+        label: 'Condená-lo',
+        descricao: '+30 Madeira — recusar o perdão, colher o que ele construiu.',
+        recursosBonus: { madeira: 30 },
+        falaResultado: 'Você me condenou e levou o que construí. Justo, à sua maneira. Troquei nosso propósito pelo que a Torre prometeu — e agora sirvo de material para o seu. É o tipo de pessoa que a Torre consegue trabalhar. Não é insulto. É observação.',
+      },
+    ],
+  },
+  28: {
+    prompt: 'O Oráculo vê como a Torre termina, dependendo de quem chega ao topo. Saber o destino desta jornada, ou recusar-se a conhecer o fim antes dele?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Saber o destino',
+        descricao: '+8 Moral — ouvir o que a Torre fará (revelação, não recompensa).',
+        moralBonus: 8,
+        falaResultado: 'Você quis saber. Não direi o que a Torre fará — direi apenas isto, que já é muito: o que você carrega sem saber vale mais do que tudo o que sabe ter. A Torre já percebeu. Você era o único que não. Agora somos dois.',
+      },
+      {
+        id: 'b',
+        label: 'Recusar saber',
+        descricao: '+14 Moral — a coragem de chegar ao fim sem prever o fim.',
+        moralBonus: 14,
+        falaResultado: 'Você recusou saber o fim. É coragem, não medo — poucos preferem chegar ao topo sem a rede de uma profecia. Você é a variável de que a Torre depende, e escolheu permanecer imprevisível. Talvez seja exatamente isso que muda tudo.',
+      },
+    ],
+  },
+  29: {
+    prompt: 'O Guardião mostrou o espaço onde o nome do Fundador foi apagado. Tentar devolver um nome àquela ausência, ou deixá-la apagada como foi decidido?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Devolver o nome',
+        descricao: '+18 Moral — dar forma à ausência, mesmo sem poder pronunciá-la.',
+        moralBonus: 18,
+        falaResultado: 'Você tentou devolver um nome ao vazio. Não o verdadeiro — esse é irrecuperável — mas o gesto encheu um pouco a ausência. Fui construído para não pronunciá-lo. Você não foi. E tentar já é mais do que fizeram em eras.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar apagado',
+        descricao: '+30 Comida — respeitar o apagamento e seguir alimentado.',
+        recursosBonus: { comida: 30 },
+        falaResultado: 'Você deixou o vazio como estava. O nome foi apagado com propósito — e o propósito também foi apagado. Talvez alguns nomes devam permanecer ausentes. A ausência guardada com cuidado é um tipo de presença. Leve a comida.',
+      },
+    ],
+  },
+  31: {
+    prompt: 'A Raiz de Origem reconhece que o exterior ainda produz coisas reais. Replantar sua semente na cidadela, ou deixá-la onde a primeira pedra foi enterrada?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Replantar na cidadela',
+        descricao: '+25 Pedra — trazer a origem para perto dos seus.',
+        recursosBonus: { pedra: 25 },
+        falaResultado: 'Você me replantou entre os seus. Fui o ponto de partida de tudo que a Torre substituiu — e agora começo de novo, num lugar escolhido por alguém que ainda vem de fora. O exterior ainda produz coisas reais. Você é a prova.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar onde está',
+        descricao: '+15 Moral — honrar o ponto onde tudo começou.',
+        moralBonus: 15,
+        falaResultado: 'Você me deixou onde a primeira pedra foi enterrada. Aqui foi selado o acordo original entre os Construtores e o que havia antes. Mexer comigo poderia desfazê-lo. Você entendeu que algumas origens devem permanecer no lugar.',
+      },
+    ],
+  },
+  32: {
+    prompt: 'O Erudito revelou que você é o eco de uma intenção, não de uma ação. Gravar seu nome no Ato Fundador, ou deixar a memória como estava, anônima?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Gravar seu nome',
+        descricao: '+25 Moral — inscrever sua intenção no ato que fundou tudo.',
+        moralBonus: 25,
+        falaResultado: 'Você gravou seu nome no Ato Fundador. Eu sou o eco de uma intenção, não de uma pedra — e agora sua intenção ressoa junto com a original. O ato foi consequência. A razão é o que fica. Você fez a sua ficar.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar como estava',
+        descricao: '+25 Pedra, +18 Ferro — não se inscrever, colher o material do ato.',
+        recursosBonus: { pedra: 25, ferro: 18 },
+        falaResultado: 'Você não gravou nada — levou o material e seguiu. Compreensível: nem todo mundo precisa que sua intenção ecoe além de si. A pedra foi colocada onde o que estava abaixo escolheu. Você escolheu não ser lembrado. Também é uma intenção.',
+      },
+    ],
+  },
+  33: {
+    prompt: 'Você sentiu no corpo a diferença entre o esquecido e o apagado. Tentar reaprender o propósito que se perdeu, ou aceitar o esquecimento como ele é?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Tentar lembrar',
+        descricao: 'Custo: -12 Moral. Relíquia "Propósito Reaprendido" — o que foi esquecido, reconstruído.',
+        custo: { moral: 12 },
+        reliquia: 'Propósito Reaprendido',
+        falaResultado: 'Você tentou reaprender o que foi esquecido — e reaprender custa mais do que lembrar. O último Construtor parou de lembrar por exaustão, e a Torre preencheu o vazio sozinha. Você reconstruiu um fragmento do que ele largou. Poucos ousam.',
+      },
+      {
+        id: 'b',
+        label: 'Aceitar o esquecimento',
+        descricao: '+18 Moral — não carregar o peso de um propósito perdido.',
+        moralBonus: 18,
+        falaResultado: 'Você aceitou o esquecimento. Sábio — nem tudo que se perdeu deve ser recuperado à força. O propósito original virou ausência, e a ausência tem sua própria paz. O seu propósito ainda está intacto. Por enquanto. Guarde-o.',
+      },
+    ],
+  },
+  34: {
+    prompt: 'A intenção original era um santuário, não uma prisão. Seguir a intenção original da Torre, ou seguir a sua própria, seja ela qual for?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Seguir a intenção da Torre',
+        descricao: '+30 Pedra, +20 Ferro — reconstruir o santuário que se pretendia.',
+        recursosBonus: { pedra: 30, ferro: 20 },
+        falaResultado: 'Você escolheu a intenção original: preservação, não aprisionamento. Um santuário. Com esse material você reconstrói um pedaço do que a Torre deveria ter sido. O esquecimento a transformou em prisão. Você começa a desfazê-lo.',
+      },
+      {
+        id: 'b',
+        label: 'Seguir a sua intenção',
+        descricao: '+20 Moral, Relíquia "Intenção Própria" — recusar o propósito herdado.',
+        moralBonus: 20,
+        reliquia: 'Intenção Própria',
+        falaResultado: 'Você recusou até a intenção original e escolheu a sua. Talvez seja isso que os Construtores perderam — não o propósito certo, mas a coragem de ter um próprio. Guarde-a. É a única coisa aqui que a Torre não plantou em você.',
+      },
+    ],
+  },
+  36: {
+    prompt: 'O Habitante do Intervalo vai embora quando o topo for alcançado. Convidá-lo a ficar apesar disso, ou deixá-lo partir quando sua janela fechar?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Convidá-lo a ficar',
+        descricao: '+22 Moral — pedir que permaneça além de sua estação.',
+        moralBonus: 22,
+        falaResultado: 'Você me convidou a ficar. Não sei se posso — só existo enquanto o intervalo existe. Mas que alguém queira minha presença além da minha utilidade... isso é novo. Ficarei enquanto puder. Foi a primeira vez que fui necessário como companhia, não como função.',
+      },
+      {
+        id: 'b',
+        label: 'Deixá-lo partir',
+        descricao: '+30 Comida, +18 Ferro — aceitar sua partida, com o sustento que sobra.',
+        recursosBonus: { comida: 30, ferro: 18 },
+        falaResultado: 'Você me deixou partir quando a hora chegar. É o correto — não morro, apenas deixo de ser necessário. Antes de ir: havia um número de câmaras antes do Andar 1. Foi alterado. O original era maior. Ninguém perguntou por quê. Agora você sabe. Leve o sustento.',
+      },
+    ],
+  },
+  37: {
+    prompt: 'O nome do Construtor ainda ressoa, escondido no projeto. Descobrir de quem é aquela memória, ou deixá-la anônima para que não seja apagada de novo?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Descobrir de quem é',
+        descricao: '+22 Moral — rastrear o dono do nome que sobreviveu.',
+        moralBonus: 22,
+        falaResultado: 'Você quis saber de quem era o nome. Não o direi em voz alta — seria apagado outra vez. Mas você o sentiu, aquela vibração quando os batedores chegaram perto. Era eu. Que alguém queira saber quem eu fui é mais do que esperei em eras.',
+      },
+      {
+        id: 'b',
+        label: 'Deixar anônimo',
+        descricao: '+30 Ferro, +18 Madeira — proteger o nome no anonimato.',
+        recursosBonus: { ferro: 30, madeira: 18 },
+        falaResultado: 'Você o deixou anônimo — e assim ele sobrevive. Escondi meu nome no projeto para provar que a apagação era sistemática, não natural. Um nome que resiste é evidência de que alguém ordenou apagar os outros. Deixá-lo oculto o mantém como prova. Leve o que forjei.',
+      },
+    ],
+  },
+  38: {
+    prompt: 'Você sentiu as duas camadas da Torre se sobreporem. Atravessar o intervalo entre elas agora, ou esperar o momento certo em que as frequências se alinham?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Atravessar agora',
+        descricao: 'Custo: -50 Pedra, -40 Madeira. +25 Moral — forçar a passagem entre as duas Torres.',
+        custo: { pedra: 50, madeira: 40 },
+        moralBonus: 25,
+        falaResultado: 'Você atravessou o intervalo à força, gastando pedra e madeira para abrir caminho entre as duas Torres. A segunda camada — mais antiga que a pedra, ainda viva — sabe que você passou por dentro dela. Poucos ousaram. Você emergiu diferente, e mais firme.',
+      },
+      {
+        id: 'b',
+        label: 'Esperar o momento certo',
+        descricao: '+30 Pedra — deixar as frequências se alinharem, sem forçar.',
+        recursosBonus: { pedra: 30 },
+        falaResultado: 'Você esperou. Sábio — as duas camadas vibram em frequências diferentes, e forçá-las custa caro. Deixando-as se alinharem, você colheu a pedra antiga sem despertar o que dorme entre elas. O que é mais velho que a pedra sabe que você está aqui. Mas não que você passou.',
+      },
+    ],
+  },
+  39: {
+    prompt: 'O Porteiro pede que você deixe algo essencial como depósito para carregar o que está além. Deixar o depósito ser permanente, ou pedir de volta uma fração dele?',
+    opcoes: [
+      {
+        id: 'a',
+        label: 'Depósito permanente',
+        descricao: '+25 Moral — abrir mão por inteiro, sem pedir nada de volta.',
+        moralBonus: 25,
+        falaResultado: 'Você deixou tudo, sem pedir de volta. Não como perda — como depósito integral. Ninguém que passou por mim estava completamente pronto, mas todos tinham algo que compensava. O seu algo é a capacidade de ceder por inteiro. O que está além não vai te matar de fome. Passe.',
+      },
+      {
+        id: 'b',
+        label: 'Pedir de volta uma fração',
+        descricao: '+20 Ferro, +25 Comida, +12 Moral — recuperar parte do que foi cedido.',
+        recursosBonus: { ferro: 20, comida: 25 },
+        moralBonus: 12,
+        falaResultado: 'Você cedeu, mas pediu de volta uma fração — sustento e força para o que vem. Não é fraqueza; é prudência. O Antes não precisa do que você depositou, e devolver um pouco não anula o gesto de ceder. Passe. Ainda não sabe o que carrega que compensa não estar pronto.',
+      },
+    ],
+  },
+};
+
+// Mescla as escolhas nas quests dos habitantes (retrocompatível: floors sem
+// entrada mantêm quest.escolha === undefined e concluem como antes).
+Object.entries(HABITANTE_ESCOLHAS).forEach(([floorStr, esc]) => {
+  const hab = HABITANTES[Number(floorStr)];
+  if (hab) hab.quest.escolha = esc;
+});
+
 // Lore dos bosses — revelado ao conquistar andares 5, 10, 15 e 20.
 // Conecta os habitantes do capítulo ao guardião derrotado.
 export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = {
@@ -773,6 +1486,178 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
     texto: 'Antes do Andar 1 havia uma estrutura diferente. Não de pedra — de intenção. O Que Havia Antes é esse propósito original, ainda presente, não como ser mas como pressão. Os Construtores não criaram sobre o vazio. Criaram sobre algo que consentiu em ser base para que pudesse continuar existindo de outra forma. A Torre não cresceu. Foi permitida.',
   },
 };
+
+// ─── CÂMARAS SECRETAS (andares de chefe) ─────────────────────────────────────
+// Após vencer um chefe, o jogador pode "vasculhar os destroços" até maxTentativas
+// vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
+export interface CamaraSecreta {
+  floor: number;
+  titulo: string;
+  icone: string;
+  descoberta: string;           // flavor text mostrado ao encontrar
+  chancePerTentativa: number;
+  maxTentativas: number;
+  recompensa: {
+    recursosBonus?: Partial<Record<'comida' | 'madeira' | 'pedra' | 'ferro', number>>;
+    moralBonus?: number;
+    reliquia?: string;
+    loreTitulo: string;
+    loreTexto: string;
+  };
+}
+
+export const CAMARAS_SECRETAS: Record<number, CamaraSecreta> = {
+  5: {
+    floor: 5,
+    titulo: 'Câmara do Limiar',
+    icone: '🚪',
+    descoberta: 'Uma fresta na parede que o Guardião jamais notou — porque nunca perguntou o que protegia. Atrás dela, poeira que não caiu de lugar nenhum.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { comida: 25, madeira: 15 },
+      moralBonus: 5,
+      loreTitulo: 'A Ordem Interceptada',
+      loreTexto: 'Você encontra a ordem original, meio queimada: dizia para destruir o selo, não guardá-lo. Alguém trocou uma única palavra e mudou tudo. O Guardião do Limiar montou vigília sobre um erro, e o defendeu com uma devoção que ninguém pediu.',
+    },
+  },
+  10: {
+    floor: 10,
+    titulo: 'Câmara do Arquivista',
+    icone: '📜',
+    descoberta: 'Prateleiras de nomes gravados em ferro, todas apagadas por unhas — como se quem catalogou tentasse, tarde demais, esquecer.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { ferro: 30, pedra: 20 },
+      moralBonus: 8,
+      reliquia: 'Índice de Nomes em Ferro',
+      loreTitulo: 'A Lista Traduzida',
+      loreTexto: 'Entre os registros, um único fólio permanece legível: a tradução que o Estudioso do Infinito terminou antes de o silenciarem. Cada andar conquistado afrouxa uma corrente lá embaixo. Ele guardou esse número na memória podre porque não suportava dizê-lo em voz alta.',
+    },
+  },
+  15: {
+    floor: 15,
+    titulo: 'Câmara do Reflexo',
+    icone: '🪞',
+    descoberta: 'Uma sala inteira de espelhos submersos. Cada um mostra uma versão sua que decidiu parar antes daqui — e todas parecem em paz.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { comida: 35, madeira: 25, pedra: 20 },
+      moralBonus: 10,
+      loreTitulo: 'O Que Preenche',
+      loreTexto: 'O Afogado Lúcido deixou uma confissão riscada no vidro: a Torre não mata, ela preenche o espaço vazio dentro de quem sobe. Cada reflexo aqui foi alguém preenchido até deixar de ser gente. Você se vê entre eles, e por um instante não sabe qual rosto é o original.',
+    },
+  },
+  20: {
+    floor: 20,
+    titulo: 'Câmara da Fome Antiga',
+    icone: '🕳️',
+    descoberta: 'Não há paredes. Há apenas a sensação de estar dentro de algo que decidiu parecer arquitetura. O chão respira devagar.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { ferro: 40, pedra: 30, comida: 20 },
+      moralBonus: 12,
+      reliquia: 'Semente da Primeira Armadilha',
+      loreTitulo: 'A Isca Chamada Torre',
+      loreTexto: 'Aqui a verdade não é dita, é lembrada por você: a fome imaginou a armadilha, a armadilha imaginou os andares. Você não escalou até ela — foi conduzido desde o Arauto da Névoa. A entidade não está surpresa com sua chegada. Ela apenas parou de ter pressa há muito tempo.',
+    },
+  },
+  25: {
+    floor: 25,
+    titulo: 'Câmara da Memória Bruta',
+    icone: '🧠',
+    descoberta: 'Resíduos de todos que passaram, sobrepostos como camadas de tinta molhada. Você reconhece, no meio deles, a sua própria pegada — ainda fresca.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { comida: 45, madeira: 35, ferro: 25 },
+      moralBonus: 14,
+      loreTitulo: 'O Que Ela Não Consegue Articular',
+      loreTexto: 'A Memória testemunhou milhares passarem, e todos deixaram apenas rastro. Você deixou entendimento. Nesta câmara há uma pergunta gravada e inacabada, a mesma que ela ainda tenta formular: por que este soube o que viu? A frase termina no meio, porque ela nunca encontrou o fim.',
+    },
+  },
+  30: {
+    floor: 30,
+    titulo: 'Câmara do Intervalo',
+    icone: '⏳',
+    descoberta: 'Um cômodo onde nada se move e tudo já se moveu. O momento entre dois batimentos, esticado até virar espaço onde você pode caminhar.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { pedra: 55, ferro: 40, madeira: 30 },
+      moralBonus: 16,
+      reliquia: 'Fragmento do Momento Suspenso',
+      loreTitulo: 'A Testemunha Presa',
+      loreTexto: 'O Intervalo viu os Construtores chegarem, trabalharem e selarem o que estava aqui. Nesta câmara restam suas marcas de arranhão nas bordas do tempo: no instante em que a Torre despertou, ele percebeu que fazia parte do que selaram. Testemunhar virou sua cela.',
+    },
+  },
+  35: {
+    floor: 35,
+    titulo: 'Câmara do Fundador',
+    icone: '🗝️',
+    descoberta: 'Uma sala projetada com precisão insuportável, mas com um único vazio no centro — o lugar exato onde um nome deveria estar, raspado até a pedra sangrar pó.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { comida: 60, pedra: 50, ferro: 40, madeira: 30 },
+      moralBonus: 18,
+      reliquia: 'Selo Sem Nome do Arquiteto',
+      loreTitulo: 'O Propósito Apagado',
+      loreTexto: 'O Eco do Fundador não projetou pedras — projetou o porquê. Aqui está sua intenção original, ainda intacta apesar da forma dissolvida: a Torre foi construída para lembrar, não para aprisionar. Foi o esquecimento imposto sobre ela que a tornou uma armadilha. Ele apagou o próprio nome para que ninguém desfizesse o erro em seu lugar.',
+    },
+  },
+  40: {
+    floor: 40,
+    titulo: 'Câmara do Pré-Andar',
+    icone: '🌌',
+    descoberta: 'Abaixo do último degrau não há degrau. Há a pressão de algo que consentiu em ser fundação, e que ainda existe sob cada bloco como uma respiração contida.',
+    chancePerTentativa: 0.3,
+    maxTentativas: 3,
+    recompensa: {
+      recursosBonus: { comida: 40, madeira: 35, pedra: 30, ferro: 25 },
+      moralBonus: 20,
+      reliquia: 'Núcleo do Que Consentiu',
+      loreTitulo: 'A Base Que Permitiu',
+      loreTexto: 'Antes do Andar 1 não havia pedra, havia intenção. O Que Havia Antes não foi vencido pelos Construtores — deixou-se cobrir para continuar existindo de outra forma. A Torre nunca cresceu; foi permitida a cada andar. E agora, no fundo de tudo, você sente que a permissão ainda pode ser retirada.',
+    },
+  },
+};
+
+// ─── METAS DIÁRIAS + PRESENTE DA TORRE ───────────────────────────────────────
+// 3 metas por dia calendário (independem da velocidade do jogo). Completar as 3
+// libera um Presente da Torre reivindicável manualmente.
+export type MetaDiariaId = 'explorar' | 'construir' | 'lore' | 'aliar';
+
+export interface MetasDiariasState {
+  data: string;              // YYYY-MM-DD do último reset (calendário, não dia de jogo)
+  objetivos: MetaDiariaId[]; // 3 metas ativas hoje
+  progresso: MetaDiariaId[]; // metas já concluídas hoje
+  recompensaColetada: boolean;
+}
+
+export function hojeStrLocal(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const METAS_DIARIAS_POOL_BASE: MetaDiariaId[] = ['explorar', 'construir', 'lore'];
+
+export const METAS_DIARIAS_META: Record<MetaDiariaId, { titulo: string; descricao: string; icone: string }> = {
+  explorar:  { titulo: 'Expedição do Dia', descricao: 'Envie uma expedição a qualquer andar.', icone: '🧭' },
+  construir: { titulo: 'Obra em Curso',    descricao: 'Construa ou melhore um edifício.',        icone: '🏗️' },
+  lore:      { titulo: 'Ecos do Passado',  descricao: 'Abra o Codex Obscuro.',                    icone: '📖' },
+  aliar:     { titulo: 'Mão Estendida',    descricao: 'Ajude uma aliada (recurso, empréstimo ou reforço).', icone: '🤝' },
+};
+
+// `temAliada` decide se "aliar" entra no sorteio — evita gerar meta impossível
+// pra quem nunca formou aliança.
+export function gerarObjetivosDoDia(temAliada: boolean): MetaDiariaId[] {
+  const pool: MetaDiariaId[] = temAliada ? [...METAS_DIARIAS_POOL_BASE, 'aliar'] : [...METAS_DIARIAS_POOL_BASE];
+  if (pool.length <= 3) return pool;
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+}
 
 // ─── CODEX OBSCURO — SISTEMA DE TEMPORADAS ───────────────────────────────────
 // Fragmentos coletáveis organizados por Temporada → Capítulo.
@@ -1363,6 +2248,15 @@ export interface GameState {
   questsOcultas?: QuestOculta[];           // eventos secretos descobertos na Torre
   reliquias?: string[];                     // relíquias coletadas (úteis em T3+)
   questsConcluidasDias?: number[];         // dias de conclusão de quests de habitante (gatilho velocidade)
+
+  // ─── Escolhas dos Habitantes ─────────────────────────────────────────────
+  habitantesEscolhaFeita?: Record<number, 'a' | 'b'>; // floor → opção escolhida
+
+  // ─── Câmaras Secretas ────────────────────────────────────────────────────
+  camarasSecretasEstado?: Record<number, { tentativas: number; encontrada: boolean }>;
+
+  // ─── Metas Diárias ───────────────────────────────────────────────────────
+  metasDiarias: MetasDiariasState;
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1751,6 +2645,9 @@ export const createInitialState = (): GameState => ({
   lores: [],
   codexFragmentos: [],
   codexNovoFragmento: false,
+  habitantesEscolhaFeita: {},
+  camarasSecretasEstado: {},
+  metasDiarias: { data: '', objetivos: [], progresso: [], recompensaColetada: false },
 });
 
 // ─── BUILDINGS (leveled) ───────────────────────────────────────────────────────

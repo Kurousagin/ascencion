@@ -1,6 +1,7 @@
 import { useGame } from '../context/GameContext';
-import { ShieldAlert, Users, Bell } from 'lucide-react';
-import { getEfeitos, POP_BASE } from '../lib/game-data';
+import { useAlliance } from '../context/AllianceContext';
+import { ShieldAlert, Users, Bell, Gift, Check } from 'lucide-react';
+import { getEfeitos, POP_BASE, METAS_DIARIAS_META } from '../lib/game-data';
 import {
   isPushSupported,
   getPermissionState,
@@ -9,16 +10,26 @@ import {
   unsubscribeFromPush
 } from '../lib/push-notifications';
 import { getDeviceId } from '../lib/alliance-identity';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface DashboardProps {
   t2Desbloqueado: boolean;
 }
 
 export function Dashboard({ t2Desbloqueado }: DashboardProps) {
-  const { state, setSpeed } = useGame();
+  const { state, setSpeed, gerarMetasDiarias, reivindicarPresenteDaTorre } = useGame();
+  const { aliadas } = useAlliance();
   const [pushLoading, setPushLoading] = useState(false);
   const [pushEnabled, setPushEnabledState] = useState(isPushEnabled());
+
+  // Gera as metas do dia ao montar (no-op se já geradas hoje).
+  useEffect(() => {
+    gerarMetasDiarias(aliadas.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aliadas.length]);
+
+  const md = state.metasDiarias;
+  const metasCompletas = md.objetivos.length > 0 && md.progresso.length === md.objetivos.length;
 
   const getMoralColor = (m: number) => {
     if (m > 60) return 'text-success';
@@ -140,6 +151,50 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
             <p className="text-[9px] text-destructive/70 mt-1.5 leading-snug">
               Penalidades ativas: consumo extra de comida, -moral, -sanidade, -lealdade e fadiga acumulando.
             </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Metas de Hoje ─────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <span className="text-[10px] text-secondary tracking-widest border-b border-primary/20 pb-1 block w-max">METAS DE HOJE</span>
+        <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 rounded shadow-lg p-4 space-y-3">
+          {md.objetivos.map(id => {
+            const meta = METAS_DIARIAS_META[id];
+            const feito = md.progresso.includes(id);
+            return (
+              <div key={id} className="flex items-center gap-3">
+                <span className={`text-xl leading-none ${feito ? '' : 'opacity-60'}`}>{meta.icone}</span>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-cinzel font-bold ${feito ? 'text-success' : 'text-foreground'}`}>{meta.titulo}</div>
+                  <div className="text-[10px] text-secondary/70 leading-snug">{meta.descricao}</div>
+                </div>
+                <span className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-sm border ${
+                  feito ? 'bg-success/20 border-success text-success' : 'border-card-border text-white/20'
+                }`}>
+                  {feito ? <Check size={14} /> : ''}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Presente da Torre */}
+          {md.recompensaColetada ? (
+            <div className="w-full h-11 flex items-center justify-center gap-2 rounded-sm border border-success/40 bg-success/10 text-success font-cinzel font-bold tracking-widest text-sm">
+              <Check size={16} /> PRESENTE COLETADO HOJE
+            </div>
+          ) : (
+            <button
+              onClick={reivindicarPresenteDaTorre}
+              disabled={!metasCompletas}
+              className={`w-full h-11 flex items-center justify-center gap-2 rounded-sm font-cinzel font-bold tracking-widest text-sm transition-all touch-manipulation ${
+                metasCompletas
+                  ? 'bg-primary text-primary-foreground glow-gold animate-pulse'
+                  : 'border border-card-border text-white/30 bg-[#161B22] cursor-not-allowed'
+              }`}
+            >
+              <Gift size={16} /> {metasCompletas ? 'REIVINDICAR PRESENTE DA TORRE' : `PRESENTE DA TORRE (${md.progresso.length}/${md.objetivos.length})`}
+            </button>
           )}
         </div>
       </div>
