@@ -3300,7 +3300,11 @@ function resolverGuerra(
 
   // Limpa o flag em TODOS os mobilizados — inclusive quem morreu por causa
   // externa (fome/evento) durante a campanha — para nenhum registro ficar preso.
-  draft.npcs.filter((n) => g.tropaIds.includes(n.id)).forEach((n) => { n.emGuerra = false; });
+  draft.npcs.filter((n) => g.tropaIds.includes(n.id)).forEach((n) => {
+    n.emGuerra = false;
+    // Mark war reinforcements as ready to return (they'll be dev devolvidos by AllianceContext).
+    if (n.reforcoGuerra) n.reforcoGuerraConcluido = true;
+  });
 
   // Sobreviventes retornam (liberados do front, exaustos).
   tropaViva.forEach((n) => {
