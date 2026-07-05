@@ -785,6 +785,8 @@ export function Alliance() {
             {caixa.map((item) => {
               const isEmprestimo = item.tipo === "emprestimo" && item.morador;
               const isReforco = item.tipo === "reforco" && item.morador;
+              const isReforcoGuerra = item.tipo === "reforco_guerra" && item.morador;
+              const isPedidoAjuda = item.tipo === "pedido_socorro" && item.pedidoAjuda;
               const isRetorno = item.tipo === "retorno" && item.morador;
               const recursos = item.recursos;
               return (
@@ -801,6 +803,16 @@ export function Alliance() {
                     {isReforco && (
                       <span className="text-blue-300 font-bold">
                         Reforço ·{" "}
+                      </span>
+                    )}
+                    {isReforcoGuerra && (
+                      <span className="text-destructive font-bold">
+                        Reforço de Guerra ·{" "}
+                      </span>
+                    )}
+                    {isPedidoAjuda && (
+                      <span className="text-warning font-bold">
+                        Pedido de Ajuda ·{" "}
                       </span>
                     )}
                     {isRetorno && (
@@ -852,6 +864,34 @@ export function Alliance() {
                     </div>
                   )}
 
+                  {isReforcoGuerra && item.morador && (
+                    <div className="mb-3 text-[11px] bg-destructive/10 border border-destructive/30 rounded-sm p-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Swords size={12} className="text-destructive" />
+                        <span className="text-foreground font-bold">
+                          {item.morador.nome}
+                        </span>
+                        <span className="text-destructive text-[10px]">
+                          {PROFISSOES[getProfissao(item.morador)].nome}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-secondary">
+                        Entra direto no front de guerra e retorna ao fim da campanha.
+                      </div>
+                    </div>
+                  )}
+
+                  {isPedidoAjuda && item.pedidoAjuda && (
+                    <div className="mb-3 text-[11px] bg-warning/10 border border-warning/30 rounded-sm p-2.5">
+                      <div className="text-foreground font-bold mb-1">
+                        {item.pedidoAjuda.rivalNome}
+                      </div>
+                      <div className="text-[10px] text-secondary">
+                        {item.pedidoAjuda.diasRestantes} dia(s) restante(s) · Clique para ciente
+                      </div>
+                    </div>
+                  )}
+
                   {isRetorno && item.morador && (
                     <div
                       className={`mb-3 text-[11px] bg-background/50 border rounded-sm p-2.5 ${item.morreu ? "border-destructive/30" : "border-success/30"}`}
@@ -876,7 +916,7 @@ export function Alliance() {
                     </div>
                   )}
 
-                  {!isEmprestimo && !isReforco && !isRetorno && (
+                  {!isEmprestimo && !isReforco && !isReforcoGuerra && !isPedidoAjuda && !isRetorno && (
                     <div className="flex gap-2 flex-wrap mb-3 text-[10px] font-bold">
                       {recursos &&
                         RES_META.filter((m) => recursos[m.key] > 0).map(
@@ -910,9 +950,13 @@ export function Alliance() {
                         ? "ACOLHER MORADOR"
                         : isReforco
                           ? "ACOLHER REFORÇO"
-                          : isRetorno
-                            ? "CONFIRMAR"
-                            : "RECEBER"}
+                          : isReforcoGuerra
+                            ? "ACOLHER GUERREIRO"
+                            : isPedidoAjuda
+                              ? "CIENTE"
+                              : isRetorno
+                                ? "CONFIRMAR"
+                                : "RECEBER"}
                   </button>
                 </div>
               );

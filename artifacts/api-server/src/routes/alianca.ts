@@ -174,7 +174,14 @@ async function resolverAliada(playerId: number, aliadaDeviceId: string) {
 // Mapeia um registro de troca para o formato da caixa de entrada.
 function mapExchange(it: typeof exchangesTable.$inferSelect) {
   // Garante que conteudo é um objeto (pode vir como string JSON do banco em alguns casos)
-  const conteudoObj = typeof it.conteudo === 'string' ? JSON.parse(it.conteudo) : it.conteudo;
+  let conteudoObj = it.conteudo;
+  if (typeof it.conteudo === 'string') {
+    try {
+      conteudoObj = JSON.parse(it.conteudo);
+    } catch {
+      conteudoObj = null;
+    }
+  }
 
   return {
     id: it.id,
