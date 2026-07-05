@@ -173,31 +173,30 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     try {
       const c = await listarCaixa(deviceId.current, { cache: 'no-store' });
       if (gen === aliadasGen.current && Array.isArray(c)) {
-        // Detecta novos items de aliança e dispara notificação
-        if (isPushEnabled()) {
-          const novoIds = new Set(c.map(item => item.id));
-          const novosItems = c.filter(item => !seenExchangeIds.current.has(item.id));
+        // Detecta novos items de aliança e dispara notificação (Tier 3)
+        const novoIds = new Set(c.map(item => item.id));
+        const novosItems = c.filter(item => !seenExchangeIds.current.has(item.id));
 
-          if (novosItems.length > 0) {
-            // Texto descriptivo baseado no tipo
-            const textos = novosItems.map(item => {
-              const tipo = item.tipo;
-              const remetente = item.remetenteNome || 'Aliada';
+        if (novosItems.length > 0) {
+          // Texto descriptivo baseado no tipo
+          const textos = novosItems.map(item => {
+            const tipo = item.tipo;
+            const remetente = item.remetenteNome || 'Aliada';
 
-              if (tipo === 'recursos') return `Suprimentos de ${remetente}`;
-              if (tipo === 'emprestimo') return `Morador emprestado de ${remetente}`;
-              if (tipo === 'reforco') return `Reforço de ${remetente}`;
-              if (tipo === 'retorno') return `Morador retornou de ${remetente}`;
-              return `Novo item de ${remetente}`;
-            });
+            if (tipo === 'recursos') return `Suprimentos de ${remetente}`;
+            if (tipo === 'emprestimo') return `Morador emprestado de ${remetente}`;
+            if (tipo === 'reforco') return `Reforço de ${remetente}`;
+            if (tipo === 'retorno') return `Morador retornou de ${remetente}`;
+            return `Novo item de ${remetente}`;
+          });
 
-            // Atualiza próximo evento com timestamp imediato (now)
-            const msg = textos.join(', ');
-            void updateNextEvent(deviceId.current, new Date(), msg).catch(() => {});
-          }
-
-          seenExchangeIds.current = novoIds;
+          // Atualiza próximo evento com timestamp imediato (now)
+          // não precisa checar isPushEnabled - servidor vai ignorar se não há subscription
+          const msg = textos.join(', ');
+          void updateNextEvent(deviceId.current, new Date(), msg).catch(() => {});
         }
+
+        seenExchangeIds.current = novoIds;
         setCaixa(c);
       }
     } catch { /* mantém estado anterior */ }
