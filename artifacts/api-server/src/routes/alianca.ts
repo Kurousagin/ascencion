@@ -749,7 +749,7 @@ router.post("/alianca/reforcar", async (req, res): Promise<void> => {
 
 // ─── POST /alianca/reforcar-guerra — enviar morador para lutar em guerra ─────────
 router.post("/alianca/reforcar-guerra", async (req, res): Promise<void> => {
-  const parsed = ReforcarMoradorGuerraBody.safeParse(req.body);
+  const parsed = ReforcarMoradorBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -831,30 +831,18 @@ router.post("/alianca/pedir-ajuda", async (req, res): Promise<void> => {
     return;
   }
 
-  // Resolve todas as aliadas desta jogadora
-  const aliadas = await db
-    .select({ id: playersTable.id })
-    .from(playersTable)
-    .innerJoin(
-      alliancesTable,
-      or(
-        and(
-          eq(alliancesTable.playerId, player.id),
-          eq(alliancesTable.allyId, playersTable.id),
-        ),
-        and(
-          eq(alliancesTable.allyId, player.id),
-          eq(alliancesTable.playerId, playersTable.id),
-        ),
-      ),
-    );
+  // Resolve todas as aliadas desta jogadora (deduplica via idsAliadas)
+  const { ids: aliadasIds } = await idsAliadas(player.id);
+
+  // Extra safety: deduplicate with Set
+  const aliadasUnicas = [...new Set(aliadasIds)];
 
   // Cria um item "pedido_socorro" na caixa de cada aliada
-  const conteudoPedido = { rivalNome, diasRestantes };
-  const pedidos = aliadas.map((a) => ({
+  const conteudoPedido = { deviceIdSolicitante: player.deviceId, rivalNome, diasRestantes };
+  const pedidos = aliadasUnicas.map((aliadaId) => ({
     tipo: "pedido_socorro" as const,
     fromPlayerId: player.id,
-    toPlayerId: a.id,
+    toPlayerId: aliadaId,
     remetenteNome: player.nome,
     conteudo: conteudoPedido as any,
   }));
@@ -864,7 +852,7 @@ router.post("/alianca/pedir-ajuda", async (req, res): Promise<void> => {
   }
 
   req.log.info(
-    { playerId: player.id, aliadas: aliadas.length },
+    { playerId: player.id, aliadas: aliadasUnicas.length, ids: aliadasUnicas },
     "Pedido de ajuda em guerra disparado"
   );
 

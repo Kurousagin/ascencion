@@ -719,11 +719,14 @@ components:
           oneOf:
             - type: object
               properties:
+                deviceIdSolicitante:
+                  type: string
                 rivalNome:
                   type: string
                 diasRestantes:
                   type: integer
               required:
+                - deviceIdSolicitante
                 - rivalNome
                 - diasRestantes
             - type: "null"

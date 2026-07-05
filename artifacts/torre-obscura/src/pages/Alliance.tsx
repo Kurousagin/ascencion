@@ -110,6 +110,11 @@ export function Alliance() {
   const [reforcoGuerraNpcId, setReforcoGuerraNpcId] = useState("");
   const [reforcandoGuerra, setReforcandoGuerra] = useState(false);
 
+  // ── Responder pedido de ajuda ──
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<{ id: number; deviceIdSolicitante: string } | null>(null);
+  const [npcParaPedido, setNpcParaPedido] = useState("");
+  const [enviandoPedido, setEnviandoPedido] = useState(false);
+
   // ── Mensagens de feedback ──
   const [msg, setMsg] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(
     null,
@@ -268,6 +273,29 @@ export function Alliance() {
       });
     } else {
       setMsg({ tipo: "erro", texto: r.erro ?? "Falha ao enviar reforço de guerra." });
+    }
+  };
+
+  const handleResponderPedido = async () => {
+    if (!pedidoSelecionado || !npcParaPedido) return;
+    setEnviandoPedido(true);
+    setMsg(null);
+    // Chama reforcarGuerra com o deviceId de quem pediu ajuda
+    const r = await reforcarGuerra(pedidoSelecionado.deviceIdSolicitante, npcParaPedido);
+    setEnviandoPedido(false);
+    if (r.ok) {
+      setNpcParaPedido("");
+      setPedidoSelecionado(null);
+      // Marca o pedido como recebido para removê-lo da caixa
+      try {
+        await receber(pedidoSelecionado.id);
+      } catch { /* a caixa vai atualizar sozinha em 15s */ }
+      setMsg({
+        tipo: "ok",
+        texto: "Reforço enviado para a guerra!",
+      });
+    } else {
+      setMsg({ tipo: "erro", texto: r.erro ?? "Falha ao enviar reforço." });
     }
   };
 
@@ -768,6 +796,58 @@ export function Alliance() {
         </>
       )}
 
+      {/* Modal: Responder pedido de ajuda */}
+      {pedidoSelecionado && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-warning/30 rounded-sm max-w-sm w-full p-6 space-y-4">
+            <h2 className="text-sm font-cinzel text-warning font-bold tracking-widest">
+              ENVIAR REFORÇO DE GUERRA
+            </h2>
+            <p className="text-[11px] text-secondary">
+              Selecione um morador para enviar à guerra:
+            </p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {state.npcs
+                .filter((n) => n.vivo && podeEmprestar(n))
+                .map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => setNpcParaPedido(n.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-sm border text-[10px] transition-all ${
+                      npcParaPedido === n.id
+                        ? "border-warning bg-warning/20 text-foreground"
+                        : "border-card-border bg-background/40 text-secondary hover:border-warning/50"
+                    }`}
+                  >
+                    <div className="font-bold text-foreground">{n.nome}</div>
+                    <div className="text-[9px] text-muted-foreground">
+                      {PROFISSOES[getProfissao(n)].nome} • {n.raridade}
+                    </div>
+                  </button>
+                ))}
+            </div>
+            <div className="flex gap-2 pt-4">
+              <button
+                onClick={() => {
+                  setPedidoSelecionado(null);
+                  setNpcParaPedido("");
+                }}
+                className="flex-1 min-h-[40px] border border-card-border text-secondary rounded-sm font-cinzel text-xs font-bold tracking-widest hover:border-primary/50 transition-all"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleResponderPedido}
+                disabled={!npcParaPedido || enviandoPedido}
+                className="flex-1 min-h-[40px] border border-warning text-warning rounded-sm font-cinzel text-xs font-bold tracking-widest hover:bg-warning/20 active:scale-[0.98] disabled:opacity-40 transition-all"
+              >
+                {enviandoPedido ? "ENVIANDO..." : "ENVIAR"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Caixa de entrada */}
       <section>
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
@@ -938,26 +1018,43 @@ export function Alliance() {
                     </div>
                   )}
 
-                  <button
-                    onClick={() => handleReceber(item.id)}
-                    disabled={recebendoId === item.id}
-                    className="w-full min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-success text-success hover:bg-success hover:text-background active:scale-[0.98] disabled:opacity-40"
-                  >
-                    <Check size={14} />{" "}
-                    {recebendoId === item.id
-                      ? "RECEBENDO..."
-                      : isEmprestimo
-                        ? "ACOLHER MORADOR"
-                        : isReforco
-                          ? "ACOLHER REFORÇO"
-                          : isReforcoGuerra
-                            ? "ACOLHER GUERREIRO"
-                            : isPedidoAjuda
-                              ? "CIENTE"
+                  {isPedidoAjuda ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleReceber(item.id)}
+                        disabled={recebendoId === item.id}
+                        className="flex-1 min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-secondary/40 text-secondary hover:border-secondary/60 active:scale-[0.98] disabled:opacity-40"
+                      >
+                        <X size={14} /> IGNORAR
+                      </button>
+                      <button
+                        onClick={() => setPedidoSelecionado({ id: item.id, deviceIdSolicitante: item.pedidoAjuda?.deviceIdSolicitante ?? '' })}
+                        disabled={state.npcs.filter(n => n.vivo && podeEmprestar(n)).length === 0}
+                        className="flex-1 min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-warning text-warning hover:bg-warning/20 active:scale-[0.98] disabled:opacity-40"
+                      >
+                        <Swords size={14} /> ENVIAR REFORÇO
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleReceber(item.id)}
+                      disabled={recebendoId === item.id}
+                      className="w-full min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-success text-success hover:bg-success hover:text-background active:scale-[0.98] disabled:opacity-40"
+                    >
+                      <Check size={14} />{" "}
+                      {recebendoId === item.id
+                        ? "RECEBENDO..."
+                        : isEmprestimo
+                          ? "ACOLHER MORADOR"
+                          : isReforco
+                            ? "ACOLHER REFORÇO"
+                            : isReforcoGuerra
+                              ? "ACOLHER GUERREIRO"
                               : isRetorno
                                 ? "CONFIRMAR"
                                 : "RECEBER"}
-                  </button>
+                    </button>
+                  )}
                 </div>
               );
             })}

@@ -13,6 +13,7 @@ export interface ConteudoRecursos {
 
 // Tipo "pedido_socorro": notificação de guerra e solicitação de ajuda.
 export interface ConteudoPedidoAjuda {
+  deviceIdSolicitante: string;
   rivalNome: string;
   diasRestantes: number;
 }

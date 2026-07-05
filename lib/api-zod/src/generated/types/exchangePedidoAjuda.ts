@@ -7,6 +7,7 @@
  */
 
 export type ExchangePedidoAjuda = {
+  deviceIdSolicitante: string;
   rivalNome: string;
   diasRestantes: number;
 } | null;
