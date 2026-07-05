@@ -112,7 +112,9 @@ export function Alliance() {
 
   // ── Responder pedido de ajuda ──
   const [pedidoSelecionado, setPedidoSelecionado] = useState<{ id: number; deviceIdSolicitante: string } | null>(null);
+  const [modoAjuda, setModoAjuda] = useState<'tropa' | 'suprimentos'>('tropa');
   const [npcParaPedido, setNpcParaPedido] = useState("");
+  const [suprimentoEnvio, setSuprimentoEnvio] = useState<{ comida: string; ferro: string }>({ comida: '', ferro: '' });
   const [enviandoPedido, setEnviandoPedido] = useState(false);
 
   // ── Mensagens de feedback ──
@@ -280,13 +282,12 @@ export function Alliance() {
     if (!pedidoSelecionado || !npcParaPedido) return;
     setEnviandoPedido(true);
     setMsg(null);
-    // Chama reforcarGuerra com o deviceId de quem pediu ajuda
     const r = await reforcarGuerra(pedidoSelecionado.deviceIdSolicitante, npcParaPedido);
     setEnviandoPedido(false);
     if (r.ok) {
       setNpcParaPedido("");
       setPedidoSelecionado(null);
-      // Marca o pedido como recebido para removê-lo da caixa
+      setModoAjuda('tropa');
       try {
         await receber(pedidoSelecionado.id);
       } catch { /* a caixa vai atualizar sozinha em 15s */ }
@@ -297,6 +298,50 @@ export function Alliance() {
     } else {
       setMsg({ tipo: "erro", texto: r.erro ?? "Falha ao enviar reforço." });
     }
+  };
+
+  const suprimentoNums = () => ({
+    comida: Math.max(0, Math.floor(parseFloat(suprimentoEnvio.comida) || 0)),
+    ferro: Math.max(0, Math.floor(parseFloat(suprimentoEnvio.ferro) || 0)),
+  });
+  const totalSuprimento = () => suprimentoNums().comida + suprimentoNums().ferro;
+  const suprimentoSuficiente = () => {
+    const s = suprimentoNums();
+    return state.recursos.comida >= s.comida && state.recursos.ferro >= s.ferro;
+  };
+  const podeEnviarSuprimento = () =>
+    totalSuprimento() > 0 &&
+    totalSuprimento() <= restanteHoje &&
+    suprimentoSuficiente();
+
+  const handleEnviarSuprimentoGuerra = async () => {
+    if (!pedidoSelecionado) return;
+    const s = suprimentoNums();
+    if (totalSuprimento() <= 0) return;
+    const reservado = debitarRecursos({ comida: s.comida, madeira: 0, pedra: 0, ferro: s.ferro });
+    if (!reservado) {
+      setMsg({ tipo: "erro", texto: "Suprimentos insuficientes no armazém." });
+      return;
+    }
+    setEnviandoPedido(true);
+    setMsg(null);
+    const r = await enviar(pedidoSelecionado.deviceIdSolicitante, { comida: s.comida, madeira: 0, pedra: 0, ferro: s.ferro });
+    if (r.ok) {
+      setSuprimentoEnvio({ comida: '', ferro: '' });
+      setPedidoSelecionado(null);
+      setModoAjuda('tropa');
+      try {
+        await receber(pedidoSelecionado.id);
+      } catch { /* a caixa vai atualizar sozinha em 15s */ }
+      setMsg({
+        tipo: "ok",
+        texto: "Suprimentos enviados para a guerra!",
+      });
+    } else {
+      estornarRecursos({ comida: s.comida, madeira: 0, pedra: 0, ferro: s.ferro });
+      setMsg({ tipo: "erro", texto: r.erro ?? "Falha ao enviar suprimentos." });
+    }
+    setEnviandoPedido(false);
   };
 
   // Considera tanto a lista carregada quanto o contador do perfil.
@@ -801,44 +846,131 @@ export function Alliance() {
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-warning/30 rounded-sm max-w-sm w-full p-6 space-y-4">
             <h2 className="text-sm font-cinzel text-warning font-bold tracking-widest">
-              ENVIAR REFORÇO DE GUERRA
+              RESPONDER PEDIDO DE AJUDA
             </h2>
-            <p className="text-[11px] text-secondary">
-              Selecione um morador para enviar à guerra:
-            </p>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {state.npcs
-                .filter((n) => n.vivo && podeEmprestar(n))
-                .map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => setNpcParaPedido(n.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-sm border text-[10px] transition-all ${
-                      npcParaPedido === n.id
-                        ? "border-warning bg-warning/20 text-foreground"
-                        : "border-card-border bg-background/40 text-secondary hover:border-warning/50"
-                    }`}
-                  >
-                    <div className="font-bold text-foreground">{n.nome}</div>
-                    <div className="text-[9px] text-muted-foreground">
-                      {PROFISSOES[getProfissao(n)].nome} • {n.raridade}
-                    </div>
-                  </button>
-                ))}
+
+            {/* Modo selector */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModoAjuda('tropa')}
+                className={`flex-1 py-2 px-3 rounded-sm border text-[10px] font-bold tracking-widest transition-all ${
+                  modoAjuda === 'tropa'
+                    ? 'border-warning bg-warning/20 text-foreground'
+                    : 'border-card-border text-secondary hover:border-warning/50'
+                }`}
+              >
+                REFORÇO
+              </button>
+              <button
+                onClick={() => setModoAjuda('suprimentos')}
+                className={`flex-1 py-2 px-3 rounded-sm border text-[10px] font-bold tracking-widest transition-all ${
+                  modoAjuda === 'suprimentos'
+                    ? 'border-warning bg-warning/20 text-foreground'
+                    : 'border-card-border text-secondary hover:border-warning/50'
+                }`}
+              >
+                SUPRIMENTOS
+              </button>
             </div>
+
+            {/* Modo: Reforço de tropa */}
+            {modoAjuda === 'tropa' && (
+              <>
+                <p className="text-[11px] text-secondary">
+                  Selecione um morador para enviar à guerra:
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {state.npcs.filter((n) => n.vivo && podeEmprestar(n)).length === 0 ? (
+                    <div className="text-[10px] text-muted-foreground italic py-4">
+                      Nenhum morador elegível disponível.
+                    </div>
+                  ) : (
+                    state.npcs
+                      .filter((n) => n.vivo && podeEmprestar(n))
+                      .map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => setNpcParaPedido(n.id)}
+                          className={`w-full text-left px-3 py-2.5 rounded-sm border text-[10px] transition-all ${
+                            npcParaPedido === n.id
+                              ? "border-warning bg-warning/20 text-foreground"
+                              : "border-card-border bg-background/40 text-secondary hover:border-warning/50"
+                          }`}
+                        >
+                          <div className="font-bold text-foreground">{n.nome}</div>
+                          <div className="text-[9px] text-muted-foreground">
+                            {PROFISSOES[getProfissao(n)].nome} • {n.raridade}
+                          </div>
+                        </button>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Modo: Suprimentos */}
+            {modoAjuda === 'suprimentos' && (
+              <>
+                <p className="text-[11px] text-secondary">
+                  Envie comida e ferro para fortalecer a defesa:
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                      <Wheat size={11} className="text-success/70" /> Comida
+                      <span className="text-muted-foreground/60 ml-auto">
+                        ({Math.floor(state.recursos.comida)})
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={suprimentoEnvio.comida}
+                      onChange={(e) => setSuprimentoEnvio(s => ({ ...s, comida: e.target.value }))}
+                      placeholder="0"
+                      className="w-full bg-background/60 border border-primary/20 rounded-sm py-2 px-2 text-sm text-foreground text-center focus:outline-none focus:border-primary/60"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                      <Zap size={11} className="text-primary/70" /> Ferro
+                      <span className="text-muted-foreground/60 ml-auto">
+                        ({Math.floor(state.recursos.ferro)})
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={suprimentoEnvio.ferro}
+                      onChange={(e) => setSuprimentoEnvio(s => ({ ...s, ferro: e.target.value }))}
+                      placeholder="0"
+                      className="w-full bg-background/60 border border-primary/20 rounded-sm py-2 px-2 text-sm text-foreground text-center focus:outline-none focus:border-primary/60"
+                    />
+                  </div>
+                </div>
+                <div className="text-[10px] text-secondary border-t border-primary/10 pt-2">
+                  <div>Restante hoje: <span className={restanteHoje > 0 ? 'text-primary font-bold' : 'text-destructive font-bold'}>{restanteHoje}</span></div>
+                </div>
+              </>
+            )}
+
             <div className="flex gap-2 pt-4">
               <button
                 onClick={() => {
                   setPedidoSelecionado(null);
                   setNpcParaPedido("");
+                  setSuprimentoEnvio({ comida: '', ferro: '' });
+                  setModoAjuda('tropa');
                 }}
                 className="flex-1 min-h-[40px] border border-card-border text-secondary rounded-sm font-cinzel text-xs font-bold tracking-widest hover:border-primary/50 transition-all"
               >
                 CANCELAR
               </button>
               <button
-                onClick={handleResponderPedido}
-                disabled={!npcParaPedido || enviandoPedido}
+                onClick={modoAjuda === 'tropa' ? handleResponderPedido : handleEnviarSuprimentoGuerra}
+                disabled={(modoAjuda === 'tropa' ? !npcParaPedido : !podeEnviarSuprimento()) || enviandoPedido}
                 className="flex-1 min-h-[40px] border border-warning text-warning rounded-sm font-cinzel text-xs font-bold tracking-widest hover:bg-warning/20 active:scale-[0.98] disabled:opacity-40 transition-all"
               >
                 {enviandoPedido ? "ENVIANDO..." : "ENVIAR"}
@@ -1028,11 +1160,14 @@ export function Alliance() {
                         <X size={14} /> IGNORAR
                       </button>
                       <button
-                        onClick={() => setPedidoSelecionado({ id: item.id, deviceIdSolicitante: item.pedidoAjuda?.deviceIdSolicitante ?? '' })}
-                        disabled={state.npcs.filter(n => n.vivo && podeEmprestar(n)).length === 0}
+                        onClick={() => {
+                          const temTropa = state.npcs.filter(n => n.vivo && podeEmprestar(n)).length > 0;
+                          setPedidoSelecionado({ id: item.id, deviceIdSolicitante: item.pedidoAjuda?.deviceIdSolicitante ?? '' });
+                          setModoAjuda(temTropa ? 'tropa' : 'suprimentos');
+                        }}
                         className="flex-1 min-h-[44px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-warning text-warning hover:bg-warning/20 active:scale-[0.98] disabled:opacity-40"
                       >
-                        <Swords size={14} /> ENVIAR REFORÇO
+                        <Swords size={14} /> RESPONDER
                       </button>
                     </div>
                   ) : (

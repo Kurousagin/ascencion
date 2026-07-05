@@ -2488,6 +2488,14 @@ function resolverGuerra(
   return logs;
 }
 
+// Calcula o custo diário de suprimento da guerra para um número de tropas vivas.
+export function calcCustoSuprimentoGuerra(numTropaViva: number): { comida: number; ferro: number } {
+  return {
+    comida: Math.ceil(numTropaViva * 2.5),
+    ferro: Math.max(1, Math.floor(numTropaViva * 0.5)),
+  };
+}
+
 // Avança um dia da guerra em curso. Muta `draft` (guerra, moradores, recursos,
 // moral, histórico) e retorna as entradas de log a serem registradas. Deve ser
 // chamada uma vez por dia dentro de processDay.
@@ -2507,8 +2515,7 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
   }
 
   // 1) Suprimento próprio: custo extra de guerra por dia (comida + ferro).
-  const custoComida = Math.ceil(tropa.length * 2.5);
-  const custoFerro = Math.max(1, Math.floor(tropa.length * 0.5));
+  const { comida: custoComida, ferro: custoFerro } = calcCustoSuprimentoGuerra(tropa.length);
   const suprido = draft.recursos.comida >= custoComida && draft.recursos.ferro >= custoFerro;
   draft.recursos.comida = Math.max(0, draft.recursos.comida - custoComida);
   draft.recursos.ferro = Math.max(0, draft.recursos.ferro - custoFerro);

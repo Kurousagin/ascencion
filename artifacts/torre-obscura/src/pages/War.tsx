@@ -10,7 +10,7 @@ import {
 import {
   NPC, RivalCidadela, calcNpcPower, calcPoderTropa, calcCustoMobilizacao,
   calcPoderMilitar, podeGuerrear, getProfissao, PROFISSOES, getEfeitos,
-  GUERRA_DURACAO, GUERRA_MIN_TROPA,
+  GUERRA_DURACAO, GUERRA_MIN_TROPA, calcCustoSuprimentoGuerra,
 } from '../lib/game-data';
 
 type ResKey = 'comida' | 'madeira' | 'pedra' | 'ferro';
@@ -431,9 +431,31 @@ function GuerraAtivaPanel() {
         </div>
 
         {/* Suprimento */}
-        <div className={`mt-3 text-[10px] flex items-center gap-1 ${g.suprido ? 'text-success' : 'text-destructive'}`}>
-          {g.suprido ? <Check size={12} /> : <Flame size={12} />}
-          {g.suprido ? 'Linhas de suprimento firmes' : 'SEM SUPRIMENTO — tropas enfraquecidas'}
+        <div className="mt-3 space-y-2">
+          <div>
+            <div className="text-[9px] text-secondary tracking-widest mb-1">CONSUMO DIÁRIO PREVISTO</div>
+            <div className="flex gap-4 text-[10px]">
+              {(() => {
+                const custo = calcCustoSuprimentoGuerra(vivos.length);
+                const comidaSuficiente = state.recursos.comida >= custo.comida;
+                const ferroSuficiente = state.recursos.ferro >= custo.ferro;
+                return (
+                  <>
+                    <span className={comidaSuficiente ? 'text-success' : 'text-destructive'}>
+                      <Wheat className="inline mr-1" size={11} /> {custo.comida} / {Math.floor(state.recursos.comida)}
+                    </span>
+                    <span className={ferroSuficiente ? 'text-success' : 'text-destructive'}>
+                      <Zap className="inline mr-1" size={11} /> {custo.ferro} / {Math.floor(state.recursos.ferro)}
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+          <div className={`text-[10px] flex items-center gap-1 ${g.suprido ? 'text-success' : 'text-destructive'}`}>
+            {g.suprido ? <Check size={12} /> : <Flame size={12} />}
+            {g.suprido ? 'Linhas de suprimento firmes' : 'SEM SUPRIMENTO — tropas enfraquecidas'}
+          </div>
         </div>
         <div className="mt-2 text-[10px] text-muted-foreground italic">{g.ultimoRelato}</div>
       </div>
