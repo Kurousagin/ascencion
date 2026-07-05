@@ -8,6 +8,7 @@ import {
 import { useGame, Recursos } from './GameContext';
 import { getProfissao, GameState, NPC, MoradorBase, moradorBase } from '../lib/game-data';
 import { getDeviceId, resetDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
+import { updateNextEvent, isPushEnabled } from '../lib/push-notifications';
 
 // ─── Histórico de empréstimos (persistido em localStorage) ────────────────────
 
@@ -108,6 +109,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   // sobrescreva o estado com lista vazia depois que um request mais novo já
   // entregou o resultado correto.
   const aliadasGen = useRef(0);
+  // Rastreia IDs de items já vistos para detectar novos itens de aliança
+  const seenExchangeIds = useRef<Set<number>>(new Set());
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { aliadasRef.current = aliadas; }, [aliadas]);
 
@@ -169,7 +172,34 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch { /* mantém estado anterior */ }
     try {
       const c = await listarCaixa(deviceId.current, { cache: 'no-store' });
-      if (gen === aliadasGen.current && Array.isArray(c)) setCaixa(c);
+      if (gen === aliadasGen.current && Array.isArray(c)) {
+        // Detecta novos items de aliança e dispara notificação
+        if (isPushEnabled()) {
+          const novoIds = new Set(c.map(item => item.id));
+          const novosItems = c.filter(item => !seenExchangeIds.current.has(item.id));
+
+          if (novosItems.length > 0) {
+            // Texto descriptivo baseado no tipo
+            const textos = novosItems.map(item => {
+              const tipo = item.tipo;
+              const remetente = item.remetenteNome || 'Aliada';
+
+              if (tipo === 'recursos') return `Suprimentos de ${remetente}`;
+              if (tipo === 'emprestimo') return `Morador emprestado de ${remetente}`;
+              if (tipo === 'reforco') return `Reforço de ${remetente}`;
+              if (tipo === 'retorno') return `Morador retornou de ${remetente}`;
+              return `Novo item de ${remetente}`;
+            });
+
+            // Atualiza próximo evento com timestamp imediato (now)
+            const msg = textos.join(', ');
+            void updateNextEvent(deviceId.current, new Date(), msg).catch(() => {});
+          }
+
+          seenExchangeIds.current = novoIds;
+        }
+        setCaixa(c);
+      }
     } catch { /* mantém estado anterior */ }
   }, []);
 

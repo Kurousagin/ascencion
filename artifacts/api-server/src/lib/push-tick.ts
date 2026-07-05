@@ -83,16 +83,23 @@ export async function runNotificationTick(): Promise<PushTickResult> {
 
   const sendPromises = subscriptions.map(async (sub) => {
     try {
-      // Skip if recently active (app possibly open)
-      if (sub.lastActiveAt > minActivityThreshold) {
+      const isInactive = sub.lastActiveAt < inactivityThreshold;
+
+      // Detecta se é notificação de aliança (timestamp "agora")
+      const isAllianceNotification =
+        sub.nextEventAt &&
+        sub.nextEventAt <= now &&
+        (!sub.lastNotifiedEventAt || sub.lastNotifiedEventAt !== sub.nextEventAt);
+
+      // Para eventos de aliança, dispara imediatamente (sem MIN_INACTIVITY_MINUTES)
+      // Para outros eventos, requer 30min de inatividade
+      if (!isAllianceNotification && sub.lastActiveAt > minActivityThreshold) {
         return;
       }
 
-      const isInactive = sub.lastActiveAt < inactivityThreshold;
       const shouldNotifyEvent =
         sub.nextEventAt &&
-        sub.nextEventAt > now &&
-        sub.nextEventAt <= eventLookaheadThreshold &&
+        (isAllianceNotification || (sub.nextEventAt > now && sub.nextEventAt <= eventLookaheadThreshold)) &&
         (!sub.lastNotifiedEventAt || sub.lastNotifiedEventAt !== sub.nextEventAt);
 
       const shouldNotifyGeneric =
