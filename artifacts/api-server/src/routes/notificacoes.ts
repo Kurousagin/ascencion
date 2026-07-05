@@ -35,29 +35,35 @@ router.post("/notificacoes/inscrever", async (req, res): Promise<void> => {
   }
   const { deviceId, endpoint, p256dh, auth } = parsed.data;
 
-  await db
-    .insert(pushSubscriptionsTable)
-    .values({
-      deviceId,
-      endpoint,
-      p256dh,
-      authKey: auth,
-      enabled: true,
-      lastActiveAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: pushSubscriptionsTable.deviceId,
-      set: {
+  try {
+    await db
+      .insert(pushSubscriptionsTable)
+      .values({
+        deviceId,
         endpoint,
         p256dh,
         authKey: auth,
         enabled: true,
         lastActiveAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptionsTable.deviceId,
+        set: {
+          endpoint,
+          p256dh,
+          authKey: auth,
+          enabled: true,
+          lastActiveAt: new Date(),
+        },
+      });
 
-  req.log.info({ deviceId }, "Inscrito em notificações");
-  res.json({ ok: true });
+    req.log.info({ deviceId }, "Inscrito em notificações");
+    res.json({ ok: true });
+  } catch (e) {
+    const error = e as { message?: string };
+    req.log.error({ error: error.message, deviceId }, "Failed to subscribe");
+    res.status(500).json({ error: "Failed to subscribe to push notifications" });
+  }
 });
 
 // POST /notificacoes/desinscrever
