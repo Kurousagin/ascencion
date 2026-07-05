@@ -173,15 +173,18 @@ async function resolverAliada(playerId: number, aliadaDeviceId: string) {
 
 // Mapeia um registro de troca para o formato da caixa de entrada.
 function mapExchange(it: typeof exchangesTable.$inferSelect) {
+  // Garante que conteudo é um objeto (pode vir como string JSON do banco em alguns casos)
+  const conteudoObj = typeof it.conteudo === 'string' ? JSON.parse(it.conteudo) : it.conteudo;
+
   return {
     id: it.id,
     tipo: it.tipo,
     remetenteNome: it.remetenteNome,
-    recursos: it.tipo === 'recursos' ? (it.conteudo ?? null) : null,
+    recursos: it.tipo === 'recursos' ? (conteudoObj ?? null) : null,
     morador: it.morador ?? null,
     prazoDias: it.prazoDias ?? null,
     morreu: it.morreu,
-    pedidoAjuda: it.tipo === 'pedido_socorro' ? (it.conteudo ?? null) : null,
+    pedidoAjuda: it.tipo === 'pedido_socorro' ? (conteudoObj ?? null) : null,
     status: it.status,
     criadoEm: it.createdAt,
   };
@@ -541,7 +544,10 @@ router.get("/alianca/:deviceId/caixa", async (req, res): Promise<void> => {
       ),
     );
 
-  const data = ListarCaixaResponse.parse(itens.map(mapExchange));
+  const mapped = itens.map(mapExchange);
+  req.log.debug({ itens: mapped }, `Mapped ${itens.length} items from db`);
+
+  const data = ListarCaixaResponse.parse(mapped);
   res.json(data);
 });
 
