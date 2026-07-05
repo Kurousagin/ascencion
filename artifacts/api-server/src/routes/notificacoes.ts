@@ -135,7 +135,10 @@ router.patch("/notificacoes/proximo-evento", async (req, res): Promise<void> => 
             .where(eq(pushSubscriptionsTable.deviceId, deviceId))
             .limit(1);
 
-          if (sub.length === 0 || !sub[0].enabled) return;
+          if (sub.length === 0 || !sub[0].enabled) {
+            req.log.warn({ deviceId }, "Nenhuma subscrição ativa para Tier 3");
+            return;
+          }
 
           const payload = JSON.stringify({
             title: "Torre Obscura",
@@ -145,7 +148,7 @@ router.patch("/notificacoes/proximo-evento", async (req, res): Promise<void> => 
             tag: "torre-obscura-event",
           });
 
-          await webpush.sendNotification(
+          const result = await webpush.sendNotification(
             {
               endpoint: sub[0].endpoint,
               keys: {
@@ -161,13 +164,15 @@ router.patch("/notificacoes/proximo-evento", async (req, res): Promise<void> => 
             .set({ lastNotifiedEventAt: now })
             .where(eq(pushSubscriptionsTable.deviceId, deviceId));
 
-          req.log.info({ deviceId }, "Notificação Tier 3 enviada imediatamente");
+          req.log.info({ deviceId, statusCode: result.statusCode }, "✅ Notificação Tier 3 enviada com sucesso");
         } catch (e) {
           const err = e as { statusCode?: number; message?: string };
           if (err.statusCode === 404 || err.statusCode === 410) {
             await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.deviceId, deviceId));
+            req.log.warn({ deviceId, statusCode: err.statusCode }, "❌ Subscrição expirada (404/410), removida do banco");
+          } else {
+            req.log.error({ deviceId, error: err.message, statusCode: err.statusCode }, "❌ Falha ao enviar notificação Tier 3");
           }
-          req.log.warn({ error: err.message }, "Falha ao enviar notificação Tier 3");
         }
       });
     }
