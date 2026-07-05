@@ -755,7 +755,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
-    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra || n.reforcoGuerra)) return;
+    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra || (n.reforcoGuerra && !n.reforcoGuerraConcluido))) return;
     const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
