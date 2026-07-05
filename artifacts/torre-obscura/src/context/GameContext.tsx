@@ -63,6 +63,8 @@ interface GameContextType {
   reintegrarMorador: (base: MoradorBase, morreu: boolean) => void; // dono: recebe de volta
   // Aliança: reforço de expedição (fase 3).
   receberReforco: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço
+  // Aliança: reforço de guerra (ajuda aliada em conflito).
+  receberReforcoGuerra: (base: MoradorBase, donoNome: string, origemExchangeId: number) => void; // receptora: adiciona reforço de guerra
   // Guerra: declara guerra a uma cidadela-bot (ofensiva) ou responde a uma invasão (defensiva).
   declararGuerra: (rival: RivalCidadela, tropaIds: string[]) => boolean;
   // Responde à invasão pendente mobilizando a tropa escolhida (sem custo — é defesa).
@@ -689,7 +691,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
-    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra)) return;
+    if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra || n.reforcoGuerra)) return;
     const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
@@ -1106,6 +1108,42 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // Receptor: recebe um morador para lutar na guerra com reforço-de-guerra.
+  // Se já há guerra ativa, entra direto no front; senão fica ocioso até a
+  // próxima mobilização.
+  const receberReforcoGuerra = (
+    base: MoradorBase, donoNome: string, origemExchangeId: number,
+  ) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      if (s.npcs.some(n => n.id === base.id)) return prev; // já recebido
+      const emGuerraAgora = !!s.guerra;
+      const morador: NPC = {
+        ...base,
+        emExpedicao: false,
+        posto: null,
+        reforco: true,
+        reforcoGuerra: true,
+        reforcoConcluido: false,
+        reforcoGuerraConcluido: false,
+        emGuerra: emGuerraAgora,
+        donoNome,
+        origemExchangeId,
+      };
+      s.npcs.push(morador);
+      if (emGuerraAgora && s.guerra) {
+        s.guerra.tropaIds.push(morador.id);
+        addLog(s, 'evento', `${base.nome.toUpperCase()} chegou como REFORÇO DE GUERRA de ${donoNome.toUpperCase()} e já se junta ao front contra ${s.guerra.rival.nome.toUpperCase()}!`);
+      } else {
+        addLog(s, 'descoberta', `${base.nome.toUpperCase()} chegou como REFORÇO DE GUERRA de ${donoNome.toUpperCase()} — pronto para a próxima mobilização.`);
+      }
+      s.lastTimestamp = Date.now();
+      localStorage.setItem('torre_obscura_save', JSON.stringify(s));
+      return s;
+    });
+  };
+
   // Dono: reintegra o morador que voltou do empréstimo com o estado atualizado.
   // Se morreu na aliada, é perdido e apenas registrado no log. Reintegração não
   // respeita o limite de população (é o seu próprio morador voltando para casa).
@@ -1470,6 +1508,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       removerEmprestado,
       reintegrarMorador,
       receberReforco,
+      receberReforcoGuerra,
       declararGuerra,
       responderGuerra,
       treinarNpc,

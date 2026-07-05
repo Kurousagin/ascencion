@@ -56,6 +56,7 @@ export function Alliance() {
     caixa,
     online,
     historico,
+    ativar,
     parear,
     desfazer,
     enviar,
@@ -66,8 +67,9 @@ export function Alliance() {
   } = useAlliance();
 
   useEffect(() => {
+    ativar();
     refresh();
-  }, [refresh]);
+  }, [ativar, refresh]);
 
   // ── Estado do pareamento ──
   const [codigo, setCodigo] = useState("");

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
 import { Onboarding } from '../components/Onboarding';
@@ -13,6 +15,7 @@ export function TitleScreen() {
 
   const [lancamentoOpen, setLancamentoOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [confirmPendente, setConfirmPendente] = useState<'novo' | null>(null);
 
   let saveDay = 0;
   let saveVivos = 0;
@@ -42,14 +45,21 @@ export function TitleScreen() {
     sessionStorage.setItem(GACHA_LANCAMENTO_PENDING, '1');
   };
 
-  const handleNovoJogo = async () => {
-    // Dissolve alianças do ciclo anterior antes de iniciar cidadela nova
+  const executarNovoJogo = async () => {
     await dissolveAll();
     if (LANCAMENTO_ATIVO) {
       setLancamentoOpen(true);
     } else {
       agendarOnboarding();
       startNewGame();
+    }
+  };
+
+  const handleNovoJogo = async () => {
+    if (hasSave) {
+      setConfirmPendente('novo');
+    } else {
+      await executarNovoJogo();
     }
   };
 
@@ -139,6 +149,48 @@ export function TitleScreen() {
 
         </div>
       </div>
+
+      <Dialog.Root open={confirmPendente !== null} onOpenChange={o => { if (!o) setConfirmPendente(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/97 backdrop-blur-lg z-[70]" />
+          <Dialog.Content className="fixed inset-0 flex items-center justify-center z-[70] p-4 outline-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="w-full max-w-sm bg-gradient-to-b from-[#1C1808] via-[#14120A] to-[#0E0D0B] border border-primary/50 rounded-sm shadow-[0_0_80px_rgba(212,175,55,0.15)] overflow-hidden"
+            >
+              <div className="relative px-6 pt-8 pb-5 text-center border-b border-primary/20">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
+                <div className="w-1.5 h-1.5 rotate-45 bg-primary mx-auto mb-3 shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+                <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.2em] text-sm leading-tight mb-4">
+                  APAGAR CIDADELA ATUAL?
+                </Dialog.Title>
+                <p className="text-[11px] text-secondary/80 leading-relaxed">
+                  Dia {saveDay} • {saveVivos} sobreviventes serão perdidos para sempre. O Observador não sustenta duas realidades ao mesmo tempo.
+                </p>
+              </div>
+              <div className="flex gap-2 p-5">
+                <button
+                  onClick={() => setConfirmPendente(null)}
+                  className="flex-1 px-4 py-3 border border-primary/30 text-primary hover:bg-primary/5 text-xs font-cinzel tracking-wider transition-colors"
+                >
+                  CONTINUAR
+                </button>
+                <button
+                  onClick={async () => {
+                    setConfirmPendente(null);
+                    await executarNovoJogo();
+                  }}
+                  className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-cinzel tracking-wider transition-colors"
+                >
+                  DESCARTAR E RECOMEÇAR
+                </button>
+              </div>
+            </motion.div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {LANCAMENTO_ATIVO && (
         <LancamentoModal

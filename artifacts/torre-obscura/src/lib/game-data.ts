@@ -123,6 +123,11 @@ export interface NPC {
   // Presentes apenas em moradores de reforço que ainda estão na minha cidadela.
   reforco?: boolean;            // true = veio como reforço de expedição (uma vez)
   reforcoConcluido?: boolean;   // true = já participou da expedição, aguarda retorno
+  // ─── Reforço de guerra (aliança ajuda guerra) ────────────────────────────────
+  // Presentes apenas em moradores enviados especificamente para lutar na guerra
+  // da aliada (distinto de `reforco`, que é para UMA expedição).
+  reforcoGuerra?: boolean;         // true = veio para ajudar na guerra da aliada
+  reforcoGuerraConcluido?: boolean; // true = a guerra em que lutava terminou, aguarda retorno
   // ─── Guerra entre cidadelas ──────────────────────────────────────────────
   // true = morador foi mobilizado para o front. Fica indisponível para torre,
   // trabalho, empréstimo e reforço até a guerra terminar.
@@ -139,13 +144,14 @@ export interface NPC {
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
-export type MoradorBase = Omit<NPC, 'emprestado' | 'emprestadoAte' | 'donoNome' | 'origemExchangeId' | 'reforco' | 'reforcoConcluido'>;
+export type MoradorBase = Omit<NPC, 'emprestado' | 'emprestadoAte' | 'donoNome' | 'origemExchangeId' | 'reforco' | 'reforcoConcluido' | 'reforcoGuerra' | 'reforcoGuerraConcluido'>;
 
 // Remove marcadores locais antes de trafegar o morador pela rede.
 export function moradorBase(npc: NPC): MoradorBase {
   const {
     emprestado: _e, emprestadoAte: _a, donoNome: _d, origemExchangeId: _o,
     reforco: _r, reforcoConcluido: _rc,
+    reforcoGuerra: _rg, reforcoGuerraConcluido: _rgc,
     ...base
   } = npc;
   return base;
@@ -160,8 +166,9 @@ export function podeEmprestar(npc: NPC): boolean {
 // Um morador próprio pode ser mobilizado para a guerra se está vivo, fora de
 // expedição, não é emprestado/reforço de outra cidadela e não está já na guerra.
 // (Diferente do empréstimo, aceita moradores com posto — eles largam o trabalho.)
+// Reforço-de-guerra é elegível (é específico para guerra), mas reforço-de-expedição não.
 export function podeGuerrear(npc: NPC): boolean {
-  return npc.vivo && !npc.emExpedicao && !npc.emprestado && !npc.reforco && !npc.emGuerra;
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && (!npc.reforco || npc.reforcoGuerra) && !npc.emGuerra;
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante';

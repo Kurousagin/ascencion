@@ -7,7 +7,7 @@ import {
 } from '@workspace/api-client-react';
 import { useGame, Recursos } from './GameContext';
 import { getProfissao, GameState, NPC, MoradorBase, moradorBase } from '../lib/game-data';
-import { getDeviceId, resetDeviceId, getNomeLocal, setNomeLocal } from '../lib/alliance-identity';
+import { getDeviceId, resetDeviceId, getNomeLocal, setNomeLocal, isAllianceAtivada, marcarAllianceAtivada, desativarAlianca } from '../lib/alliance-identity';
 import { updateNextEvent, isPushEnabled } from '../lib/push-notifications';
 
 // ─── Histórico de empréstimos (persistido em localStorage) ────────────────────
@@ -48,6 +48,7 @@ interface AllianceContextType {
   caixa: Exchange[];
   online: boolean;
   historico: EmprestimoRegistro[];
+  ativar: () => void;
   parear: (codigo: string) => Promise<{ ok: boolean; erro?: string }>;
   desfazer: (aliadaDeviceId: string) => Promise<{ ok: boolean; erro?: string }>;
   dissolveAll: () => Promise<void>;
@@ -101,6 +102,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const [caixa, setCaixa] = useState<Exchange[]>([]);
   const [online, setOnline] = useState(false);
   const [historico, setHistorico] = useState<EmprestimoRegistro[]>(carregarHistorico);
+  const [ativo, setAtivo] = useState(isAllianceAtivada());
 
   const deviceId = useRef(getDeviceId());
   const stateRef = useRef<GameState | null>(state);
@@ -209,7 +211,17 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     void sincronizarPerfil().then(() => puxarAliadasECaixa());
   }, [sincronizarPerfil, puxarAliadasECaixa]);
 
+  // Ativa o registro de aliança: passa de "preguiçoso" para "ativo", disparando
+  // sincronização e polling.
+  const ativar = useCallback(() => {
+    if (!ativo) {
+      marcarAllianceAtivada();
+      setAtivo(true);
+    }
+  }, [ativo]);
+
   useEffect(() => {
+    if (!ativo) return;
     refresh();
     const t1 = setInterval(() => { void sincronizarPerfil(); }, SYNC_MS);
     const t2 = setInterval(() => { void puxarAliadasECaixa(); }, POLL_MS);
@@ -220,11 +232,12 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
       clearInterval(t2);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [sincronizarPerfil, puxarAliadasECaixa, refresh]);
+  }, [sincronizarPerfil, puxarAliadasECaixa, refresh, ativo]);
 
   // ─── Parear ────────────────────────────────────────────────────────────────
   const parear = useCallback(async (codigo: string) => {
     try {
+      ativar();
       const a = await parearAlianca({ deviceId: deviceId.current, codigo: codigo.trim().toUpperCase() });
       // Atualização optimista: mostra a aliada antes mesmo do poll
       setAliadas(prev => (prev.some(x => x.deviceId === a.deviceId) ? prev : [...prev, a]));
@@ -235,7 +248,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [sincronizarPerfil, puxarAliadasECaixa]);
+  }, [sincronizarPerfil, puxarAliadasECaixa, ativar]);
 
   // ─── Desfazer aliança ────────────────────────────────────────────────────────
   const desfazer = useCallback(async (aliadaDeviceId: string) => {
@@ -387,31 +400,38 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   // Gera um novo código de aliança — as alianças do ciclo anterior ficam
   // órfãs no servidor automaticamente, sem precisar de chamadas de rede.
   // Robusto a offline: funciona sempre, independente de conectividade.
+  // Condicional: só reseta se a aliança já estava ativada. Caso contrário,
+  // é um no-op de rede (só limpa estado local).
   const dissolveAll = useCallback(async () => {
-    const novoId = resetDeviceId();
-    deviceId.current = novoId;
+    if (ativo) {
+      const novoId = resetDeviceId();
+      deviceId.current = novoId;
+      desativarAlianca();
+      setAtivo(false);
+    }
     setPerfil(null);
     setAliadas([]);
     setCaixa([]);
     setHistorico([]);
     salvarHistoricoStorage([]);
-  }, []);
+  }, [ativo]);
 
   // ─── Renomear cidadela ─────────────────────────────────────────────────────
   const renomear = useCallback(async (nome: string) => {
     const limpo = nome.trim();
     if (!limpo) return;
+    ativar();
     setNomeLocal(limpo);
     try {
       const p = await registrarPerfil({ deviceId: deviceId.current, nome: limpo });
       setPerfil(p);
     } catch { /* reenviado na próxima sync */ }
-  }, []);
+  }, [ativar]);
 
   return (
     <AllianceContext.Provider value={{
       perfil, aliadas, caixa, online, historico,
-      parear, desfazer, dissolveAll, enviar, emprestar, reforcar, receber, renomear, refresh,
+      ativar, parear, desfazer, dissolveAll, enviar, emprestar, reforcar, receber, renomear, refresh,
     }}>
       {children}
     </AllianceContext.Provider>
