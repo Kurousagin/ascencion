@@ -260,6 +260,91 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErroResposta"
+  /alianca/reforcar-guerra:
+    post:
+      operationId: reforcarMoradorGuerra
+      tags: [alianca]
+      summary: Enviar um morador para lutar na guerra da aliada
+      description: >
+        Remove o morador da cidadela da remetente (tratado pelo cliente) e cria
+        uma troca do tipo "reforco_guerra" na caixa de entrada da aliada. O morador
+        entra direto no front se a guerra já está ativa, ou fica ocioso até a próxima
+        mobilização. Máximo de 2 reforços de guerra ativos simultâneos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReforcoInput"
+      responses:
+        "200":
+          description: Reforço de guerra registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReforcoResultado"
+        "400":
+          description: Requisição inválida ou limite de reforços de guerra excedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Sem aliada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+  /alianca/pedir-ajuda:
+    post:
+      operationId: pedirAjudaGuerra
+      tags: [alianca]
+      summary: Notificar aliadas de que está em guerra
+      description: >
+        Cria um item do tipo "pedido_socorro" na caixa de entrada de todas as aliadas,
+        sinalizando que você está em guerra e precisa de reforços. Dispara notificação
+        push Tier 3 para cada aliada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                rivalNome:
+                  type: string
+                diasRestantes:
+                  type: integer
+              required:
+                - deviceId
+                - rivalNome
+                - diasRestantes
+      responses:
+        "200":
+          description: Pedido enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enviadoPara:
+                    type: integer
+                required:
+                  - enviadoPara
+        "400":
+          description: Requisição inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
+        "404":
+          description: Jogadora não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroResposta"
   /alianca/{deviceId}/caixa:
     get:
       operationId: listarCaixa
@@ -468,11 +553,20 @@ components:
           type: integer
         profissoes:
           $ref: "#/components/schemas/ResumoProfissoes"
+        emGuerra:
+          type: boolean
+        guerraRivalNome:
+          type: ["string", "null"]
+        guerraDiasRestantes:
+          type: ["integer", "null"]
       required:
         - dia
         - populacao
         - andarAtual
         - profissoes
+        - emGuerra
+        - guerraRivalNome
+        - guerraDiasRestantes
     PerfilInput:
       type: object
       properties:
@@ -620,6 +714,19 @@ components:
           type: ["integer", "null"]
         morreu:
           type: boolean
+        # Presente para tipo="pedido_socorro"
+        pedidoAjuda:
+          oneOf:
+            - type: object
+              properties:
+                rivalNome:
+                  type: string
+                diasRestantes:
+                  type: integer
+              required:
+                - rivalNome
+                - diasRestantes
+            - type: "null"
         status:
           type: string
         criadoEm:

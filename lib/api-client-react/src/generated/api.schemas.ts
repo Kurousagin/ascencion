@@ -32,6 +32,11 @@ export interface ResumoCidadela {
   populacao: number;
   andarAtual: number;
   profissoes: ResumoProfissoes;
+  emGuerra: boolean;
+  /** @nullable */
+  guerraRivalNome: string | null;
+  /** @nullable */
+  guerraDiasRestantes: number | null;
 }
 
 export interface PerfilInput {
@@ -90,6 +95,11 @@ export interface EnvioResultado {
   restanteHoje: number;
 }
 
+export type ExchangePedidoAjuda = {
+  rivalNome: string;
+  diasRestantes: number;
+} | null;
+
 export interface Morador {
   id: string;
   nome: string;
@@ -118,6 +128,7 @@ export interface Exchange {
   /** @nullable */
   prazoDias?: number | null;
   morreu?: boolean;
+  pedidoAjuda?: ExchangePedidoAjuda;
   status: string;
   criadoEm: string;
 }
@@ -247,4 +258,14 @@ export interface ProximoEventoInput {
   proximoEventoEm: string | null;
   proximoEventoTexto: string | null;
 }
+
+export type PedirAjudaGuerraBody = {
+  deviceId: string;
+  rivalNome: string;
+  diasRestantes: number;
+};
+
+export type PedirAjudaGuerra200 = {
+  enviadoPara: number;
+};
 

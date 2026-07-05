@@ -3,6 +3,7 @@ import {
   registrarPerfil, listarAliadas, parearAlianca, desfazerAlianca,
   enviarRecursos, listarCaixa, receberItem,
   emprestarMorador, reforcarMorador, devolverMorador,
+  reforcarMoradorGuerra, pedirAjudaGuerra,
   type Perfil, type Aliada, type Exchange, type ResumoCidadela,
 } from '@workspace/api-client-react';
 import { useGame, Recursos } from './GameContext';
@@ -55,6 +56,8 @@ interface AllianceContextType {
   enviar: (aliadaDeviceId: string, r: Recursos) => Promise<{ ok: boolean; erro?: string }>;
   emprestar: (aliadaDeviceId: string, npcId: string, prazoDias: number) => Promise<{ ok: boolean; erro?: string }>;
   reforcar: (aliadaDeviceId: string, npcId: string) => Promise<{ ok: boolean; erro?: string }>;
+  reforcarGuerra: (aliadaDeviceId: string, npcId: string) => Promise<{ ok: boolean; erro?: string }>;
+  pedirAjuda: (rivalNome: string, diasRestantes: number) => Promise<{ ok: boolean; erro?: string }>;
   receber: (exchangeId: number) => Promise<{ ok: boolean; erro?: string }>;
   renomear: (nome: string) => Promise<void>;
   refresh: () => void;
@@ -77,6 +80,9 @@ function resumoDoEstado(state: GameState): ResumoCidadela {
     populacao: vivos.length,
     andarAtual: state.andarAtual,
     profissoes,
+    emGuerra: !!state.guerra,
+    guerraRivalNome: state.guerra?.rival.nome ?? null,
+    guerraDiasRestantes: state.guerra ? state.guerra.duracao - state.guerra.diasDecorridos : null,
   };
 }
 
@@ -94,7 +100,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   const {
     state, creditarRecursos,
     removerParaEmprestimo, restaurarMorador, receberEmprestado, removerEmprestado, reintegrarMorador,
-    receberReforco,
+    receberReforco, receberReforcoGuerra,
   } = useGame();
 
   const [perfil, setPerfil] = useState<Perfil | null>(null);
@@ -188,6 +194,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
             if (tipo === 'recursos') return `Suprimentos de ${remetente}`;
             if (tipo === 'emprestimo') return `Morador emprestado de ${remetente}`;
             if (tipo === 'reforco') return `Reforço de ${remetente}`;
+            if (tipo === 'reforco_guerra') return `Reforço de guerra de ${remetente}`;
+            if (tipo === 'pedido_socorro') return `${remetente} pede reforços na guerra!`;
             if (tipo === 'retorno') return `Morador retornou de ${remetente}`;
             return `Novo item de ${remetente}`;
           });
@@ -337,6 +345,46 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     return { ok: true };
   }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
 
+  // ─── Enviar reforço de guerra ─────────────────────────────────────────────
+  const reforcarGuerra = useCallback(async (aliadaDeviceId: string, npcId: string) => {
+    const removido = removerParaEmprestimo(npcId);
+    if (!removido) return { ok: false, erro: 'Morador indisponível para reforço de guerra.' };
+
+    try {
+      await reforcarMoradorGuerra({ deviceId: deviceId.current, aliadaDeviceId, morador: moradorBase(removido) });
+    } catch (e) {
+      restaurarMorador(removido);
+      return { ok: false, erro: msgErro(e) };
+    }
+
+    adicionarRegistro({
+      id: crypto.randomUUID(),
+      npcId: removido.id,
+      npcNome: removido.nome,
+      profissao: getProfissao(removido),
+      raridade: removido.raridade,
+      tipo: 'reforco',
+      estado: 'em_curso',
+      diaEnvio: stateRef.current?.dia ?? 0,
+      prazoDias: 0,
+      aliadaNome: nomeAliada(aliadaDeviceId),
+    });
+
+    try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
+    return { ok: true };
+  }, [removerParaEmprestimo, restaurarMorador, puxarAliadasECaixa, adicionarRegistro, nomeAliada]);
+
+  // ─── Pedir ajuda em guerra ────────────────────────────────────────────────
+  const pedirAjuda = useCallback(async (rivalNome: string, diasRestantes: number) => {
+    try {
+      await pedirAjudaGuerra({ deviceId: deviceId.current, rivalNome, diasRestantes });
+      try { await puxarAliadasECaixa(); } catch { /* poll vai corrigir */ }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: msgErro(e) };
+    }
+  }, [puxarAliadasECaixa]);
+
   // ─── Receber item ──────────────────────────────────────────────────────────
   const receber = useCallback(async (exchangeId: number) => {
     try {
@@ -345,6 +393,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
         receberEmprestado(item.morador as MoradorBase, item.prazoDias ?? 1, item.remetenteNome, item.id);
       } else if (item.tipo === 'reforco' && item.morador) {
         receberReforco(item.morador as MoradorBase, item.remetenteNome, item.id);
+      } else if (item.tipo === 'reforco_guerra' && item.morador) {
+        receberReforcoGuerra(item.morador as MoradorBase, item.remetenteNome, item.id);
       } else if (item.tipo === 'retorno' && item.morador) {
         reintegrarMorador(item.morador as MoradorBase, !!item.morreu);
         // Atualiza o histórico do dono com o resultado do retorno
@@ -355,6 +405,9 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
             stateRef.current?.dia ?? 0,
           );
         }
+      } else if (item.tipo === 'pedido_socorro') {
+        // Notificação apenas: aliada está pedindo reforço para guerra
+        // Sem ação automática no cliente
       } else if (item.recursos) {
         creditarRecursos(item.recursos, item.remetenteNome);
       }
@@ -363,7 +416,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       return { ok: false, erro: msgErro(e) };
     }
-  }, [creditarRecursos, receberEmprestado, receberReforco, reintegrarMorador, atualizarRegistro]);
+  }, [creditarRecursos, receberEmprestado, receberReforco, receberReforcoGuerra, reintegrarMorador, atualizarRegistro]);
 
   // ─── Devolução automática dos emprestados ─────────────────────────────────
   const devolvendoRef = useRef<Set<string>>(new Set());
@@ -391,7 +444,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
     const vencidos = state.npcs.filter(
       n =>
         (n.emprestado && (!n.vivo || (n.emprestadoAte != null && state.dia >= n.emprestadoAte))) ||
-        (n.reforco && (!n.vivo || n.reforcoConcluido)),
+        (n.reforco && (!n.vivo || n.reforcoConcluido)) ||
+        (n.reforcoGuerra && (!n.vivo || n.reforcoGuerraConcluido)),
     );
     vencidos.forEach(n => { void devolver(n); });
   }, [state?.dia, state?.npcs, devolver]);
@@ -431,7 +485,7 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AllianceContext.Provider value={{
       perfil, aliadas, caixa, online, historico,
-      ativar, parear, desfazer, dissolveAll, enviar, emprestar, reforcar, receber, renomear, refresh,
+      ativar, parear, desfazer, dissolveAll, enviar, emprestar, reforcar, reforcarGuerra, pedirAjuda, receber, renomear, refresh,
     }}>
       {children}
     </AllianceContext.Provider>

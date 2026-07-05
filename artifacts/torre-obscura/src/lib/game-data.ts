@@ -168,7 +168,7 @@ export function podeEmprestar(npc: NPC): boolean {
 // (Diferente do empréstimo, aceita moradores com posto — eles largam o trabalho.)
 // Reforço-de-guerra é elegível (é específico para guerra), mas reforço-de-expedição não.
 export function podeGuerrear(npc: NPC): boolean {
-  return npc.vivo && !npc.emExpedicao && !npc.emprestado && (!npc.reforco || npc.reforcoGuerra) && !npc.emGuerra;
+  return npc.vivo && !npc.emExpedicao && !npc.emprestado && (!npc.reforco || !!npc.reforcoGuerra) && !npc.emGuerra;
 }
 
 export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante';

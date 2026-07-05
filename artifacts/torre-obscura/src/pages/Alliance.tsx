@@ -36,6 +36,7 @@ import {
   Link2Off,
   X,
   ChevronDown,
+  Swords,
 } from "lucide-react";
 
 const PRAZOS_DIAS = [5, 10, 20];
@@ -62,6 +63,7 @@ export function Alliance() {
     enviar,
     emprestar,
     reforcar,
+    reforcarGuerra,
     receber,
     refresh,
   } = useAlliance();
@@ -103,6 +105,10 @@ export function Alliance() {
   // ── Estado do reforço de expedição ──
   const [reforcoNpcId, setReforcoNpcId] = useState("");
   const [reforcando, setReforcando] = useState(false);
+
+  // ── Estado do reforço de guerra ──
+  const [reforcoGuerraNpcId, setReforcoGuerraNpcId] = useState("");
+  const [reforcandoGuerra, setReforcandoGuerra] = useState(false);
 
   // ── Mensagens de feedback ──
   const [msg, setMsg] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(
@@ -248,6 +254,23 @@ export function Alliance() {
     }
   };
 
+  const handleReforcarGuerra = async () => {
+    if (!reforcoGuerraNpcId || !alvo) return;
+    setReforcandoGuerra(true);
+    setMsg(null);
+    const r = await reforcarGuerra(alvo, reforcoGuerraNpcId);
+    setReforcandoGuerra(false);
+    if (r.ok) {
+      setReforcoGuerraNpcId("");
+      setMsg({
+        tipo: "ok",
+        texto: `Reforço de guerra enviado! Ele entra direto no front de ${nomeAlvo}.`,
+      });
+    } else {
+      setMsg({ tipo: "erro", texto: r.erro ?? "Falha ao enviar reforço de guerra." });
+    }
+  };
+
   // Considera tanto a lista carregada quanto o contador do perfil.
   // Sem isso, se puxarAliadasECaixa ainda não completou mas sincronizarPerfil
   // já voltou com numAliadas > 0, as seções de ação ficam escondidas.
@@ -380,8 +403,15 @@ export function Alliance() {
                   >
                     <Handshake className="absolute -right-3 -bottom-3 w-16 h-16 text-primary/10" />
                     <div className="flex items-start justify-between gap-2 relative z-10">
-                      <div className="font-cinzel font-bold text-lg text-foreground">
-                        {aliada.nome}
+                      <div className="flex items-center gap-2">
+                        <div className="font-cinzel font-bold text-lg text-foreground">
+                          {aliada.nome}
+                        </div>
+                        {aliada.resumo?.emGuerra && (
+                          <div className="text-[9px] px-2 py-1 bg-destructive/20 border border-destructive/50 rounded-sm text-destructive font-bold tracking-widest whitespace-nowrap">
+                            ⚔️ EM GUERRA
+                          </div>
+                        )}
                       </div>
                       {confirmarDesfazer === aliada.deviceId ? (
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -611,6 +641,55 @@ export function Alliance() {
               )}
             </div>
           </section>
+
+          {aliadaAlvo?.resumo?.emGuerra && (
+            <section>
+              <h3 className="text-xs font-cinzel text-destructive tracking-widest mb-4 flex items-center gap-2 border-t border-destructive/20 pt-6">
+                <Swords size={13} /> ENVIAR REFORÇO DE GUERRA
+              </h3>
+              <div className="bg-gradient-to-b from-destructive/10 to-transparent border border-destructive/30 rounded-sm p-4 space-y-3">
+                <p className="text-[10px] text-secondary/80 leading-relaxed">
+                  {nomeAlvo} está em guerra contra {aliadaAlvo?.resumo?.guerraRivalNome}! Envie um morador para lutar no front. Ele entra direto no combate e retorna quando a campanha terminar.
+                </p>
+
+                {elegiveis.length === 0 ? (
+                  <div className="text-[11px] text-muted-foreground italic py-2">
+                    Nenhum morador elegível. Reforço requer morador vivo, ocioso e não emprestado.
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-secondary tracking-wide">
+                        Morador de guerra
+                      </label>
+                      <select
+                        value={reforcoGuerraNpcId}
+                        onChange={(e) => setReforcoGuerraNpcId(e.target.value)}
+                        className="w-full bg-background/60 border border-destructive/20 rounded-sm py-2.5 px-2 text-sm text-foreground focus:outline-none focus:border-destructive/60"
+                      >
+                        <option value="">Selecione um morador...</option>
+                        {elegiveis.map((n) => (
+                          <option key={n.id} value={n.id}>
+                            {n.nome} — {PROFISSOES[getProfissao(n)].nome} (
+                            {n.raridade})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleReforcarGuerra}
+                      disabled={reforcandoGuerra || !reforcoGuerraNpcId}
+                      className="w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm transition-all touch-manipulation flex items-center justify-center gap-2 border-destructive text-destructive hover:bg-destructive/20 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Swords size={14} />{" "}
+                      {reforcandoGuerra ? "ENVIANDO..." : "ENVIAR PARA GUERRA"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </section>
+          )}
 
           <section>
             <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">

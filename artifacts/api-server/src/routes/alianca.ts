@@ -28,6 +28,7 @@ import {
   EmprestarMoradorResponse,
   ReforcarMoradorBody,
   ReforcarMoradorResponse,
+  ReforcarMoradorGuerraBody,
   DevolverMoradorBody,
   DevolverMoradorResponse,
 } from "@workspace/api-zod";
@@ -47,6 +48,9 @@ const LIMITE_EMPRESTIMOS = 2;
 // Reforço de expedição: teto de reforços simultâneos ainda não devolvidos
 // (aguardando recebimento ou já em uso na aliada).
 const LIMITE_REFORCOS = 2;
+
+// Reforço de guerra: teto independente de reforços de guerra simultâneos.
+const LIMITE_REFORCOS_GUERRA = 2;
 
 // Teto de aliadas simultâneas por jogadora.
 const MAX_ALIADAS = 3;
@@ -730,6 +734,130 @@ router.post("/alianca/reforcar", async (req, res): Promise<void> => {
   res.json(data);
 });
 
+// ─── POST /alianca/reforcar-guerra — enviar morador para lutar em guerra ─────────
+router.post("/alianca/reforcar-guerra", async (req, res): Promise<void> => {
+  const parsed = ReforcarMoradorGuerraBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { deviceId, aliadaDeviceId, morador } = parsed.data;
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
+    .limit(1);
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
+    return;
+  }
+  const aliada = await resolverAliada(player.id, aliadaDeviceId);
+  if (!aliada) {
+    res.status(404).json({ error: "Vocês não são aliadas." });
+    return;
+  }
+
+  // Teto de reforços de guerra simultâneos (independente dos de expedição)
+  const ativos = await db
+    .select({ id: exchangesTable.id })
+    .from(exchangesTable)
+    .where(
+      and(
+        eq(exchangesTable.fromPlayerId, player.id),
+        eq(exchangesTable.tipo, "reforco_guerra"),
+        inArray(exchangesTable.status, ["pendente", "recebido"]),
+      ),
+    );
+  if (ativos.length >= LIMITE_REFORCOS_GUERRA) {
+    res.status(400).json({
+      error: `Você já tem ${ativos.length} reforço(s) de guerra em campo (limite ${LIMITE_REFORCOS_GUERRA}).`,
+    });
+    return;
+  }
+
+  const [criado] = await db
+    .insert(exchangesTable)
+    .values({
+      tipo: "reforco_guerra",
+      fromPlayerId: player.id,
+      toPlayerId: aliada.id,
+      remetenteNome: player.nome,
+      morador: morador as MoradorPayload,
+    })
+    .returning();
+
+  req.log.info({ from: player.id, to: aliada.id }, "Reforço de guerra enviado");
+
+  res.json({
+    id: criado.id,
+    reforcosAtivos: ativos.length + 1,
+    limiteReforcos: LIMITE_REFORCOS_GUERRA,
+  });
+});
+
+// ─── POST /alianca/pedir-ajuda — notificar aliadas de guerra ───────────────────
+router.post("/alianca/pedir-ajuda", async (req, res): Promise<void> => {
+  const body = req.body as Record<string, unknown>;
+  const deviceId = body.deviceId;
+  const rivalNome = body.rivalNome;
+  const diasRestantes = body.diasRestantes;
+
+  if (typeof deviceId !== "string" || typeof rivalNome !== "string" || typeof diasRestantes !== "number") {
+    res.status(400).json({ error: "Parâmetros inválidos: deviceId (string), rivalNome (string), diasRestantes (number)" });
+    return;
+  }
+
+  const [player] = await db
+    .select()
+    .from(playersTable)
+    .where(eq(playersTable.deviceId, deviceId))
+    .limit(1);
+  if (!player) {
+    res.status(404).json({ error: "Perfil não encontrado." });
+    return;
+  }
+
+  // Resolve todas as aliadas desta jogadora
+  const aliadas = await db
+    .select({ id: playersTable.id })
+    .from(playersTable)
+    .innerJoin(
+      alliancesTable,
+      or(
+        and(
+          eq(alliancesTable.playerId, player.id),
+          eq(alliancesTable.allyId, playersTable.id),
+        ),
+        and(
+          eq(alliancesTable.allyId, player.id),
+          eq(alliancesTable.playerId, playersTable.id),
+        ),
+      ),
+    );
+
+  // Cria um item "pedido_socorro" na caixa de cada aliada
+  const conteudoPedido = { rivalNome, diasRestantes };
+  const pedidos = aliadas.map((a) => ({
+    tipo: "pedido_socorro" as const,
+    fromPlayerId: player.id,
+    toPlayerId: a.id,
+    remetenteNome: player.nome,
+    conteudo: conteudoPedido as any,
+  }));
+
+  if (pedidos.length > 0) {
+    await db.insert(exchangesTable).values(pedidos);
+  }
+
+  req.log.info(
+    { playerId: player.id, aliadas: aliadas.length },
+    "Pedido de ajuda em guerra disparado"
+  );
+
+  res.json({ enviadoPara: pedidos.length });
+});
+
 // ─── POST /alianca/devolver — devolver morador emprestado ao dono ───────────────
 router.post("/alianca/devolver", async (req, res): Promise<void> => {
   const parsed = DevolverMoradorBody.safeParse(req.body);
@@ -760,7 +888,7 @@ router.post("/alianca/devolver", async (req, res): Promise<void> => {
         and(
           eq(exchangesTable.id, origemExchangeId),
           eq(exchangesTable.toPlayerId, player.id),
-          inArray(exchangesTable.tipo, ["emprestimo", "reforco"]),
+          inArray(exchangesTable.tipo, ["emprestimo", "reforco", "reforco_guerra"]),
           eq(exchangesTable.status, "recebido"),
         ),
       )

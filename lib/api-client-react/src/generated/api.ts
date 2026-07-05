@@ -38,6 +38,8 @@ import type {
   InscricaoPushInput,
   OkResposta,
   PareamentoInput,
+  PedirAjudaGuerra200,
+  PedirAjudaGuerraBody,
   Perfil,
   PerfilInput,
   ProximoEventoInput,
@@ -724,6 +726,148 @@ export const useReforcarMorador = <TError = ErrorType<ErroResposta>,
         TContext
       > => {
       return useMutation(getReforcarMoradorMutationOptions(options));
+    }
+
+export const getReforcarMoradorGuerraUrl = () => {
+
+
+
+
+  return `/api/alianca/reforcar-guerra`
+}
+
+/**
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "reforco_guerra" na caixa de entrada da aliada. O morador entra direto no front se a guerra já está ativa, ou fica ocioso até a próxima mobilização. Máximo de 2 reforços de guerra ativos simultâneos.
+ * @summary Enviar um morador para lutar na guerra da aliada
+ */
+export const reforcarMoradorGuerra = async (reforcoInput: ReforcoInput, options?: RequestInit): Promise<ReforcoResultado> => {
+
+  return customFetch<ReforcoResultado>(getReforcarMoradorGuerraUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reforcoInput)
+  }
+);}
+
+
+
+
+export const getReforcarMoradorGuerraMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reforcarMoradorGuerra>>, TError,{data: BodyType<ReforcoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reforcarMoradorGuerra>>, TError,{data: BodyType<ReforcoInput>}, TContext> => {
+
+const mutationKey = ['reforcarMoradorGuerra'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reforcarMoradorGuerra>>, {data: BodyType<ReforcoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reforcarMoradorGuerra(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReforcarMoradorGuerraMutationResult = NonNullable<Awaited<ReturnType<typeof reforcarMoradorGuerra>>>
+    export type ReforcarMoradorGuerraMutationBody = BodyType<ReforcoInput>
+    export type ReforcarMoradorGuerraMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Enviar um morador para lutar na guerra da aliada
+ */
+export const useReforcarMoradorGuerra = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reforcarMoradorGuerra>>, TError,{data: BodyType<ReforcoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reforcarMoradorGuerra>>,
+        TError,
+        {data: BodyType<ReforcoInput>},
+        TContext
+      > => {
+      return useMutation(getReforcarMoradorGuerraMutationOptions(options));
+    }
+
+export const getPedirAjudaGuerraUrl = () => {
+
+
+
+
+  return `/api/alianca/pedir-ajuda`
+}
+
+/**
+ * Cria um item do tipo "pedido_socorro" na caixa de entrada de todas as aliadas, sinalizando que você está em guerra e precisa de reforços. Dispara notificação push Tier 3 para cada aliada.
+ * @summary Notificar aliadas de que está em guerra
+ */
+export const pedirAjudaGuerra = async (pedirAjudaGuerraBody: PedirAjudaGuerraBody, options?: RequestInit): Promise<PedirAjudaGuerra200> => {
+
+  return customFetch<PedirAjudaGuerra200>(getPedirAjudaGuerraUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pedirAjudaGuerraBody)
+  }
+);}
+
+
+
+
+export const getPedirAjudaGuerraMutationOptions = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pedirAjudaGuerra>>, TError,{data: BodyType<PedirAjudaGuerraBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pedirAjudaGuerra>>, TError,{data: BodyType<PedirAjudaGuerraBody>}, TContext> => {
+
+const mutationKey = ['pedirAjudaGuerra'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pedirAjudaGuerra>>, {data: BodyType<PedirAjudaGuerraBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pedirAjudaGuerra(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PedirAjudaGuerraMutationResult = NonNullable<Awaited<ReturnType<typeof pedirAjudaGuerra>>>
+    export type PedirAjudaGuerraMutationBody = BodyType<PedirAjudaGuerraBody>
+    export type PedirAjudaGuerraMutationError = ErrorType<ErroResposta>
+
+    /**
+ * @summary Notificar aliadas de que está em guerra
+ */
+export const usePedirAjudaGuerra = <TError = ErrorType<ErroResposta>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pedirAjudaGuerra>>, TError,{data: BodyType<PedirAjudaGuerraBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pedirAjudaGuerra>>,
+        TError,
+        {data: BodyType<PedirAjudaGuerraBody>},
+        TContext
+      > => {
+      return useMutation(getPedirAjudaGuerraMutationOptions(options));
     }
 
 export const getListarCaixaUrl = (deviceId: string,) => {

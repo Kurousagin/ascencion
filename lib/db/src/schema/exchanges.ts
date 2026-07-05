@@ -11,6 +11,12 @@ export interface ConteudoRecursos {
   ferro: number;
 }
 
+// Tipo "pedido_socorro": notificação de guerra e solicitação de ajuda.
+export interface ConteudoPedidoAjuda {
+  rivalNome: string;
+  diasRestantes: number;
+}
+
 // Snapshot completo de um morador transportado num empréstimo (ida) ou no
 // retorno (volta). Carrega atributos, profissão derivada, habilidade e estado
 // atual, para que a cidadela receptora possa usá-lo e devolvê-lo atualizado.
@@ -51,8 +57,8 @@ export const exchangesTable = pgTable("exchanges", {
     .references(() => playersTable.id),
   // Nome do remetente denormalizado para exibição na caixa de entrada.
   remetenteNome: text("remetente_nome").notNull(),
-  // Recursos (apenas para tipo 'recursos'; null nos empréstimos/retornos).
-  conteudo: jsonb("conteudo").$type<ConteudoRecursos>(),
+  // Conteúdo: recursos (tipo='recursos') ou pedido de ajuda (tipo='pedido_socorro'); null para outros tipos.
+  conteudo: jsonb("conteudo").$type<ConteudoRecursos | ConteudoPedidoAjuda>(),
   // Morador transportado (apenas para 'emprestimo'/'retorno').
   morador: jsonb("morador").$type<MoradorPayload>(),
   // Prazo do empréstimo em dias de jogo da cidadela receptora.

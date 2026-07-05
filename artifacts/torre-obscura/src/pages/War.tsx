@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { useAlliance } from '../context/AllianceContext';
 import { useWar } from '../context/WarContext';
 import {
   Swords, Shield, RefreshCw, Wifi, WifiOff, X, Check, Skull, Users,
@@ -384,10 +385,12 @@ function RivalCard({ rival, meuPoder, onAtacar }: { rival: RivalCidadela; meuPod
 
 function GuerraAtivaPanel() {
   const { state } = useGame();
+  const { pedirAjuda } = useAlliance();
   const g = state.guerra!;
   const tropa: NPC[] = state.npcs.filter(n => g.tropaIds.includes(n.id));
   const vivos = tropa.filter(n => n.vivo);
   const diasRestantes = Math.max(0, g.duracao - g.diasDecorridos);
+  const [enviandoPedido, setEnviandoPedido] = useState(false);
 
   // Barra de momento (-100..100), centrada em 0.
   const m = g.momento;
@@ -485,6 +488,22 @@ function GuerraAtivaPanel() {
           ))}
         </div>
       </div>
+
+      {/* Pedir Ajuda */}
+      <button
+        onClick={async () => {
+          setEnviandoPedido(true);
+          const res = await pedirAjuda(g.rival.nome, diasRestantes);
+          setEnviandoPedido(false);
+          if (res.ok) {
+            // Feedback será através da notificação push e próximo sync
+          }
+        }}
+        disabled={enviandoPedido}
+        className="w-full py-2 px-3 bg-warning/20 hover:bg-warning/30 disabled:opacity-50 border border-warning/50 rounded-md text-[10px] text-warning font-bold tracking-widest transition-colors"
+      >
+        {enviandoPedido ? 'ENVIANDO...' : 'PEDIR AJUDA ÀS ALIADAS'}
+      </button>
 
       <div className="text-[10px] text-muted-foreground text-center italic pt-2">
         A campanha avança sozinha a cada dia. Acompanhe o desfecho aqui e no Registro.

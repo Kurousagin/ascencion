@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExchangePedidoAjuda } from './exchangePedidoAjuda';
 import type { Morador } from './morador';
 import type { Recursos } from './recursos';
 
@@ -17,6 +18,7 @@ export interface Exchange {
   /** @nullable */
   prazoDias?: number | null;
   morreu?: boolean;
+  pedidoAjuda?: ExchangePedidoAjuda;
   status: string;
   criadoEm: Date;
 }

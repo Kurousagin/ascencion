@@ -12,4 +12,9 @@ export interface ResumoCidadela {
   populacao: number;
   andarAtual: number;
   profissoes: ResumoProfissoes;
+  emGuerra: boolean;
+  /** @nullable */
+  guerraRivalNome: string | null;
+  /** @nullable */
+  guerraDiasRestantes: number | null;
 }
