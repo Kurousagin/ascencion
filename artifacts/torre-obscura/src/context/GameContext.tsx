@@ -12,12 +12,14 @@ import {
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
-  HABITANTES, BOSS_ECO_LORE, verificarQuestAndar,
+  HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, HabitanteAndar,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
   getRandomHabilidade,
   QuestOculta, gerarQuestOculta, verificarQuestOculta,
   atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
+  MetaDiariaId, hojeStrLocal, gerarObjetivosDoDia, METAS_DIARIAS_META,
+  CAMARAS_SECRETAS,
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
@@ -75,6 +77,16 @@ interface GameContextType {
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
+  // Habitantes: resolve a escolha ramificada de uma quest em 'aguardando_escolha'.
+  resolverEscolhaHabitante: (floor: number, opcaoId: 'a' | 'b') => void;
+  // Câmaras Secretas: vasculha os destroços de um andar de chefe já conquistado.
+  vasculharCamaraSecreta: (floor: number) => void;
+  // Metas Diárias: gera as metas do dia (no-op se já geradas hoje).
+  gerarMetasDiarias: (temAliada: boolean) => void;
+  // Metas Diárias: registra progresso de uma meta a partir de consumidores externos.
+  registrarMetaDiaria: (id: MetaDiariaId) => void;
+  // Metas Diárias: reivindica o Presente da Torre (as 3 metas concluídas).
+  reivindicarPresenteDaTorre: () => void;
   // Codex Obscuro: marca fragmentos como vistos (limpa badge de notificação).
   abrirCodex: () => void;
   // Quests Ocultas: concluir evento secreto descoberto na Torre.
@@ -143,6 +155,52 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     s.codexFragmentos.push(id);
     s.codexNovoFragmento = true;
     return true;
+  };
+
+  // Registra progresso de uma meta diária no draft (idempotente por dia).
+  // Só marca metas que estão nos objetivos de hoje e ainda não concluídas.
+  const registrarProgressoMetaDiaria = (draft: GameState, id: MetaDiariaId) => {
+    const md = draft.metasDiarias;
+    if (!md || md.data !== hojeStrLocal()) return;
+    if (!md.objetivos.includes(id)) return;
+    if (md.progresso.includes(id)) return;
+    md.progresso.push(id);
+    addLog(draft, 'info', `META DIÁRIA CUMPRIDA — ${METAS_DIARIAS_META[id].titulo}. (${md.progresso.length}/${md.objetivos.length})`);
+  };
+
+  // Bloco compartilhado de "finalizar quest de habitante" — extraído para não
+  // duplicar entre o fluxo direto (interagirHabitante) e o de escolha
+  // (resolverEscolhaHabitante). Ativa eco, empurra lore, desbloqueia fragmentos
+  // e checa as Verdades da Temporada + quest oculta de velocidade.
+  const finalizarQuestHabitante = (s: GameState, floor: number, hab: HabitanteAndar) => {
+    if (!s.ecos.includes(floor)) s.ecos.push(floor);
+    s.lores.push({ floor, titulo: `${hab.nome} — Andar ${floor}`, texto: hab.quest.lore });
+    s.habitantesEstado[floor] = 'concluido';
+    const habFragId = idFragmentoHabitante(floor);
+    if (habFragId) desbloquearFragmento(s, habFragId);
+    const todosFloors = floorsHabitantesTemporada(1);
+    if (todosFloors.every(f => s.habitantesEstado[f] === 'concluido')) {
+      if (desbloquearFragmento(s, 'verdade_t1')) {
+        addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA I DESBLOQUEADA — todos os habitantes responderam ao chamado. Acesse o Codex Obscuro.');
+      }
+      desbloquearFragmento(s, 'pioneers_fragment');
+    }
+    const todosFloorsT2 = floorsHabitantesTemporada(2);
+    if (todosFloorsT2.length > 0 && todosFloorsT2.every(f => s.habitantesEstado[f] === 'concluido')) {
+      if (desbloquearFragmento(s, 'verdade_t2')) {
+        addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA II DESBLOQUEADA — o Intervalo revelou o que sempre esteve antes. Acesse o Codex Obscuro.');
+      }
+    }
+    const hoje = s.dia;
+    const recentes = (s.questsConcluidasDias ?? []).filter(d => hoje - d < 5);
+    s.questsConcluidasDias = [...recentes, hoje];
+    if (recentes.length >= 2 && Math.random() < 0.35) {
+      const nova = gerarQuestOculta('velocidade', undefined, s);
+      if (nova) {
+        s.questsOcultas = [...(s.questsOcultas ?? []), nova];
+        addLog(s, 'descoberta', `VISÃO DA TORRE — "${nova.titulo}": algo quer falar com você. Verifique a lista de andares conquistados.`);
+      }
+    }
   };
 
   const processDay = (draft: GameState): GameState => {
@@ -592,6 +650,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
     }
     if (parsed.codexNovoFragmento === undefined) parsed.codexNovoFragmento = false;
+    // Migração: escolhas dos habitantes, câmaras secretas e metas diárias.
+    if (!parsed.habitantesEscolhaFeita)  parsed.habitantesEscolhaFeita = {};
+    if (!parsed.camarasSecretasEstado)   parsed.camarasSecretasEstado = {};
+    if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: campo lancamento nos NPCs (saves anteriores não têm)
     parsed.npcs.forEach(n => { if (n.lancamento === undefined) n.lancamento = false; });
     // Migração: campo primordialNivel + normalização de stats base canônicos.
@@ -675,6 +737,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     s.recursos.capacidadeArmazem = getEfeitos(s.edificios).capacidadeArmazem;
     const acao = nivelAtual === 0 ? 'construído' : `melhorado (Nvl ${proximo})`;
     addLog(s, 'info', `${def.nome.toUpperCase()} ${acao}.`);
+    // Meta diária: obra concluída.
+    registrarProgressoMetaDiaria(s, 'construir');
     saveState(s);
   };
 
@@ -695,6 +759,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
+
+    // Meta diária: expedição enviada (conta a tentativa, não exige vitória).
+    registrarProgressoMetaDiaria(s, 'explorar');
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
     const ef = getEfeitos(s.edificios, s.npcs);
@@ -1374,12 +1441,22 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const q = hab.quest;
       const ef = getEfeitos(s.edificios, s.npcs);
       const cap = ef.capacidadeArmazem;
-      // Consumir recurso(s) ao concluir (pode ter até dois recursos exigidos)
+      // Consumir recurso(s) exigido(s) — representa "entregar" o pedido, acontece
+      // independente de haver escolha depois.
       if (q.tipo === 'recurso') {
         if (q.recurso)  s.recursos[q.recurso.tipo]  -= q.recurso.qtd;
         if (q.recurso2) s.recursos[q.recurso2.tipo] -= q.recurso2.qtd;
       }
-      // Conceder recompensas
+
+      // Quest COM escolha: não concede nada ainda — aguarda o jogador decidir.
+      if (q.escolha) {
+        s.habitantesEstado[floor] = 'aguardando_escolha';
+        addLog(s, 'info', `${hab.nome.toUpperCase()}: missão pronta para conclusão — uma escolha aguarda.`);
+        saveState(s);
+        return;
+      }
+
+      // Quest SEM escolha (comportamento legado): concede a recompensa da quest.
       if (q.recursosBonus) {
         if (q.recursosBonus.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + q.recursosBonus.comida);
         if (q.recursosBonus.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + q.recursosBonus.madeira);
@@ -1387,46 +1464,138 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (q.recursosBonus.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + q.recursosBonus.ferro);
       }
       if (q.moralBonus) s.moral = Math.min(100, s.moral + q.moralBonus);
-      // Ativar Eco de loot neste andar
-      if (!s.ecos.includes(floor)) s.ecos.push(floor);
-      // Registrar lore desbloqueado (legado)
-      s.lores.push({ floor, titulo: `${hab.nome} — Andar ${floor}`, texto: q.lore });
-      s.habitantesEstado[floor] = 'concluido';
       addLog(s, 'descoberta', `ECO ATIVADO — ${hab.nome} (Andar ${floor}): ${q.recompensaDesc}.`);
-      // Codex: desbloquear fragmento de habitante
-      const habFragId = idFragmentoHabitante(floor);
-      if (habFragId) desbloquearFragmento(s, habFragId);
-      // Codex: verificar Verdade da Temporada I (todos os 16 habitants concluídos)
-      const todosFloors = floorsHabitantesTemporada(1);
-      if (todosFloors.every(f => s.habitantesEstado[f] === 'concluido')) {
-        if (desbloquearFragmento(s, 'verdade_t1')) {
-          addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA I DESBLOQUEADA — todos os habitantes responderam ao chamado. Acesse o Codex Obscuro.');
-        }
-        // Fragmento especial dos Pioneers — rumor dos 100 andares (gated em T1 completo)
-        desbloquearFragmento(s, 'pioneers_fragment');
-      }
-      // Codex: verificar Verdade da Temporada II (todos os 16 habitants de T2 concluídos)
-      const todosFloorsT2 = floorsHabitantesTemporada(2);
-      if (todosFloorsT2.length > 0 && todosFloorsT2.every(f => s.habitantesEstado[f] === 'concluido')) {
-        if (desbloquearFragmento(s, 'verdade_t2')) {
-          addLog(s, 'descoberta', 'A VERDADE DA TEMPORADA II DESBLOQUEADA — o Intervalo revelou o que sempre esteve antes. Acesse o Codex Obscuro.');
-        }
-      }
-      // Velocidade: 3+ quests de habitante concluídas nos últimos 5 dias → chance de evento
-      {
-        const hoje = s.dia;
-        const recentes = (s.questsConcluidasDias ?? []).filter(d => hoje - d < 5);
-        s.questsConcluidasDias = [...recentes, hoje];
-        if (recentes.length >= 2 && Math.random() < 0.35) {
-          const nova = gerarQuestOculta('velocidade', undefined, s);
-          if (nova) {
-            s.questsOcultas = [...(s.questsOcultas ?? []), nova];
-            addLog(s, 'descoberta', `VISÃO DA TORRE — "${nova.titulo}": algo quer falar com você. Verifique a lista de andares conquistados.`);
-          }
-        }
-      }
+      finalizarQuestHabitante(s, floor, hab);
       saveState(s);
     }
+  };
+
+  // ─── ESCOLHA DO HABITANTE ────────────────────────────────────────────────
+  // Resolve a escolha ramificada de uma quest em 'aguardando_escolha'.
+  const resolverEscolhaHabitante = (floor: number, opcaoId: 'a' | 'b') => {
+    if (!state) return;
+    const hab = HABITANTES[floor];
+    if (!hab?.quest.escolha) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    if (s.habitantesEstado[floor] !== 'aguardando_escolha') return;
+    const opcao = hab.quest.escolha.opcoes.find(o => o.id === opcaoId);
+    if (!opcao) return;
+
+    // Valida e debita custo (aborta sem alterar nada se não houver saldo).
+    if (opcao.custo) {
+      if (opcao.custo.moral   !== undefined && s.moral            < opcao.custo.moral)   return;
+      if (opcao.custo.comida  !== undefined && s.recursos.comida  < opcao.custo.comida)  return;
+      if (opcao.custo.madeira !== undefined && s.recursos.madeira < opcao.custo.madeira) return;
+      if (opcao.custo.pedra   !== undefined && s.recursos.pedra   < opcao.custo.pedra)   return;
+      if (opcao.custo.ferro   !== undefined && s.recursos.ferro   < opcao.custo.ferro)   return;
+      if (opcao.custo.moral)   s.moral = Math.max(0, s.moral - opcao.custo.moral);
+      if (opcao.custo.comida)  s.recursos.comida  -= opcao.custo.comida;
+      if (opcao.custo.madeira) s.recursos.madeira -= opcao.custo.madeira;
+      if (opcao.custo.pedra)   s.recursos.pedra   -= opcao.custo.pedra;
+      if (opcao.custo.ferro)   s.recursos.ferro   -= opcao.custo.ferro;
+    }
+
+    const ef = getEfeitos(s.edificios, s.npcs);
+    const cap = ef.capacidadeArmazem;
+    if (opcao.recursosBonus?.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + opcao.recursosBonus.comida);
+    if (opcao.recursosBonus?.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + opcao.recursosBonus.madeira);
+    if (opcao.recursosBonus?.pedra)   s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + opcao.recursosBonus.pedra);
+    if (opcao.recursosBonus?.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + opcao.recursosBonus.ferro);
+    if (opcao.moralBonus) s.moral = Math.min(100, s.moral + opcao.moralBonus);
+    if (opcao.reliquia) s.reliquias = [...(s.reliquias ?? []), opcao.reliquia];
+
+    // Efeito especial hardcoded — Andar 26 opção "a": procurar entre os corpos.
+    // 30% de chance de recuperar um sobrevivente (que pode vir corrompido).
+    if (floor === 26 && opcaoId === 'a') {
+      const popViva = s.npcs.filter(n => n.vivo).length;
+      if (popViva < ef.capPopulacao && Math.random() < 0.30) {
+        const novo = generateNPC(Math.random() < 0.35); // maior chance de vir obscuro
+        s.npcs.push(novo);
+        addLog(s, 'descoberta', `SOBREVIVENTE RECUPERADO no Andar 26: ${novo.nome.toUpperCase()}${novo.obscuro ? ' — mas algo voltou com ela.' : ' juntou-se ao grupo.'}`);
+      } else {
+        addLog(s, 'info', 'Entre os corpos da expedição perdida, nada respirava. Você os deixou onde estavam.');
+      }
+    }
+
+    s.habitantesEscolhaFeita = { ...(s.habitantesEscolhaFeita ?? {}), [floor]: opcaoId };
+    finalizarQuestHabitante(s, floor, hab);
+    addLog(s, 'descoberta', `${hab.nome.toUpperCase()}: ${opcao.label} — ${opcao.falaResultado}`);
+    saveState(s);
+  };
+
+  // ─── CÂMARAS SECRETAS ────────────────────────────────────────────────────
+  const vasculharCamaraSecreta = (floor: number) => {
+    if (!state) return;
+    const camara = CAMARAS_SECRETAS[floor];
+    if (!camara) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const est = s.camarasSecretasEstado?.[floor] ?? { tentativas: 0, encontrada: false };
+    if (est.encontrada || est.tentativas >= camara.maxTentativas) return;
+    if (s.andarAtual <= floor) return; // só buscável depois de já ter passado o chefe
+    est.tentativas++;
+    const achou = Math.random() < camara.chancePerTentativa;
+    if (achou) {
+      est.encontrada = true;
+      const ef = getEfeitos(s.edificios, s.npcs);
+      const cap = ef.capacidadeArmazem;
+      const r = camara.recompensa;
+      if (r.recursosBonus?.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + r.recursosBonus.comida);
+      if (r.recursosBonus?.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + r.recursosBonus.madeira);
+      if (r.recursosBonus?.pedra)   s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + r.recursosBonus.pedra);
+      if (r.recursosBonus?.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + r.recursosBonus.ferro);
+      if (r.moralBonus) s.moral = Math.min(100, s.moral + r.moralBonus);
+      if (r.reliquia) s.reliquias = [...(s.reliquias ?? []), r.reliquia];
+      s.lores.push({ floor, titulo: r.loreTitulo, texto: r.loreTexto });
+      addLog(s, 'descoberta', `CÂMARA SECRETA ENCONTRADA — ${camara.titulo}: ${camara.descoberta}`);
+    } else {
+      addLog(s, 'info', `Vasculhou os destroços do Andar ${floor} — nada encontrado (tentativa ${est.tentativas}/${camara.maxTentativas}).`);
+    }
+    s.camarasSecretasEstado = { ...(s.camarasSecretasEstado ?? {}), [floor]: est };
+    saveState(s);
+  };
+
+  // ─── METAS DIÁRIAS ───────────────────────────────────────────────────────
+  const gerarMetasDiarias = (temAliada: boolean) => {
+    if (!state) return;
+    if (state.metasDiarias.data === hojeStrLocal()) return; // já geradas hoje
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    s.metasDiarias = {
+      data: hojeStrLocal(),
+      objetivos: gerarObjetivosDoDia(temAliada),
+      progresso: [],
+      recompensaColetada: false,
+    };
+    saveState(s);
+  };
+
+  const registrarMetaDiaria = (id: MetaDiariaId) => {
+    if (!state) return;
+    const md = state.metasDiarias;
+    if (!md || md.data !== hojeStrLocal()) return;
+    if (!md.objetivos.includes(id) || md.progresso.includes(id)) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    registrarProgressoMetaDiaria(s, id);
+    saveState(s);
+  };
+
+  const reivindicarPresenteDaTorre = () => {
+    if (!state) return;
+    const md = state.metasDiarias;
+    if (!md || md.progresso.length < md.objetivos.length || md.objetivos.length === 0) return;
+    if (md.recompensaColetada) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const ef = getEfeitos(s.edificios, s.npcs);
+    const cap = ef.capacidadeArmazem;
+    const sorte = Math.random() < 0.15;
+    const mult = sorte ? 3 : 1;
+    const comida  = (15 + s.andarAtual * 2) * mult;
+    const madeira = Math.round((15 + s.andarAtual * 2) * 0.6) * mult;
+    s.recursos.comida  = Math.min(cap, s.recursos.comida  + comida);
+    s.recursos.madeira = Math.min(cap, s.recursos.madeira + madeira);
+    s.metasDiarias = { ...md, recompensaColetada: true };
+    addLog(s, sorte ? 'descoberta' : 'info',
+      `PRESENTE DA TORRE${sorte ? ' (BÔNUS 3×!)' : ''} — +${comida} comida, +${madeira} madeira.`);
+    saveState(s);
   };
 
   const abrirCodex = () => {
@@ -1514,6 +1683,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       treinarNpc,
       estudarNpc,
       interagirHabitante,
+      resolverEscolhaHabitante,
+      vasculharCamaraSecreta,
+      gerarMetasDiarias,
+      registrarMetaDiaria,
+      reivindicarPresenteDaTorre,
       abrirCodex,
       concluirQuestOculta,
       lastExpeditionResult: expeditionResult,
