@@ -22,22 +22,41 @@ if (Number.isNaN(port) || port <= 0) {
 async function runMigrations() {
   try {
     const migrationsDir = join(process.cwd(), "lib/db/drizzle");
+
+    // Check if push_subscriptions table exists
+    const tableExists = await db
+      .execute(
+        `SELECT to_regclass('public.push_subscriptions')` as any
+      )
+      .then(() => true)
+      .catch(() => false);
+
+    if (tableExists) {
+      logger.info("push_subscriptions table already exists, skipping migrations");
+      return;
+    }
+
     const files = await readdir(migrationsDir);
     const sqlFiles = files.filter(f => f.endsWith(".sql")).sort();
 
     for (const file of sqlFiles) {
       const sql = await readFile(join(migrationsDir, file), "utf-8");
-      try {
-        await db.execute(sql as any);
-        logger.info({ migration: file }, "Migration applied");
-      } catch (e) {
-        const err = e as { message?: string };
-        if (err.message?.includes("already exists")) {
-          logger.info({ migration: file }, "Migration already applied");
-        } else {
-          throw e;
+      // Split by statement-breakpoint to execute individually
+      const statements = sql.split(/^--> statement-breakpoint\n/m).filter(s => s.trim());
+
+      for (const stmt of statements) {
+        try {
+          await db.execute(stmt as any);
+        } catch (e) {
+          const err = e as { message?: string };
+          if (err.message?.includes("already exists")) {
+            logger.debug({ migration: file }, "Statement already applied");
+          } else {
+            logger.warn({ error: err.message, stmt: stmt.substring(0, 100) }, "Statement error");
+          }
         }
       }
+      logger.info({ migration: file }, "Migration processed");
     }
   } catch (error) {
     logger.warn(error, "Migration check failed, continuing anyway");

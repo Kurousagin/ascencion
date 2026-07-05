@@ -36,7 +36,9 @@ router.post("/notificacoes/inscrever", async (req, res): Promise<void> => {
   const { deviceId, endpoint, p256dh, auth } = parsed.data;
 
   try {
-    await db
+    const now = new Date();
+    // Try insert first, if fails due to unique constraint, update instead
+    const result = await db
       .insert(pushSubscriptionsTable)
       .values({
         deviceId,
@@ -44,16 +46,17 @@ router.post("/notificacoes/inscrever", async (req, res): Promise<void> => {
         p256dh,
         authKey: auth,
         enabled: true,
-        lastActiveAt: new Date(),
+        lastActiveAt: now,
       })
       .onConflictDoUpdate({
-        target: pushSubscriptionsTable.deviceId,
+        target: [pushSubscriptionsTable.deviceId],
         set: {
           endpoint,
           p256dh,
           authKey: auth,
           enabled: true,
-          lastActiveAt: new Date(),
+          lastActiveAt: now,
+          updatedAt: now,
         },
       });
 
