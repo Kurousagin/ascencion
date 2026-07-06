@@ -1519,6 +1519,8 @@ export interface CamaraSecreta {
   tipo: 'benéfica' | 'maléfica' | 'neutra';
   dificuldade: number;
   custo: number;               // comida exigida
+  maxTentativas: number;       // máximo de tentativas (default 3)
+  chancePerTentativa: number;  // chance de sucesso (0-1, ex.: 0.3)
   resultado: ResultadoCamara;
 }
 
@@ -1535,6 +1537,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 12,
     custo: 20,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Encontrou um abrigo escondido com suprimentos antigos.',
       falhaTexto: 'A trilha levava a uma armadilha — conseguiu sair, mas ferido.',
@@ -1554,6 +1558,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 13,
     custo: 22,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Decodificou uma tábua de conhecimento perdido.',
       falhaTexto: 'Os símbolos eram um código de proteção — recuou antes de ativar.',
@@ -1571,6 +1577,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'maléfica',
     dificuldade: 14,
     custo: 25,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Venceu o eco da morte e encontrou o que ela guardava.',
       falhaTexto: 'O eco foi mais forte — você recuou antes de ser consumido.',
@@ -1590,6 +1598,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 13,
     custo: 24,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'O cristal revelou o acesso. Dentro, fragmentos de verdades antigas.',
       falhaTexto: 'Sem a bênção da Voz, a câmara permanece fechada.',
@@ -1606,6 +1616,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 12,
     custo: 20,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Com o ferro, restaurou o caminho. Encontrou registros intactos.',
       falhaTexto: 'Sem ferro, o caminho colapsa — você recuou.',
@@ -1625,6 +1637,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 13,
     custo: 26,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Passou pelo Limiar. Dentro, o que o Guardião vigila há eras.',
       falhaTexto: 'O Guardião bloqueou o caminho — não era hora.',
@@ -1644,6 +1658,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 12,
     custo: 21,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Seguiu as marcas até uma câmara que documenta o processo.',
       falhaTexto: 'As marcas desapareceram — você perdeu o rastro.',
@@ -1661,6 +1677,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 11,
     custo: 19,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Dentro, um jardim impossível. Tudo que cresce aqui alimenta-se de histórias.',
       falhaTexto: 'Sem permissão, as plantas recusam crescer — o caminho permanece bloqueado.',
@@ -1679,6 +1697,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 14,
     custo: 28,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Os raros perceberam. Dentro, o primórdio documentado.',
       falhaTexto: 'Sem raros, a câmara permanece invisível.',
@@ -1696,6 +1716,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 14,
     custo: 27,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'O arquivo abriu. Conhecimento que transcende o catalogado.',
       falhaTexto: 'Sem a experiência necessária, o arquivo permanece selado.',
@@ -1715,6 +1737,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'maléfica',
     dificuldade: 15,
     custo: 30,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'A forja acendeu. Dentro, armas que o Ferreiro nunca terminou.',
       falhaTexto: 'A forja apagou — você não tinha suficiente morte para acendê-la.',
@@ -1735,6 +1759,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 15,
     custo: 32,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Encontrou o método. O Fundador repete: vencer é lembrar.',
       falhaTexto: 'Sem o conhecimento da Memória, o método permanece indecifrado.',
@@ -1751,6 +1777,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 16,
     custo: 33,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Os nomes apareceram. Cada um uma história que foi deletada.',
       falhaTexto: 'Os nomes permaneceram invisíveis — você não tinha direito de ler.',
@@ -1768,6 +1796,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 13,
     custo: 25,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'A fresta se abriu. Dentro, a confissão do Afogado em forma de ar.',
       falhaTexto: 'Sem sustento, você afogou-se antes de cruzar a fresta.',
@@ -1785,6 +1815,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 15,
     custo: 28,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Sincronizou. O pulso compartilhou suas memórias.',
       falhaTexto: 'Desincronizado, o pulso expulsou você com força.',
@@ -1804,6 +1836,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'maléfica',
     dificuldade: 14,
     custo: 26,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'O Oráculo revelou — você viu seu futuro ao contrário.',
       falhaTexto: 'A revelação era demais — você enlouqueceu temporariamente.',
@@ -1823,6 +1857,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 14,
     custo: 27,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Encontrou o plano. O Comandante sabia como vencer desde o começo.',
       falhaTexto: 'Sem a bênção do Comandante, a câmara permanece estratégica mas fechada.',
@@ -1842,6 +1878,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 15,
     custo: 30,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'O reflexo desaparecido apareceu. Você viu a versão de si que parou antes.',
       falhaTexto: 'O espelho rejeitou sua visão — você viu apenas vazio.',
@@ -1858,6 +1896,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 16,
     custo: 31,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'A pergunta abriu seus olhos. A resposta você já sabia.',
       falhaTexto: 'Sem os incomuns, a pergunta permanece inaudível.',
@@ -1875,6 +1915,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'maléfica',
     dificuldade: 15,
     custo: 29,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'A fome compartilhou sua memória. Você sente cada coisa que comeu.',
       falhaTexto: 'A fome pediu mais — você recuou faminto.',
@@ -1894,6 +1936,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 16,
     custo: 32,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'As câmaras abriram. Cada uma mostra uma escolha que nunca fez.',
       falhaTexto: 'Os paradoxos se cancelaram mutuamente — a câmara não abriu.',
@@ -1911,6 +1955,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 15,
     custo: 28,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'O bastião abriu. Dentro, as evidências que ele não conseguiu destruir.',
       falhaTexto: 'Sem a bênção do Defensor, o bastião permanece intransponível.',
@@ -1930,6 +1976,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 17,
     custo: 34,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Rastreou o sussurro. Dentro, um aviso que não é para você — é para depois.',
       falhaTexto: 'O sussurro desapareceu — você perdeu a pista.',
@@ -1947,6 +1995,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'benéfica',
     dificuldade: 18,
     custo: 36,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'Entraram enquanto dormia. Documentação de séculos de observação.',
       falhaTexto: 'Ela acordou — vocês recuaram antes de ser vistos.',
@@ -1965,6 +2015,8 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     tipo: 'neutra',
     dificuldade: 19,
     custo: 38,
+    maxTentativas: 3,
+    chancePerTentativa: 0.30,
     resultado: {
       sucessoTexto: 'A verdade revelou-se. Não era o que você esperava.',
       falhaTexto: 'A verdade permaneceu oculta — você não estava pronto.',
@@ -1972,6 +2024,62 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     },
   },
 };
+
+// Helper: verificar se um requisito de câmara foi cumprido
+export function verificarRequisitoCamara(state: GameState, requisito: RequisitoCamara): boolean {
+  if (requisito.tipo === 'class_farms') {
+    const totalFarms = Object.values(state.farmsPorAndarEClasse ?? {}).reduce((sum, andarFarms) => {
+      return sum + (andarFarms[requisito.profissao] ?? 0);
+    }, 0);
+    return totalFarms >= requisito.minFarmsComClasse;
+  }
+  if (requisito.tipo === 'mortes_andar') {
+    const totalMortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
+    return totalMortes >= requisito.minMortes;
+  }
+  if (requisito.tipo === 'quest_habitante') {
+    return state.habitantesEstado?.[requisito.floor] === 'concluido';
+  }
+  if (requisito.tipo === 'recurso_minimo') {
+    const recursos = state.recursos;
+    if (requisito.recurso === 'comida') return recursos.comida >= requisito.quantidade;
+    if (requisito.recurso === 'madeira') return recursos.madeira >= requisito.quantidade;
+    if (requisito.recurso === 'pedra') return recursos.pedra >= requisito.quantidade;
+    if (requisito.recurso === 'ferro') return recursos.ferro >= requisito.quantidade;
+  }
+  if (requisito.tipo === 'npc_raridade') {
+    const countByRaridade: Record<string, number> = {};
+    state.npcs.forEach(n => {
+      if (n.vivo) {
+        const mapped = n.raridade === 'Divino' ? 'divino'
+          : n.raridade === 'Lendário' ? 'lendario'
+          : n.raridade === 'Épico' ? 'raro'
+          : n.raridade === 'Incomum' ? 'incomum'
+          : n.raridade === 'Comum' ? 'comum'
+          : null;
+        if (mapped) countByRaridade[mapped] = (countByRaridade[mapped] ?? 0) + 1;
+      }
+    });
+    return (countByRaridade[requisito.raridade] ?? 0) >= requisito.quantidade;
+  }
+  if (requisito.tipo === 'combinado') {
+    return requisito.conditions.every(cond => {
+      if (cond.tipo === 'class_farms') {
+        const farms = Object.values(state.farmsPorAndarEClasse ?? {}).reduce((sum, af) => {
+          const prof = (cond as unknown as { profissao?: ProfissaoId }).profissao as ProfissaoId | undefined;
+          return sum + (prof ? (af[prof] ?? 0) : 0);
+        }, 0);
+        return farms >= (cond.value ?? 0);
+      }
+      if (cond.tipo === 'mortes') {
+        const mortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
+        return mortes >= (cond.value ?? 0);
+      }
+      return false;
+    });
+  }
+  return false;
+}
 
 // ─── METAS DIÁRIAS + PRESENTE DA TORRE ───────────────────────────────────────
 // 3 metas por dia calendário (independem da velocidade do jogo). Completar as 3
@@ -2600,7 +2708,9 @@ export interface GameState {
   habitantesEscolhaFeita?: Record<number, 'a' | 'b'>; // floor → opção escolhida
 
   // ─── Câmaras Secretas ────────────────────────────────────────────────────
-  camarasSecretasEstado?: Record<number, { tentativas: number; encontrada: boolean }>;
+  camarasSecretasEstado?: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }>;
+  farmsPorAndarEClasse?: Record<number, Record<ProfissaoId, number>>;
+  totalMortesAndar?: Record<number, number>;
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
@@ -2994,6 +3104,8 @@ export const createInitialState = (): GameState => ({
   codexNovoFragmento: false,
   habitantesEscolhaFeita: {},
   camarasSecretasEstado: {},
+  farmsPorAndarEClasse: {},
+  totalMortesAndar: {},
   metasDiarias: { data: '', objetivos: [], progresso: [], recompensaColetada: false },
 });
 
