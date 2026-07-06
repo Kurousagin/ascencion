@@ -304,6 +304,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 20, moralBonus: 5,
       lore: 'A mensagem que nunca chegou era uma ordem para abrir o selo — não para mantê-lo. Alguém a interceptou antes do destinatário a receber. Esse alguém ainda está aqui.',
       recompensaDesc: '+20% loot neste andar · +5 Moral',
+      escolha: {
+        prompt: 'A mensagem revelada ou guardada?',
+        opcoes: [
+          { id: 'a' as const, label: 'Revelar', descricao: '+5 Moral', moralBonus: 5, falaResultado: 'Revelada. O peso é compartilhado.' },
+          { id: 'b' as const, label: 'Guardar', descricao: 'Relíquia 'Mensagem Selada'', reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido. Arauto assente.' },
+        ],
+      },
     },
   },
   2: {
@@ -434,6 +441,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 30, moralBonus: 8,
       lore: 'Ele não está morrendo. Está sendo preenchido pela Torre lentamente. E permanece consciente durante todo o processo. Há uma diferença entre transformação e morte. Ele é a prova.',
       recompensaDesc: '+30% loot neste andar · +8 Moral',
+      escolha: {
+        prompt: 'A mensagem revelada ou guardada?',
+        opcoes: [
+          { id: 'a' as const, label: 'Revelar', descricao: '+5 Moral', moralBonus: 5, falaResultado: 'Revelada. Peso compartilhado.' },
+          { id: 'b' as const, label: 'Guardar', descricao: 'Relíquia 'Mensagem Selada'', reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido.' },
+        ],
+      },
     },
   },
   12: {
@@ -540,6 +554,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 35, moralBonus: 15,
       lore: 'O silêncio que você ouve não é ausência de som. É a entidade respirando devagar para não assustar a presa antes do momento certo. O Susurro é essa respiração. E ele te avisou.',
       recompensaDesc: '+35% loot neste andar · +15 Moral',
+      escolha: {
+        prompt: 'Forjar arma ou guardar ferro?',
+        opcoes: [
+          { id: 'a' as const, label: 'Forjar', descricao: '+20% poder', falaResultado: 'Promessa.' },
+          { id: 'b' as const, label: 'Guardar', descricao: '+20 Ferro, Relíquia', recursosBonus: { ferro: 20 }, reliquia: 'Ferro', falaResultado: 'Potencial.' },
+        ],
+      },
     },
   },
 
@@ -555,6 +576,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 20, moralBonus: 8,
       lore: 'O Vestígio existe na memória de um momento que ainda não aconteceu. Ele te reconheceu porque já te viu chegar — de um futuro que pode ou não se tornar real. O rastro que o Batedor leu não era do passado. Era uma possibilidade.',
       recompensaDesc: '+20% loot neste andar · +8 Moral',
+      escolha: {
+        prompt: 'Seguir vestígio ou registrar?',
+        opcoes: [
+          { id: 'a' as const, label: 'Seguir', descricao: 'Batedor indisponível 5d, +20% Eco', falaResultado: 'Viu antes.' },
+          { id: 'b' as const, label: 'Registrar', descricao: '+15% Eco', falaResultado: 'Seguro.' },
+        ],
+      },
     },
   },
   22: {
@@ -685,6 +713,13 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
       ecoBonus: 30, moralBonus: 18,
       lore: 'O Eco existe no milissegundo em que o último Construtor vivo esqueceu por que haviam começado a construir. Não foi drama — foi exaustão. Ele simplesmente parou de lembrar. E naquele instante, a Torre mudou de propósito por conta própria, preenchendo o vácuo com o único propósito que conhecia: continuar existindo.',
       recompensaDesc: '+30% loot neste andar · +18 Moral',
+      escolha: {
+        prompt: 'Um morador ou cidadela?',
+        opcoes: [
+          { id: 'a' as const, label: 'Um', descricao: '+2 stats', falaResultado: 'Favorito escolhido.' },
+          { id: 'b' as const, label: 'Todos', descricao: '+10 Madeira, +5 Moral', recursosBonus: { madeira: 10 }, moralBonus: 5, falaResultado: 'Respiram para todos.' },
+        ],
+      },
     },
   },
   34: {
