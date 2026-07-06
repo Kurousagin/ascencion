@@ -308,7 +308,7 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
         prompt: 'A mensagem revelada ou guardada?',
         opcoes: [
           { id: 'a' as const, label: 'Revelar', descricao: '+5 Moral', moralBonus: 5, falaResultado: 'Revelada. O peso é compartilhado.' },
-          { id: 'b' as const, label: 'Guardar', descricao: 'Relíquia 'Mensagem Selada'', reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido. Arauto assente.' },
+          { id: 'b' as const, label: 'Guardar', descricao: "Relíquia \"Mensagem Selada\"", reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido. Arauto assente.' },
         ],
       },
     },
