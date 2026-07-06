@@ -1490,138 +1490,485 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
 // ─── CÂMARAS SECRETAS (andares de chefe) ─────────────────────────────────────
 // Após vencer um chefe, o jogador pode "vasculhar os destroços" até maxTentativas
 // vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
+export type RequisitoCamara =
+  | { tipo: 'class_farms'; profissao: ProfissaoId; minFarmsComClasse: number; textoRequisito: string }
+  | { tipo: 'mortes_andar'; minMortes: number; textoRequisito: string }
+  | { tipo: 'quest_habitante'; floor: number; textoRequisito: string }
+  | { tipo: 'recurso_minimo'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; quantidade: number; textoRequisito: string }
+  | { tipo: 'combinado'; conditions: Array<{ tipo: string; value: number }>; textoRequisito: string }
+  | { tipo: 'npc_raridade'; raridade: 'comum' | 'incomum' | 'raro' | 'lendario'; quantidade: number; textoRequisito: string };
+
+export interface ResultadoCamara {
+  sucessoTexto: string;
+  falhaTexto: string;
+  recursosBonus?: Partial<Record<'comida' | 'madeira' | 'pedra' | 'ferro', number>>;
+  moralBonus?: number;
+  reliquia?: string;
+  recursosPerdidos?: Partial<Record<'comida' | 'madeira' | 'pedra' | 'ferro', number>>;
+  moralPerdido?: number;
+  chanceMorteNPC?: number;  // 0-1
+  loreGanho?: { titulo: string; texto: string };
+}
+
 export interface CamaraSecreta {
   floor: number;
   titulo: string;
   icone: string;
-  descoberta: string;           // flavor text mostrado ao encontrar
-  chancePerTentativa: number;
-  maxTentativas: number;
-  recompensa: {
-    recursosBonus?: Partial<Record<'comida' | 'madeira' | 'pedra' | 'ferro', number>>;
-    moralBonus?: number;
-    reliquia?: string;
-    loreTitulo: string;
-    loreTexto: string;
-  };
+  descricao: string;           // descrição do mistério
+  requisito: RequisitoCamara;
+  tipo: 'benéfica' | 'maléfica' | 'neutra';
+  dificuldade: number;
+  custo: number;               // comida exigida
+  resultado: ResultadoCamara;
 }
 
-export const CAMARAS_SECRETAS: Record<number, CamaraSecreta> = {
-  5: {
+// CÂMARAS SECRETAS — Temporada 1 (22 câmaras nos andares 1-20)
+// Cada câmara requer um tipo de requisito distinto para descoberta
+export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
+  // Andar 1 — 1 câmara
+  '1_1': {
+    floor: 1,
+    titulo: 'Trilha do Rastreador',
+    icone: '🌲',
+    descricao: 'Enquanto o Rastreador explorava a Mata Cinzenta, notou marcas diferentes — pegadas que ninguém havia registrado.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'batedor', minFarmsComClasse: 8, textoRequisito: 'Só um rastreador experiente percebe as marcas na floresta' },
+    tipo: 'benéfica',
+    dificuldade: 12,
+    custo: 20,
+    resultado: {
+      sucessoTexto: 'Encontrou um abrigo escondido com suprimentos antigos.',
+      falhaTexto: 'A trilha levava a uma armadilha — conseguiu sair, mas ferido.',
+      recursosBonus: { comida: 20, madeira: 12 },
+      moralBonus: 4,
+      loreGanho: { titulo: 'A Ordem Interceptada', texto: 'Uma ordem original, queimada: dizia para destruir o selo, não guardá-lo. Alguém trocou uma única palavra e mudou tudo.' },
+    },
+  },
+
+  // Andar 2 — 1 câmara
+  '2_1': {
+    floor: 2,
+    titulo: 'Conhecimento Cristalizado',
+    icone: '📚',
+    descricao: 'Enquanto o Erudito decifrava símbolos antigos, notou marcas diferentes na parede — uma câmara escondida.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'erudito', minFarmsComClasse: 8, textoRequisito: 'Apenas um erudito consegue decodificar os símbolos antigos' },
+    tipo: 'neutra',
+    dificuldade: 13,
+    custo: 22,
+    resultado: {
+      sucessoTexto: 'Decodificou uma tábua de conhecimento perdido.',
+      falhaTexto: 'Os símbolos eram um código de proteção — recuou antes de ativar.',
+      loreGanho: { titulo: 'A Língua Anterior', texto: 'Fragmentos de uma linguagem que precede qualquer idioma catalogado. Os padrões sugerem urgência.' },
+    },
+  },
+
+  // Andar 3 — 1 câmara
+  '3_1': {
+    floor: 3,
+    titulo: 'Ecos da Raiz Primária',
+    icone: '🌿',
+    descricao: 'Enquanto moradores caíam e voltavam à Terra, você percebeu uma câmara que só aparecia entre as mortes.',
+    requisito: { tipo: 'mortes_andar' as const, minMortes: 10, textoRequisito: 'A câmara só revela-se quando a morte é suficientemente familiar' },
+    tipo: 'maléfica',
+    dificuldade: 14,
+    custo: 25,
+    resultado: {
+      sucessoTexto: 'Venceu o eco da morte e encontrou o que ela guardava.',
+      falhaTexto: 'O eco foi mais forte — você recuou antes de ser consumido.',
+      moralPerdido: 10,
+      chanceMorteNPC: 0.1,
+      loreGanho: { titulo: 'O Retorno à Terra', texto: 'A morte não é fim aqui — é retorno. A câmara mostra que cada corpo que cai alimenta algo abaixo.' },
+    },
+  },
+
+  // Andar 4 — 2 câmaras
+  '4_1': {
+    floor: 4,
+    titulo: 'Sussurro Cristalino',
+    icone: '🔮',
+    descricao: 'A Voz do Cristal sussurra uma verdade — há uma câmara que só quem ouve de verdade consegue encontrar.',
+    requisito: { tipo: 'quest_habitante' as const, floor: 4, textoRequisito: 'Completar a quest do Habitante do Andar 4 permite ouvir o caminho' },
+    tipo: 'neutra',
+    dificuldade: 13,
+    custo: 24,
+    resultado: {
+      sucessoTexto: 'O cristal revelou o acesso. Dentro, fragmentos de verdades antigas.',
+      falhaTexto: 'Sem a bênção da Voz, a câmara permanece fechada.',
+      loreGanho: { titulo: 'A Memória do Cristal', texto: 'O cristal catalogou cada verdade que passou por aqui. Aqui estão gravadas as palavras que ninguém deveria ter dito.' },
+    },
+  },
+
+  '4_2': {
+    floor: 4,
+    titulo: 'Memória Fraturada',
+    icone: '💎',
+    descricao: 'Entre os cacos do cristal, há um espaço onde a memória não consegue se formar direito.',
+    requisito: { tipo: 'recurso_minimo' as const, recurso: 'ferro', quantidade: 80, textoRequisito: 'Ferro suficiente para reparar o caminho quebrado' },
+    tipo: 'benéfica',
+    dificuldade: 12,
+    custo: 20,
+    resultado: {
+      sucessoTexto: 'Com o ferro, restaurou o caminho. Encontrou registros intactos.',
+      falhaTexto: 'Sem ferro, o caminho colapsa — você recuou.',
+      recursosBonus: { pedra: 25, ferro: 15 },
+      moralBonus: 3,
+      loreGanho: { titulo: 'O Que Foi Esquecido', texto: 'Registros de expedições anteriores, apagadas dos arquivos oficiais. Ninguém deveria saber que passaram daqui.' },
+    },
+  },
+
+  // Andar 5 — 1 câmara
+  '5_1': {
     floor: 5,
     titulo: 'Câmara do Limiar',
     icone: '🚪',
-    descoberta: 'Uma fresta na parede que o Guardião jamais notou — porque nunca perguntou o que protegia. Atrás dela, poeira que não caiu de lugar nenhum.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { comida: 25, madeira: 15 },
+    descricao: 'O Guardião mantém uma fresta fechada — mas quem compreender seu vigil consegue entrar.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 6, textoRequisito: 'Uma sentinela experiente percebe o vazio que o Guardião protege' },
+    tipo: 'benéfica',
+    dificuldade: 13,
+    custo: 26,
+    resultado: {
+      sucessoTexto: 'Passou pelo Limiar. Dentro, o que o Guardião vigila há eras.',
+      falhaTexto: 'O Guardião bloqueou o caminho — não era hora.',
+      recursosBonus: { madeira: 18, pedra: 12 },
+      moralBonus: 6,
+      loreGanho: { titulo: 'O Erro Guardado', texto: 'Uma fresta que não deveria existir. Um segredo que um único Guardião carrega. Ele vigia não por dever, mas por punição — a de saber.' },
+    },
+  },
+
+  // Andar 6 — 1 câmara
+  '6_1': {
+    floor: 6,
+    titulo: 'Rastro do Construtor',
+    icone: '🔨',
+    descricao: 'Enquanto um Batedor rastreava, encontrou marcas de quem construiu este andar — marcas que não eram humanas.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'batedor', minFarmsComClasse: 7, textoRequisito: 'Um batedor consegue reconhecer pegadas de quem construiu a Torre' },
+    tipo: 'neutra',
+    dificuldade: 12,
+    custo: 21,
+    resultado: {
+      sucessoTexto: 'Seguiu as marcas até uma câmara que documenta o processo.',
+      falhaTexto: 'As marcas desapareceram — você perdeu o rastro.',
+      loreGanho: { titulo: 'A Técnica Original', texto: 'O processo construtivo era diferente. Não era força — era intenção. Cada pedra era colocada com um propósito além do suporte estrutural.' },
+    },
+  },
+
+  // Andar 7 — 2 câmaras
+  '7_1': {
+    floor: 7,
+    titulo: 'Jardim Esquecido',
+    icone: '🌱',
+    descricao: 'A Jardineira guarda uma câmara onde o que cresce não é madeira ou pedra, mas memória.',
+    requisito: { tipo: 'quest_habitante' as const, floor: 7, textoRequisito: 'Completar a quest da Jardineira abre o caminho para seu jardim secreto' },
+    tipo: 'benéfica',
+    dificuldade: 11,
+    custo: 19,
+    resultado: {
+      sucessoTexto: 'Dentro, um jardim impossível. Tudo que cresce aqui alimenta-se de histórias.',
+      falhaTexto: 'Sem permissão, as plantas recusam crescer — o caminho permanece bloqueado.',
+      recursosBonus: { comida: 22, madeira: 16 },
       moralBonus: 5,
-      loreTitulo: 'A Ordem Interceptada',
-      loreTexto: 'Você encontra a ordem original, meio queimada: dizia para destruir o selo, não guardá-lo. Alguém trocou uma única palavra e mudou tudo. O Guardião do Limiar montou vigília sobre um erro, e o defendeu com uma devoção que ninguém pediu.',
+      loreGanho: { titulo: 'O Cultivo da Torre', texto: 'A Torre não é só pedra — em algum nível, ela respira como uma planta. Cresce, adapta-se, alimenta-se.' },
     },
   },
-  10: {
+
+  '7_2': {
+    floor: 7,
+    titulo: 'Semente Primordial',
+    icone: '🌾',
+    descricao: 'Entre as raízes do andar, há uma câmara que guarda o que germinou antes da Torre existir.',
+    requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem perceber onde a vida começou' },
+    tipo: 'neutra',
+    dificuldade: 14,
+    custo: 28,
+    resultado: {
+      sucessoTexto: 'Os raros perceberam. Dentro, o primórdio documentado.',
+      falhaTexto: 'Sem raros, a câmara permanece invisível.',
+      loreGanho: { titulo: 'O Que Veio Primeiro', texto: 'Antes da Torre, algo crescia aqui. A Torre foi construída SOBRE isso, não antes. Aquilo continua crescendo.' },
+    },
+  },
+
+  // Andar 8 — 1 câmara
+  '8_1': {
+    floor: 8,
+    titulo: 'Arquivo do Estudo Infinito',
+    icone: '🔬',
+    descricao: 'O Estudioso guardou um arquivo secreto — documentação de tudo que aprendeu e que o fizeram esquecer.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'erudito', minFarmsComClasse: 9, textoRequisito: 'Um erudito que explorou o suficiente consegue acessar o conhecimento guardado' },
+    tipo: 'benéfica',
+    dificuldade: 14,
+    custo: 27,
+    resultado: {
+      sucessoTexto: 'O arquivo abriu. Conhecimento que transcende o catalogado.',
+      falhaTexto: 'Sem a experiência necessária, o arquivo permanece selado.',
+      recursosBonus: { ferro: 20, pedra: 15 },
+      moralBonus: 7,
+      loreGanho: { titulo: 'O Esquecimento Imposto', texto: 'O Estudioso foi silenciado. Seu arquivo contém teorias que a Torre não quer que ninguém saiba. Ele documentou tudo, esperando que alguém encontrasse.' },
+    },
+  },
+
+  // Andar 9 — 1 câmara
+  '9_1': {
+    floor: 9,
+    titulo: 'Câmara da Forja Perdida',
+    icone: '⚒️',
+    descricao: 'O Ferreiro Espectral mantém uma forja que só quem sofreu o suficiente consegue ligar.',
+    requisito: { tipo: 'mortes_andar' as const, minMortes: 8, textoRequisito: 'A forja reage ao calor da morte — quanto mais morte, mais quente arde' },
+    tipo: 'maléfica',
+    dificuldade: 15,
+    custo: 30,
+    resultado: {
+      sucessoTexto: 'A forja acendeu. Dentro, armas que o Ferreiro nunca terminou.',
+      falhaTexto: 'A forja apagou — você não tinha suficiente morte para acendê-la.',
+      recursosBonus: { ferro: 35, pedra: 10 },
+      moralPerdido: 8,
+      chanceMorteNPC: 0.12,
+      loreGanho: { titulo: 'A Arma Inacabada', texto: 'O Ferreiro tentava forjar algo que pudesse ferir a própria Torre. Nunca terminou. Aqui estão seus rascunhos.' },
+    },
+  },
+
+  // Andar 10 — 2 câmaras
+  '10_1': {
     floor: 10,
-    titulo: 'Câmara do Arquivista',
-    icone: '📜',
-    descoberta: 'Prateleiras de nomes gravados em ferro, todas apagadas por unhas — como se quem catalogou tentasse, tarde demais, esquecer.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { ferro: 30, pedra: 20 },
-      moralBonus: 8,
-      reliquia: 'Índice de Nomes em Ferro',
-      loreTitulo: 'A Lista Traduzida',
-      loreTexto: 'Entre os registros, um único fólio permanece legível: a tradução que o Estudioso do Infinito terminou antes de o silenciarem. Cada andar conquistado afrouxa uma corrente lá embaixo. Ele guardou esse número na memória podre porque não suportava dizê-lo em voz alta.',
+    titulo: 'Conhecimento Cristalizado',
+    icone: '📚',
+    descricao: 'A Memória da Construção guarda o segredo maior — o método que o Fundador usou.',
+    requisito: { tipo: 'quest_habitante' as const, floor: 10, textoRequisito: 'Completar a quest da Memória revela onde o método está escondido' },
+    tipo: 'neutra',
+    dificuldade: 15,
+    custo: 32,
+    resultado: {
+      sucessoTexto: 'Encontrou o método. O Fundador repete: vencer é lembrar.',
+      falhaTexto: 'Sem o conhecimento da Memória, o método permanece indecifrado.',
+      loreGanho: { titulo: 'O Método do Fundador', texto: 'Não era força. Era lembrar. O Fundador repetiu o propósito original em voz alta por quarenta dias até que a Torre cedesse.' },
     },
   },
-  15: {
+
+  '10_2': {
+    floor: 10,
+    titulo: 'Catálogo Apagado',
+    icone: '🗂️',
+    descricao: 'Um segundo arquivo existe aqui — nomes que foram catalogados e depois apagados deliberadamente.',
+    requisito: { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 5 }, { tipo: 'mortes', value: 5 }], textoRequisito: 'Quem perdeu moradores e aprendeu a explorar consegue ler os nomes apagados' },
+    tipo: 'neutra',
+    dificuldade: 16,
+    custo: 33,
+    resultado: {
+      sucessoTexto: 'Os nomes apareceram. Cada um uma história que foi deletada.',
+      falhaTexto: 'Os nomes permaneceram invisíveis — você não tinha direito de ler.',
+      loreGanho: { titulo: 'Os Esquecidos', texto: 'Expedições inteiras passaram aqui. A Torre catalogou cada uma. Depois apagou. Aqui estão seus nomes, como resistência contra o esquecimento.' },
+    },
+  },
+
+  // Andar 11 — 1 câmara
+  '11_1': {
+    floor: 11,
+    titulo: 'Câmara do Afogado Consciente',
+    icone: '💧',
+    descricao: 'O Afogado Lúcido abriu uma fresta na realidade — uma câmara que existe entre a água e o ar.',
+    requisito: { tipo: 'recurso_minimo' as const, recurso: 'comida', quantidade: 100, textoRequisito: 'Alimento suficiente para sustentar quem tenta respirar duas vidas' },
+    tipo: 'neutra',
+    dificuldade: 13,
+    custo: 25,
+    resultado: {
+      sucessoTexto: 'A fresta se abriu. Dentro, a confissão do Afogado em forma de ar.',
+      falhaTexto: 'Sem sustento, você afogou-se antes de cruzar a fresta.',
+      loreGanho: { titulo: 'A Respiração Dupla', texto: 'A Torre não mata — ela preenche. Aqui o Afogado documentou o processo exato de como deixou de ser gente e virou espaço vazio.' },
+    },
+  },
+
+  // Andar 12 — 1 câmara
+  '12_1': {
+    floor: 12,
+    titulo: 'Câmara do Pulso Profundo',
+    icone: '🔊',
+    descricao: 'O pulso da Torre bate mais fundo aqui. Um Combatente experiente consegue sincronizar-se com ele.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'combatente', minFarmsComClasse: 10, textoRequisito: 'Um combatente experiente consegue bater no mesmo ritmo que a Torre' },
+    tipo: 'benéfica',
+    dificuldade: 15,
+    custo: 28,
+    resultado: {
+      sucessoTexto: 'Sincronizou. O pulso compartilhou suas memórias.',
+      falhaTexto: 'Desincronizado, o pulso expulsou você com força.',
+      recursosBonus: { ferro: 30, pedra: 18 },
+      moralBonus: 8,
+      loreGanho: { titulo: 'A Batida Original', texto: 'O pulso é a Torre. A Torre é um coração. E um coração bate por intenção, não por acaso.' },
+    },
+  },
+
+  // Andar 13 — 1 câmara
+  '13_1': {
+    floor: 13,
+    titulo: 'Câmara do Oráculo Espelhado',
+    icone: '🔮',
+    descricao: 'O Oráculo Invertido vê o futuro ao contrário. Uma câmara existe onde ontem e amanhã ocupam o mesmo espaço.',
+    requisito: { tipo: 'mortes_andar' as const, minMortes: 7, textoRequisito: 'Quem viu a morte de frente consegue entender o que o Oráculo inverte' },
+    tipo: 'maléfica',
+    dificuldade: 14,
+    custo: 26,
+    resultado: {
+      sucessoTexto: 'O Oráculo revelou — você viu seu futuro ao contrário.',
+      falhaTexto: 'A revelação era demais — você enlouqueceu temporariamente.',
+      moralPerdido: 12,
+      chanceMorteNPC: 0.08,
+      loreGanho: { titulo: 'A Visão Invertida', texto: 'Você viu onde termina. Agora sabe onde começar. O Oráculo não previne — apenas mostra a verdade de trás para frente.' },
+    },
+  },
+
+  // Andar 14 — 1 câmara
+  '14_1': {
+    floor: 14,
+    titulo: 'Câmara do Comandante de Mármore',
+    icone: '👑',
+    descricao: 'O Comandante guardou sua estratégia final — a câmara onde a vitória foi planejada e depois abandonada.',
+    requisito: { tipo: 'quest_habitante' as const, floor: 14, textoRequisito: 'Completar a quest do Comandante revela onde ele escondeu seu plano' },
+    tipo: 'benéfica',
+    dificuldade: 14,
+    custo: 27,
+    resultado: {
+      sucessoTexto: 'Encontrou o plano. O Comandante sabia como vencer desde o começo.',
+      falhaTexto: 'Sem a bênção do Comandante, a câmara permanece estratégica mas fechada.',
+      recursosBonus: { ferro: 28, pedra: 14 },
+      moralBonus: 9,
+      loreGanho: { titulo: 'A Estratégia Abandonada', texto: 'O Comandante viu como ganhar. Mas optou por perder. Aqui está documentado por quê — e a resposta é pior que qualquer derrota.' },
+    },
+  },
+
+  // Andar 15 — 2 câmaras
+  '15_1': {
     floor: 15,
     titulo: 'Câmara do Reflexo',
     icone: '🪞',
-    descoberta: 'Uma sala inteira de espelhos submersos. Cada um mostra uma versão sua que decidiu parar antes daqui — e todas parecem em paz.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { comida: 35, madeira: 25, pedra: 20 },
+    descricao: 'Uma sala inteira de espelhos submersos. O Vigia da Pergunta guardou um reflexo que não mostra você.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 8, textoRequisito: 'Uma sentinela consegue perceber qual reflexo está faltando' },
+    tipo: 'neutra',
+    dificuldade: 15,
+    custo: 30,
+    resultado: {
+      sucessoTexto: 'O reflexo desaparecido apareceu. Você viu a versão de si que parou antes.',
+      falhaTexto: 'O espelho rejeitou sua visão — você viu apenas vazio.',
+      loreGanho: { titulo: 'O Que Preenche a Torre', texto: 'Cada reflexo aqui foi alguém preenchido até deixar de ser gente. O vazio deixado ficou tão claro que se tornou visível.' },
+    },
+  },
+
+  '15_2': {
+    floor: 15,
+    titulo: 'Câmara da Pergunta Sem Resposta',
+    icone: '❓',
+    descricao: 'A pergunta que o Vigia recusou responder tem uma câmara própria — e ela continua fazendo perguntas.',
+    requisito: { tipo: 'npc_raridade' as const, raridade: 'incomum', quantidade: 3, textoRequisito: 'Apenas moradores incomuns conseguem ouvir o que a pergunta sussurra' },
+    tipo: 'neutra',
+    dificuldade: 16,
+    custo: 31,
+    resultado: {
+      sucessoTexto: 'A pergunta abriu seus olhos. A resposta você já sabia.',
+      falhaTexto: 'Sem os incomuns, a pergunta permanece inaudível.',
+      loreGanho: { titulo: 'A Imortalidade da Pergunta', texto: 'Uma pergunta bem feita nunca morre — apenas muda de quem a faz. O Vigia guardou-a aqui para que alguém mais a fizesse um dia.' },
+    },
+  },
+
+  // Andar 16 — 1 câmara
+  '16_1': {
+    floor: 16,
+    titulo: 'Câmara do Eco Faminto',
+    icone: '🌑',
+    descricao: 'O Eco Faminto guarda uma câmara onde o vazio tem fome e ela documenta cada coisa que comeu.',
+    requisito: { tipo: 'mortes_andar' as const, minMortes: 6, textoRequisito: 'A fome reconhece quem já alimentou a Torre' },
+    tipo: 'maléfica',
+    dificuldade: 15,
+    custo: 29,
+    resultado: {
+      sucessoTexto: 'A fome compartilhou sua memória. Você sente cada coisa que comeu.',
+      falhaTexto: 'A fome pediu mais — você recuou faminto.',
+      moralPerdido: 10,
+      chanceMorteNPC: 0.1,
+      loreGanho: { titulo: 'O Apetite da Torre', texto: 'Não é fome física. É fome de espaço vazio. A Torre come realidade — a realidade que pessoas trazem quando sobem.' },
+    },
+  },
+
+  // Andar 17 — 1 câmara
+  '17_1': {
+    floor: 17,
+    titulo: 'Câmara do Paradoxo Possível',
+    icone: '🌀',
+    descricao: 'O Paradoxo Ambulante documenta os caminhos que poderiam ter sido. Uma câmara para cada vida não vivida.',
+    requisito: { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 7 }, { tipo: 'mortes', value: 3 }], textoRequisito: 'Quem explorou e sofreu consegue entender os caminhos não tomados' },
+    tipo: 'neutra',
+    dificuldade: 16,
+    custo: 32,
+    resultado: {
+      sucessoTexto: 'As câmaras abriram. Cada uma mostra uma escolha que nunca fez.',
+      falhaTexto: 'Os paradoxos se cancelaram mutuamente — a câmara não abriu.',
+      loreGanho: { titulo: 'As Vidas Não Vividas', texto: 'Para cada escolha, uma vida é apagada. O Paradoxo guardou-as aqui como prova de que você matou versões de si mesmo ao subir.' },
+    },
+  },
+
+  // Andar 18 — 1 câmara
+  '18_1': {
+    floor: 18,
+    titulo: 'Câmara do Último Defensor',
+    icone: '🛡️',
+    descricao: 'O Último Defensor construiu uma câmara para guardar aquilo que o Torre tentou apagar.',
+    requisito: { tipo: 'quest_habitante' as const, floor: 18, textoRequisito: 'Completar a quest do Defensor permite entrar em seu último bastião' },
+    tipo: 'benéfica',
+    dificuldade: 15,
+    custo: 28,
+    resultado: {
+      sucessoTexto: 'O bastião abriu. Dentro, as evidências que ele não conseguiu destruir.',
+      falhaTexto: 'Sem a bênção do Defensor, o bastião permanece intransponível.',
+      recursosBonus: { madeira: 32, pedra: 16 },
       moralBonus: 10,
-      loreTitulo: 'O Que Preenche',
-      loreTexto: 'O Afogado Lúcido deixou uma confissão riscada no vidro: a Torre não mata, ela preenche o espaço vazio dentro de quem sobe. Cada reflexo aqui foi alguém preenchido até deixar de ser gente. Você se vê entre eles, e por um instante não sabe qual rosto é o original.',
+      loreGanho: { titulo: 'O Que a Torre Tentou Apagar', texto: 'O Defensor não caiu em combate — foi deletado. Sua câmara é o último arquivo de que ele existiu.' },
     },
   },
-  20: {
+
+  // Andar 19 — 1 câmara
+  '19_1': {
+    floor: 19,
+    titulo: 'Câmara do Sussurro do Limiar',
+    icone: '🌬️',
+    descricao: 'O Sussurro do Limiar vem de uma câmara que existe na respiração entre você e o que vem a seguir.',
+    requisito: { tipo: 'class_farms' as const, profissao: 'batedor', minFarmsComClasse: 9, textoRequisito: 'Um batedor consegue rastrear o sussurro até sua origem' },
+    tipo: 'neutra',
+    dificuldade: 17,
+    custo: 34,
+    resultado: {
+      sucessoTexto: 'Rastreou o sussurro. Dentro, um aviso que não é para você — é para depois.',
+      falhaTexto: 'O sussurro desapareceu — você perdeu a pista.',
+      loreGanho: { titulo: 'O Aviso para Depois', texto: 'Alguém deixou um recado nesta câmara. Não é para você — é para quem vier depois de você. Ainda assim, você consegue ler.' },
+    },
+  },
+
+  // Andar 20 — 2 câmaras (finais de T1)
+  '20_1': {
     floor: 20,
-    titulo: 'Câmara da Fome Antiga',
-    icone: '🕳️',
-    descoberta: 'Não há paredes. Há apenas a sensação de estar dentro de algo que decidiu parecer arquitetura. O chão respira devagar.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { ferro: 40, pedra: 30, comida: 20 },
+    titulo: 'Câmara da Entidade Dormida',
+    icone: '👁️',
+    descricao: 'A entidade do Andar 20 guarda uma câmara onde ela dorme enquanto não está observando ninguém.',
+    requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem aproximar enquanto ela dorme' },
+    tipo: 'benéfica',
+    dificuldade: 18,
+    custo: 36,
+    resultado: {
+      sucessoTexto: 'Entraram enquanto dormia. Documentação de séculos de observação.',
+      falhaTexto: 'Ela acordou — vocês recuaram antes de ser vistos.',
+      recursosBonus: { ferro: 40, pedra: 25, madeira: 15 },
       moralBonus: 12,
-      reliquia: 'Semente da Primeira Armadilha',
-      loreTitulo: 'A Isca Chamada Torre',
-      loreTexto: 'Aqui a verdade não é dita, é lembrada por você: a fome imaginou a armadilha, a armadilha imaginou os andares. Você não escalou até ela — foi conduzido desde o Arauto da Névoa. A entidade não está surpresa com sua chegada. Ela apenas parou de ter pressa há muito tempo.',
+      loreGanho: { titulo: 'O Que Ela Observa', texto: 'A entidade documentou cada pessoa que chegou ao Andar 20. Seus apontamentos são precisos — ela sabe exatamente quem você é.' },
     },
   },
-  25: {
-    floor: 25,
-    titulo: 'Câmara da Memória Bruta',
-    icone: '🧠',
-    descoberta: 'Resíduos de todos que passaram, sobrepostos como camadas de tinta molhada. Você reconhece, no meio deles, a sua própria pegada — ainda fresca.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { comida: 45, madeira: 35, ferro: 25 },
-      moralBonus: 14,
-      loreTitulo: 'O Que Ela Não Consegue Articular',
-      loreTexto: 'A Memória testemunhou milhares passarem, e todos deixaram apenas rastro. Você deixou entendimento. Nesta câmara há uma pergunta gravada e inacabada, a mesma que ela ainda tenta formular: por que este soube o que viu? A frase termina no meio, porque ela nunca encontrou o fim.',
-    },
-  },
-  30: {
-    floor: 30,
-    titulo: 'Câmara do Intervalo',
-    icone: '⏳',
-    descoberta: 'Um cômodo onde nada se move e tudo já se moveu. O momento entre dois batimentos, esticado até virar espaço onde você pode caminhar.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { pedra: 55, ferro: 40, madeira: 30 },
-      moralBonus: 16,
-      reliquia: 'Fragmento do Momento Suspenso',
-      loreTitulo: 'A Testemunha Presa',
-      loreTexto: 'O Intervalo viu os Construtores chegarem, trabalharem e selarem o que estava aqui. Nesta câmara restam suas marcas de arranhão nas bordas do tempo: no instante em que a Torre despertou, ele percebeu que fazia parte do que selaram. Testemunhar virou sua cela.',
-    },
-  },
-  35: {
-    floor: 35,
-    titulo: 'Câmara do Fundador',
-    icone: '🗝️',
-    descoberta: 'Uma sala projetada com precisão insuportável, mas com um único vazio no centro — o lugar exato onde um nome deveria estar, raspado até a pedra sangrar pó.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { comida: 60, pedra: 50, ferro: 40, madeira: 30 },
-      moralBonus: 18,
-      reliquia: 'Selo Sem Nome do Arquiteto',
-      loreTitulo: 'O Propósito Apagado',
-      loreTexto: 'O Eco do Fundador não projetou pedras — projetou o porquê. Aqui está sua intenção original, ainda intacta apesar da forma dissolvida: a Torre foi construída para lembrar, não para aprisionar. Foi o esquecimento imposto sobre ela que a tornou uma armadilha. Ele apagou o próprio nome para que ninguém desfizesse o erro em seu lugar.',
-    },
-  },
-  40: {
-    floor: 40,
-    titulo: 'Câmara do Pré-Andar',
-    icone: '🌌',
-    descoberta: 'Abaixo do último degrau não há degrau. Há a pressão de algo que consentiu em ser fundação, e que ainda existe sob cada bloco como uma respiração contida.',
-    chancePerTentativa: 0.3,
-    maxTentativas: 3,
-    recompensa: {
-      recursosBonus: { comida: 40, madeira: 35, pedra: 30, ferro: 25 },
-      moralBonus: 20,
-      reliquia: 'Núcleo do Que Consentiu',
-      loreTitulo: 'A Base Que Permitiu',
-      loreTexto: 'Antes do Andar 1 não havia pedra, havia intenção. O Que Havia Antes não foi vencido pelos Construtores — deixou-se cobrir para continuar existindo de outra forma. A Torre nunca cresceu; foi permitida a cada andar. E agora, no fundo de tudo, você sente que a permissão ainda pode ser retirada.',
+
+  '20_2': {
+    floor: 20,
+    titulo: 'Câmara da Primeira Verdade',
+    icone: '📖',
+    descricao: 'Antes de tudo, havia uma verdade. A entidade guardou-a em uma câmara que só existe para quem vence o Andar 20.',
+    requisito: { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 8 }, { tipo: 'mortes', value: 4 }], textoRequisito: 'Quem explorou profundamente e sobreviveu aos custos consegue ouvir a verdade primeira' },
+    tipo: 'neutra',
+    dificuldade: 19,
+    custo: 38,
+    resultado: {
+      sucessoTexto: 'A verdade revelou-se. Não era o que você esperava.',
+      falhaTexto: 'A verdade permaneceu oculta — você não estava pronto.',
+      loreGanho: { titulo: 'A Verdade Antes de Tudo', texto: 'Antes de qualquer Construtor, qualquer Torre, qualquer morte — havia uma verdade. A entidade nunca a nomeou. Apenas observou enquanto você a descobria.' },
     },
   },
 };
