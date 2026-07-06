@@ -12,7 +12,7 @@ interface TowerProps {
 }
 
 export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerProps) {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, resolverEscolhaHabitante, vasculharCamaraSecreta, abrirCodex, concluirQuestOculta } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, resolverEscolhaHabitante, abrirCodex, concluirQuestOculta } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
@@ -797,10 +797,10 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               const cf = camaraSecretaModalFloor;
               const cam = CAMARAS_SECRETAS[cf];
               if (!cam) return null;
-              const cEst = state.camarasSecretasEstado?.[cf] ?? { tentativas: 0, encontrada: false };
+              const cEst = state.camarasSecretasEstado?.[cf] ?? { descoberta: false, tentativas: 0, encontrada: false };
               const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
               const restantes = cam.maxTentativas - cEst.tentativas;
-              const r = cam.recompensa;
+              const r = cam.resultado;
               const recompStr = [
                 r.recursosBonus?.comida  ? `+${r.recursosBonus.comida} comida`   : '',
                 r.recursosBonus?.madeira ? `+${r.recursosBonus.madeira} madeira` : '',
@@ -831,14 +831,18 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   {cEst.encontrada ? (
                     <>
                       <div className="bg-black/30 rounded-sm p-4 border-l-2 border-primary/40">
-                        <p className="text-[12px] text-white/70 italic leading-relaxed">"{cam.descoberta}"</p>
+                        <p className="text-[12px] text-white/70 italic leading-relaxed">"{cam.descricao}"</p>
                       </div>
                       <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
                         <div className="text-[9px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
                           <BookOpen size={9} /> FRAGMENTO REVELADO
                         </div>
-                        <div className="text-[10px] text-primary/50 mb-1 font-cinzel">{r.loreTitulo}</div>
-                        <p className="text-[11px] text-white/60 italic leading-relaxed">{r.loreTexto}</p>
+                        {r.loreGanho && (
+                          <>
+                            <div className="text-[10px] text-primary/50 mb-1 font-cinzel">{r.loreGanho.titulo}</div>
+                            <p className="text-[11px] text-white/60 italic leading-relaxed">{r.loreGanho.texto}</p>
+                          </>
+                        )}
                         {recompStr && (
                           <div className="mt-2 text-[9px] text-success/70 flex items-center gap-1">
                             <Sparkles size={8} /> {recompStr}
@@ -863,6 +867,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         Tentativas restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
                         {' · '}chance {Math.round(cam.chancePerTentativa * 100)}% por busca
                       </div>
+                      {/* TODO: Implement camera search button
                       <button
                         onClick={() => vasculharCamaraSecreta(cf)}
                         disabled={esgotada}
@@ -874,6 +879,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                       >
                         <Search size={16} /> {esgotada ? 'NADA MAIS RESTA' : 'VASCULHAR OS DESTROÇOS'}
                       </button>
+                      */}
                     </>
                   )}
                 </>

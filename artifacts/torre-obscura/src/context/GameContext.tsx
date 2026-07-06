@@ -19,7 +19,7 @@ import {
   QuestOculta, gerarQuestOculta, verificarQuestOculta,
   atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
   MetaDiariaId, hojeStrLocal, gerarObjetivosDoDia, METAS_DIARIAS_META,
-  CAMARAS_SECRETAS,
+  CAMARAS_SECRETAS, verificarRequisitoCamara,
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
@@ -79,8 +79,8 @@ interface GameContextType {
   interagirHabitante: (floor: number) => void;
   // Habitantes: resolve a escolha ramificada de uma quest em 'aguardando_escolha'.
   resolverEscolhaHabitante: (floor: number, opcaoId: 'a' | 'b') => void;
-  // Câmaras Secretas: vasculha os destroços de um andar de chefe já conquistado.
-  vasculharCamaraSecreta: (floor: number) => void;
+  // TODO: Câmaras Secretas: vasculha os destroços de um andar de chefe já conquistado.
+  // vasculharCamaraSecreta: (floor: number) => void;
   // Metas Diárias: gera as metas do dia (no-op se já geradas hoje).
   gerarMetasDiarias: (temAliada: boolean) => void;
   // Metas Diárias: registra progresso de uma meta a partir de consumidores externos.
@@ -653,6 +653,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Migração: escolhas dos habitantes, câmaras secretas e metas diárias.
     if (!parsed.habitantesEscolhaFeita)  parsed.habitantesEscolhaFeita = {};
     if (!parsed.camarasSecretasEstado)   parsed.camarasSecretasEstado = {};
+    if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
+    if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: campo lancamento nos NPCs (saves anteriores não têm)
     parsed.npcs.forEach(n => { if (n.lancamento === undefined) n.lancamento = false; });
@@ -882,6 +884,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             addLog(s, 'descoberta', `CÂMARA OCULTA — "${nova.titulo}" detectada no andar ${floorData.floor}. Verifique a lista de andares conquistados.`);
           }
         }
+
+        // Rastrear farms por classe e andar para requisitos de câmaras secretas
+        s.farmsPorAndarEClasse = s.farmsPorAndarEClasse ?? {};
+        group.forEach(n => {
+          const prof = getProfissao(n) as import('../lib/game-data').ProfissaoId;
+          if (prof && s.farmsPorAndarEClasse) {
+            if (!s.farmsPorAndarEClasse[floorData.floor]) s.farmsPorAndarEClasse[floorData.floor] = { combatente: 0, batedor: 0, erudito: 0, sentinela: 0 };
+            s.farmsPorAndarEClasse[floorData.floor][prof] = (s.farmsPorAndarEClasse[floorData.floor][prof] ?? 0) + 1;
+          }
+        });
       }
 
       // Monta resultado para o card pós-expedição (vitória)
@@ -910,6 +922,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
           resultVitoria.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
+          // Rastrear morte por andar para requisitos de câmaras secretas
+          s.totalMortesAndar = s.totalMortesAndar ?? {};
+          s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -919,6 +934,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
+      // Verificar câmaras secretas desbloqueadas
+      Object.entries(CAMARAS_SECRETAS).forEach(([camaraId, camara]) => {
+        if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
+          if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
+          if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
+          else s.camarasSecretasEstado[camaraId].descoberta = true;
+          addLog(s, 'descoberta', `CÂMARA SECRETA REVELADA — ${camara.titulo} (Andar ${camara.floor}) pode ser explorada!`);
+        }
+      });
+
       saveState(s);
       setExpeditionResult(resultVitoria);
     } else {
@@ -964,6 +990,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
           resultFalha.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
+          // Rastrear morte por andar para requisitos de câmaras secretas
+          s.totalMortesAndar = s.totalMortesAndar ?? {};
+          s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -1524,35 +1553,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ─── CÂMARAS SECRETAS ────────────────────────────────────────────────────
-  const vasculharCamaraSecreta = (floor: number) => {
-    if (!state) return;
-    const camara = CAMARAS_SECRETAS[floor];
-    if (!camara) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
-    const est = s.camarasSecretasEstado?.[floor] ?? { tentativas: 0, encontrada: false };
-    if (est.encontrada || est.tentativas >= camara.maxTentativas) return;
-    if (s.andarAtual <= floor) return; // só buscável depois de já ter passado o chefe
-    est.tentativas++;
-    const achou = Math.random() < camara.chancePerTentativa;
-    if (achou) {
-      est.encontrada = true;
-      const ef = getEfeitos(s.edificios, s.npcs);
-      const cap = ef.capacidadeArmazem;
-      const r = camara.recompensa;
-      if (r.recursosBonus?.comida)  s.recursos.comida  = Math.min(cap, s.recursos.comida  + r.recursosBonus.comida);
-      if (r.recursosBonus?.madeira) s.recursos.madeira = Math.min(cap, s.recursos.madeira + r.recursosBonus.madeira);
-      if (r.recursosBonus?.pedra)   s.recursos.pedra   = Math.min(cap, s.recursos.pedra   + r.recursosBonus.pedra);
-      if (r.recursosBonus?.ferro)   s.recursos.ferro   = Math.min(cap, s.recursos.ferro   + r.recursosBonus.ferro);
-      if (r.moralBonus) s.moral = Math.min(100, s.moral + r.moralBonus);
-      if (r.reliquia) s.reliquias = [...(s.reliquias ?? []), r.reliquia];
-      s.lores.push({ floor, titulo: r.loreTitulo, texto: r.loreTexto });
-      addLog(s, 'descoberta', `CÂMARA SECRETA ENCONTRADA — ${camara.titulo}: ${camara.descoberta}`);
-    } else {
-      addLog(s, 'info', `Vasculhou os destroços do Andar ${floor} — nada encontrado (tentativa ${est.tentativas}/${camara.maxTentativas}).`);
-    }
-    s.camarasSecretasEstado = { ...(s.camarasSecretasEstado ?? {}), [floor]: est };
-    saveState(s);
-  };
+  // TODO: Implement vasculharCamaraSecreta function for camera exploration
+  // const vasculharCamaraSecreta = (floor: number) => {
+  // };
 
   // ─── METAS DIÁRIAS ───────────────────────────────────────────────────────
   const gerarMetasDiarias = (temAliada: boolean) => {
@@ -1684,7 +1687,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       estudarNpc,
       interagirHabitante,
       resolverEscolhaHabitante,
-      vasculharCamaraSecreta,
       gerarMetasDiarias,
       registrarMetaDiaria,
       reivindicarPresenteDaTorre,
