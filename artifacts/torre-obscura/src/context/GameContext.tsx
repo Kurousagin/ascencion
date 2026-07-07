@@ -584,9 +584,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Carrega cidadela de teste pré-populada para desenvolvimento/QA.
     // Não libera primordials (test save não usa sistema de lançamento).
     console.log('[startTestGame] Loading test save:', { dia: testSave.dia, andar: testSave.andarAtual });
-    flushSync(() => setState(testSave));
+    // saveState já chama setState internamente
     saveState(testSave);
-    console.log('[startTestGame] Test save loaded');
+    console.log('[startTestGame] Test save loaded, state should be updated');
   };
 
   // Adiciona o NPC sorteado no gacha de lançamento ao estado do jogo.
@@ -625,6 +625,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     let parsed: GameState;
     try {
       parsed = JSON.parse(saved) as GameState;
+      console.log('[continueGame] Loaded from storage:', { dia: parsed.dia, andar: parsed.andarAtual });
+      setState(parsed);
     } catch {
       localStorage.removeItem('torre_obscura_save');
       setHasSave(false);

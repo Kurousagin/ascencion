@@ -84,7 +84,11 @@ function MainGameInner() {
     }
   }, [state]);
 
-  if (!state) return <TitleScreen />;
+  if (!state) {
+    console.log('[App] state is null, rendering TitleScreen');
+    return <TitleScreen />;
+  }
+  console.log('[App] state loaded, rendering game:', { dia: state.dia, andar: state.andarAtual });
   if (state.gameOver || state.vitoria) return <GameOverScreen />;
 
   // Notificação pessoal: player está entre os top 10 e ainda não viu
