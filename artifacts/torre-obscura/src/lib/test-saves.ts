@@ -12,14 +12,16 @@ export const TEST_CODES = {
   'T2': 'cidadela-teste-t2',
 } as const;
 
-// Helper: preenche habitantesEstado para andares conquistados
+// Helper: preenche habitantesEstado para todos os Habitantes até maxFloor
 function populateHabitanteEstado(maxFloor: number): Record<number, 'oculto' | 'descoberto' | 'quest_ativa' | 'aguardando_escolha' | 'concluido'> {
   const estado: Record<number, 'oculto' | 'descoberto' | 'quest_ativa' | 'aguardando_escolha' | 'concluido'> = {};
-  for (let i = 1; i <= maxFloor; i++) {
-    if (i in HABITANTES) {
-      estado[i] = 'concluido'; // Todos os habitantes já foram descobertos e completados
+  // Popula todos os Habitantes que existem até maxFloor
+  Object.entries(HABITANTES).forEach(([floorStr, _]) => {
+    const floor = parseInt(floorStr);
+    if (floor <= maxFloor) {
+      estado[floor] = 'concluido'; // Todos os habitantes já foram descobertos e completados
     }
-  }
+  });
   return estado;
 }
 
