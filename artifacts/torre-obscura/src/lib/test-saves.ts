@@ -12,6 +12,17 @@ export const TEST_CODES = {
   'T2': 'cidadela-teste-t2',
 } as const;
 
+// Helper: preenche habitantesEstado para andares conquistados
+function populateHabitanteEstado(maxFloor: number): Record<number, 'oculto' | 'descoberto' | 'quest_ativa' | 'aguardando_escolha' | 'concluido'> {
+  const estado: Record<number, 'oculto' | 'descoberto' | 'quest_ativa' | 'aguardando_escolha' | 'concluido'> = {};
+  for (let i = 1; i <= maxFloor; i++) {
+    if (i in HABITANTES) {
+      estado[i] = 'concluido'; // Todos os habitantes já foram descobertos e completados
+    }
+  }
+  return estado;
+}
+
 function createTestSaveBasic(): GameState {
   return {
     dia: 1,
@@ -51,8 +62,8 @@ function createTestSaveBasic(): GameState {
     guerra: null,
     guerraPendente: null,
     guerrasHistorico: [],
-    habitantesEstado: {},
-    habitantesDiaDescoberta: {},
+    habitantesEstado: populateHabitanteEstado(5),
+    habitantesDiaDescoberta: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 },
     habitantesQuestResetDia: {},
     ecos: [],
     ecosCapitulo: [],
@@ -122,8 +133,8 @@ function createTestSaveCompleta(): GameState {
     guerra: null,
     guerraPendente: null,
     guerrasHistorico: [],
-    habitantesEstado: {},
-    habitantesDiaDescoberta: {},
+    habitantesEstado: populateHabitanteEstado(20),
+    habitantesDiaDescoberta: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [i + 1, 1])),
     habitantesQuestResetDia: {},
     ecos: [],
     ecosCapitulo: [],
@@ -196,8 +207,8 @@ function createTestSaveT2(): GameState {
     guerra: null,
     guerraPendente: null,
     guerrasHistorico: [],
-    habitantesEstado: {},
-    habitantesDiaDescoberta: {},
+    habitantesEstado: populateHabitanteEstado(30),
+    habitantesDiaDescoberta: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, 1])),
     habitantesQuestResetDia: {},
     ecos: [],
     ecosCapitulo: [],
