@@ -652,3 +652,48 @@ export const ESCOLHAS_LORE: Record<number, {
     opcaoB: { label: 'Pedir de volta uma fração', descricao: '+20 Ferro, +25 Comida, +12 Moral — recuperar parte do que foi cedido.', falaResultado: 'Você cedeu, mas pediu de volta uma fração — sustento e força para o que vem. Não é fraqueza; é prudência. O Antes não precisa do que você depositou, e devolver um pouco não anula o gesto de ceder. Passe. Ainda não sabe o que carrega que compensa não estar pronto.' },
   },
 };
+
+// ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
+
+export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {
+  fogueira: {
+    t1: 'Fogo primitivo. Resistência contra a escuridão. Pequeno demais para aquecer corpos, grande demais para ignorar. Cada chama que não se apaga é um ato de teimosia.',
+    t2: 'A chama transcendeu o propósito de sobrevivência. Agora armazena memória — cada dia que queima, algo é lembrado. Os que vêem a Pira Eterna relatam visões. Não sabe se são lembranças da Torre ou lembranças do que a Torre esqueceu de ser.',
+  },
+  fazenda: {
+    t1: 'Cultivo primitivo. Sementes de um mundo que acabou, plantadas em solo de andares que não têm sol. Crescem porque a Torre exige que cresçam. Gosto de comida colhida aqui: tem desespero.',
+    t2: 'Os Campos do Antes cultivam sementes que não existem mais. Achamos as sementes em cavernas seladas — elas germinam aqui como se esperassem esse momento há eras. Cada colheita sabe a "antes". O que existia. O que não era Torre.',
+  },
+  enfermaria: {
+    t1: 'Cura com o improviso. Bandagens feitas de pano escavado. Ervas que não deviam funcionar, mas funcionam. Adormeci aqui uma vez — quando acordei, entendi que dor é informação e cura é saber ouvir.',
+    t2: 'Casa da Cura Antiga. Memórias da medicina que precedeu a Torre. Instrumentos que ninguém sabe para que servem começaram a funcionar quando trouxemos os primeiros feridos. Como se os instrumentos se lembrassem de um propósito adormecido há épocas.',
+  },
+  templo: {
+    t1: 'Rezamos para seres esquecidos. Dedicamos altares a nomes que ninguém sabe de quem são. Funciona. Não porque os seres existem — funciona porque o ato de rezar sem esperar respostas abre uma porta que a Torre fechou.',
+    t2: 'Santuário da Verdade. Paramos de rezar. Começamos a decifrá-lo. O templo descobriu que rezar era uma forma de fazer perguntas sem questionar — a Torre permitia. Agora fazemos perguntas diretas e o Santuário traduz as não-respostas. Aprendemos: verdade e silêncio são o mesmo.',
+  },
+  quartel: {
+    t1: 'Treino com armas feitas de deterioração. Tudo aqui é improviso. Ensino combatentes a usar o peso da dúvida — é mais letal que ferro. Eles aprendem que a força não é do braço; é de saber que não vai sobreviver e ir de qualquer jeito.',
+    t2: 'Sentinela do Intervalo. Não treinamos mais por sobrevivência. Treinamos porque algo observa. Os combatentes sentem — quando alcançam o nível certo, conseguem "ver" o intervalo por um momento. Aprendem a lutar contra o que não está lá. Contra o que está entre andares.',
+  },
+  armazem: {
+    t1: 'Espaço vazio cheio de esperança. Guardamos comida, madeira, pedra, ferro — e entre eles, guardamos a ideia de amanhã. Cada recurso é uma promessa de que não morreremos hoje.',
+    t2: 'Cofre da Preservação. Descobrimos que recursos guardados aqui não apodrecem. Não é conservação física — é como se o Intervalo os segurasse fora do tempo. Comida de sete anos atrás sabe como era sete anos atrás.',
+  },
+  alojamento: {
+    t1: 'Dormir entre os nossos. Pele contra pele. Partilha de calor. Dormir é a morte ensaiada; fazemos a morte juntos para que acorde seja prova de que ainda somos muitos.',
+    t2: 'Câmara de Repouso Eterno. O sono aqui é diferente. Quem dorme aqui sente pulso da Torre — não como inimigo, mas como presença. Acordam sabendo coisas que não aprenderam. Como se a Torre sussurrasse durante o repouso.',
+  },
+  arquivo: {
+    t1: 'Escrevemos antes de esquecer. Cada palavra é um defesa contra o apagamento. A Torre tenta corroer registros — nós reescrevemos. Arquivo é o lugar onde a memória aprende a resistir.',
+    t2: 'Biblioteca da Verdade. Não registramos mais para resistir — registramos para mapear. Cada pergunta respondida, cada silêncio que a Torre guarda, cada contradição entre fragmentos — tudo vai aqui. A Biblioteca começa a compreender a estrutura da Torre. A Torre começa a compreender que foi compreendida.',
+  },
+  mirante: {
+    t1: 'Vigia os andares acima. Espera por uma descida que nunca vem. Observa mudanças menores nos andares já conquistados. Mirante é a paciência vigilante. É esperança que não virou desespero — ainda.',
+    t2: 'Espelho dos Andares. Deixou de apenas observar. Começou a antever. Quem sobe aqui relata visões de andares que não alcançaram ainda — como espelho que reflete o futuro. Espelho é a premonição vigilante. É esperança que começou a saber por quê.',
+  },
+  retrato_torre: {
+    t1: 'N/A — Desbloqueado em T2',
+    t2: 'Retrato da Torre. Descobrimos que a Torre pode ser capturada — não em imagem, mas em essência. Um espelho que registra não o reflexo, mas o significado. Quem trabalha aqui sente como se estivesse "vendo" a Torre entender a si mesma. Como se a Torre e quem a estuda virassem one.',
+  },
+};
