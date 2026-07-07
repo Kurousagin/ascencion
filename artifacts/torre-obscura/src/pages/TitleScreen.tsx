@@ -105,11 +105,14 @@ export function TitleScreen() {
     await dissolveAll();
     console.log('[handleLoadTestGame] Calling startTestGame');
     startTestGame(testSave);
-    console.log('[handleLoadTestGame] Closing dialog');
-    setTestCodeOpen(false);
-    console.log('[handleLoadTestGame] Dialog closed, resetting input');
-    setTestCode('');
-    setTestError('');
+    console.log('[handleLoadTestGame] Scheduling dialog close');
+    // Garante que dialog fecha DEPOIS que React processa todos os renders
+    setTimeout(() => {
+      console.log('[handleLoadTestGame] Closing dialog now');
+      setTestCodeOpen(false);
+      setTestCode('');
+      setTestError('');
+    }, 0);
   };
 
   return (
