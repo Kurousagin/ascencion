@@ -377,27 +377,31 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     {habEstIcon}
                   </button>
                 )}
-                {/* Botão de Câmara Secreta (andares de chefe já conquistados) */}
-                {isBossFloor && CAMARAS_SECRETAS[f.floor] && (() => {
-                  const cam = CAMARAS_SECRETAS[f.floor];
-                  const cEst = state.camarasSecretasEstado?.[f.floor] ?? { tentativas: 0, encontrada: false };
-                  const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
-                  const restantes = cam.maxTentativas - cEst.tentativas;
-                  return (
-                    <button
-                      onClick={() => setCamaraSecretaModalFloor(f.floor)}
-                      title={cEst.encontrada ? `${cam.titulo} — encontrada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} tentativa(s)`}
-                      className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
-                        cEst.encontrada
-                          ? 'bg-primary/10 border-primary/40 text-primary'
-                          : esgotada
-                            ? 'bg-card-border/20 border-card-border text-white/30'
-                            : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
-                      }`}
-                    >
-                      {cEst.encontrada ? cam.icone : <Search size={15} />}
-                    </button>
-                  );
+                {/* Botão de Câmara Secreta (todos os andares que têm câmaras) */}
+                {(() => {
+                  const camarasDoAndar = Object.entries(CAMARAS_SECRETAS).filter(([id]) => id.startsWith(`${f.floor}_`));
+                  if (camarasDoAndar.length === 0) return null;
+                  return camarasDoAndar.map(([camId, cam]) => {
+                    const cEst = state.camarasSecretasEstado?.[f.floor] ?? { tentativas: 0, encontrada: false };
+                    const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
+                    const restantes = cam.maxTentativas - cEst.tentativas;
+                    return (
+                      <button
+                        key={camId}
+                        onClick={() => setCamaraSecretaModalFloor(f.floor)}
+                        title={cEst.encontrada ? `${cam.titulo} — encontrada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} tentativa(s)`}
+                        className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
+                          cEst.encontrada
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : esgotada
+                              ? 'bg-card-border/20 border-card-border text-white/30'
+                              : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
+                        }`}
+                      >
+                        {cEst.encontrada ? cam.icone : <Search size={15} />}
+                      </button>
+                    );
+                  });
                 })()}
               </div>
             );
@@ -449,12 +453,16 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               {Object.values(TEMPORADAS).map(temporada => {
                 const totalTemp = totalFragmentosTemporada(temporada.numero);
                 const desbTemp = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === temporada.numero).length;
-                // capítulos 1-4
-                const capitulos = [1, 2, 3, 4];
-                const nomesCap: Record<number, string> = {
-                  1: CAPITULO_NOMES[1], 2: CAPITULO_NOMES[2],
-                  3: CAPITULO_NOMES[3], 4: CAPITULO_NOMES[4],
-                };
+                // Determinar capítulos dinamicamente baseado na temporada
+                const capitulos = Object.values(CODEX_FRAGMENTOS)
+                  .filter(f => f.temporada === temporada.numero)
+                  .map(f => f.capitulo)
+                  .filter((v, i, a) => a.indexOf(v) === i)
+                  .sort((a, b) => a - b);
+                const nomesCap: Record<number, string> = capitulos.reduce((acc, cap) => {
+                  acc[cap] = CAPITULO_NOMES[cap] ?? `Capítulo ${cap}`;
+                  return acc;
+                }, {} as Record<number, string>);
                 return (
                   <div key={temporada.numero}>
                     {/* Barra de progresso da temporada */}
