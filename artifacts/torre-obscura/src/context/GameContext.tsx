@@ -583,6 +583,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const startTestGame = (testSave: GameState) => {
     // Carrega cidadela de teste pré-populada para desenvolvimento/QA.
     // Não libera primordials (test save não usa sistema de lançamento).
+    setState(testSave);
     saveState(testSave);
   };
 
