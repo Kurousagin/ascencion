@@ -52,6 +52,7 @@ function createTestSaveBasic(): GameState {
     ],
     habitantesInteragidos: {},
     habitantesEscolhaFeita: {},
+    metasDiarias: { data: '', objetivos: [], progresso: [], recompensaColetada: false },
     gameOver: false,
     vitoria: false,
   };
@@ -112,6 +113,7 @@ function createTestSaveCompleta(): GameState {
     ],
     habitantesInteragidos: {},
     habitantesEscolhaFeita: {},
+    metasDiarias: { data: '', objetivos: [], progresso: [], recompensaColetada: false },
     gameOver: false,
     vitoria: false,
   };
@@ -173,6 +175,7 @@ function createTestSaveT2(): GameState {
     ],
     habitantesInteragidos: {},
     habitantesEscolhaFeita: {},
+    metasDiarias: { data: '', objetivos: [], progresso: [], recompensaColetada: false },
     gameOver: false,
     vitoria: false,
   };
