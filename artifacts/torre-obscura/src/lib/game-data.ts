@@ -173,7 +173,7 @@ export function podeGuerrear(npc: NPC): boolean {
   return npc.vivo && !npc.emExpedicao && !npc.emprestado && (!npc.reforco || !!npc.reforcoGuerra) && !npc.emGuerra;
 }
 
-export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante';
+export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante' | 'RetratoTorre';
 
 export interface Edificio {
   tipo: EdificioTipo;
@@ -218,6 +218,7 @@ export const POSTO_AFIM: Partial<Record<EdificioTipo, ProfissaoId>> = {
   Fogueira: 'sentinela',
   Arquivo: 'erudito',
   Mirante: 'batedor',
+  RetratoTorre: 'erudito',
 };
 
 // Buildings that accept workers (slots = nível atual do edifício).
@@ -3310,100 +3311,138 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
   Fogueira: {
     tipo: 'Fogueira',
     nome: 'Fogueira',
+    nomeT2: 'Pira Eterna',
     descricao: 'Aquece a alma e eleva o moral do grupo.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 5 },              resumo: '+1 moral/dia',  efeito: { moralDia: 1 } },
       { custo: { madeira: 15, pedra: 10 },  resumo: '+2 moral/dia',  efeito: { moralDia: 2 } },
       { custo: { madeira: 30, pedra: 20 },  resumo: '+4 moral/dia',  efeito: { moralDia: 4 } },
+      { custo: { madeira: 50, pedra: 35, ferro: 20 },  resumo: '+6 moral/dia · +1 sanidade/dia',  efeito: { moralDia: 6, sanidadeDia: 1 } },
+      { custo: { madeira: 70, pedra: 50, ferro: 35 },  resumo: '+8 moral/dia · +2 sanidade/dia',  efeito: { moralDia: 8, sanidadeDia: 2 } },
     ],
   },
   Fazenda: {
     tipo: 'Fazenda',
     nome: 'Fazenda',
+    nomeT2: 'Campos do Antes',
     descricao: 'Produz comida diária para sustentar a população.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 15, pedra: 5 },            resumo: '+10 comida/dia', efeito: { comidaDia: 10 } },
       { custo: { madeira: 35, pedra: 20 },           resumo: '+22 comida/dia', efeito: { comidaDia: 22 } },
       { custo: { madeira: 60, pedra: 40, ferro: 10 }, resumo: '+40 comida/dia', efeito: { comidaDia: 40 } },
+      { custo: { madeira: 90, pedra: 60, ferro: 25 }, resumo: '+58 comida/dia', efeito: { comidaDia: 58 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 40 }, resumo: '+80 comida/dia', efeito: { comidaDia: 80 } },
     ],
   },
   Enfermaria: {
     tipo: 'Enfermaria',
     nome: 'Enfermaria',
+    nomeT2: 'Casa da Cura Antiga',
     descricao: 'Acelera a recuperação de fadiga de todos.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 15, pedra: 10 },            resumo: '+8 fadiga rec./dia',  efeito: { fadigaRec: 8 } },
       { custo: { madeira: 35, pedra: 25 },            resumo: '+18 fadiga rec./dia', efeito: { fadigaRec: 18 } },
       { custo: { madeira: 60, pedra: 45, ferro: 12 }, resumo: '+30 fadiga rec./dia', efeito: { fadigaRec: 30 } },
+      { custo: { madeira: 85, pedra: 65, ferro: 20 }, resumo: '+42 fadiga rec./dia', efeito: { fadigaRec: 42 } },
+      { custo: { madeira: 115, pedra: 90, ferro: 35 }, resumo: '+56 fadiga rec./dia', efeito: { fadigaRec: 56 } },
     ],
   },
   Templo: {
     tipo: 'Templo',
     nome: 'Templo',
+    nomeT2: 'Santuário da Verdade',
     descricao: 'Restaura a sanidade e fortalece o moral.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { pedra: 30, madeira: 20 },            resumo: '+2 moral, +0.5 sanidade/dia', efeito: { moralDia: 2, sanidadeDia: 0.5 } },
       { custo: { pedra: 55, madeira: 40, ferro: 10 }, resumo: '+4 moral, +1.5 sanidade/dia', efeito: { moralDia: 4, sanidadeDia: 1.5 } },
       { custo: { pedra: 80, madeira: 60, ferro: 25 }, resumo: '+6 moral, +3 sanidade/dia',   efeito: { moralDia: 6, sanidadeDia: 3 } },
+      { custo: { pedra: 110, madeira: 85, ferro: 40 }, resumo: '+8 moral, +4.5 sanidade/dia', efeito: { moralDia: 8, sanidadeDia: 4.5 } },
+      { custo: { pedra: 140, madeira: 110, ferro: 60 }, resumo: '+10 moral, +6 sanidade/dia', efeito: { moralDia: 10, sanidadeDia: 6 } },
     ],
   },
   Quartel: {
     tipo: 'Quartel',
     nome: 'Quartel',
+    nomeT2: 'Sentinela do Intervalo',
     descricao: 'Treina o grupo, aumentando o poder nas expedições.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 25, pedra: 20, ferro: 10 }, resumo: '+10% poder de expedição', efeito: { poderBonus: 0.10 } },
       { custo: { madeira: 45, pedra: 40, ferro: 25 }, resumo: '+22% poder de expedição', efeito: { poderBonus: 0.22 } },
       { custo: { madeira: 70, pedra: 60, ferro: 45 }, resumo: '+38% poder de expedição', efeito: { poderBonus: 0.38 } },
+      { custo: { madeira: 100, pedra: 85, ferro: 65 }, resumo: '+52% poder de expedição', efeito: { poderBonus: 0.52 } },
+      { custo: { madeira: 130, pedra: 110, ferro: 90 }, resumo: '+68% poder de expedição', efeito: { poderBonus: 0.68 } },
     ],
   },
   Armazem: {
     tipo: 'Armazem',
     nome: 'Armazém',
+    nomeT2: 'Cofre da Preservação',
     descricao: 'Expande a capacidade de estocagem de recursos.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 20, pedra: 10 },            resumo: 'Capacidade 150', efeito: { capacidadeArmazem: 150 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Capacidade 300', efeito: { capacidadeArmazem: 300 } },
       { custo: { madeira: 60, pedra: 40, ferro: 15 }, resumo: 'Capacidade 600', efeito: { capacidadeArmazem: 600 } },
+      { custo: { madeira: 90, pedra: 60, ferro: 30 }, resumo: 'Capacidade 900', efeito: { capacidadeArmazem: 900 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 50 }, resumo: 'Capacidade 1200', efeito: { capacidadeArmazem: 1200 } },
     ],
   },
   Alojamento: {
     tipo: 'Alojamento',
     nome: 'Alojamento',
+    nomeT2: 'Câmara de Repouso Eterno',
     descricao: 'Abriga sobreviventes. Define o limite de população da cidadela.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 20, pedra: 8 },             resumo: 'Limite de 9 moradores',  efeito: { capPopulacao: 9 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Limite de 12 moradores', efeito: { capPopulacao: 12 } },
       { custo: { madeira: 70, pedra: 45, ferro: 15 }, resumo: 'Limite de 16 moradores', efeito: { capPopulacao: 16 } },
+      { custo: { madeira: 100, pedra: 65, ferro: 30 }, resumo: 'Limite de 18 moradores', efeito: { capPopulacao: 18 } },
+      { custo: { madeira: 140, pedra: 90, ferro: 50 }, resumo: 'Limite de 20 moradores', efeito: { capPopulacao: 20 } },
     ],
   },
   Arquivo: {
     tipo: 'Arquivo',
     nome: 'Arquivo',
+    nomeT2: 'Biblioteca da Verdade',
     descricao: 'Cataloga os fragmentos da Torre. Aumenta o poder de expedição de eruditos e batedores.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { pedra: 40, madeira: 30, ferro: 15 }, resumo: '+15% poder de expedição', efeito: { poderBonus: 0.15 } },
       { custo: { pedra: 70, madeira: 55, ferro: 30 }, resumo: '+28% poder de expedição', efeito: { poderBonus: 0.28 } },
       { custo: { pedra: 120, madeira: 90, ferro: 60 }, resumo: '+42% poder de expedição · +8% Sussurro', efeito: { poderBonus: 0.42 } },
+      { custo: { pedra: 160, madeira: 125, ferro: 85 }, resumo: '+56% poder de expedição · +12% Sussurro', efeito: { poderBonus: 0.56 } },
+      { custo: { pedra: 200, madeira: 160, ferro: 120 }, resumo: '+72% poder de expedição · +16% Sussurro', efeito: { poderBonus: 0.72 } },
     ],
   },
   Mirante: {
     tipo: 'Mirante',
     nome: 'Mirante',
+    nomeT2: 'Espelho dos Andares',
     descricao: 'Vigia os andares superiores. Reduz a fadiga das expedições e melhora a moral.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 35, pedra: 25, ferro: 20 }, resumo: '+12 fadiga rec./dia · +1 moral/dia', efeito: { fadigaRec: 12, moralDia: 1 } },
       { custo: { madeira: 60, pedra: 45, ferro: 40 }, resumo: '+22 fadiga rec./dia · +2 moral/dia', efeito: { fadigaRec: 22, moralDia: 2 } },
       { custo: { madeira: 105, pedra: 75, ferro: 65 }, resumo: '+35 fadiga rec./dia · +3 moral/dia', efeito: { fadigaRec: 35, moralDia: 3 } },
+      { custo: { madeira: 140, pedra: 100, ferro: 85 }, resumo: '+48 fadiga rec./dia · +4 moral/dia', efeito: { fadigaRec: 48, moralDia: 4 } },
+      { custo: { madeira: 180, pedra: 130, ferro: 110 }, resumo: '+63 fadiga rec./dia · +5 moral/dia', efeito: { fadigaRec: 63, moralDia: 5 } },
+    ],
+  },
+  RetratoTorre: {
+    tipo: 'RetratoTorre',
+    nome: 'Retrato da Torre',
+    nomeT2: 'Retrato da Torre',
+    descricao: 'Captura a essência da Torre em espelho. Aumenta descoberta de câmaras e eventos raros.',
+    maxNivel: 2,
+    niveis: [
+      { custo: { pedra: 50, madeira: 40, ferro: 30 }, resumo: '+10% câmaras/semana · +1 eco/semana', efeito: { poderBonus: 0.05 } },
+      { custo: { pedra: 80, madeira: 60, ferro: 50 }, resumo: '+15% câmaras/semana · +2 ecos/semana', efeito: { poderBonus: 0.10 } },
     ],
   },
 };
@@ -3460,6 +3499,7 @@ export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<Ef
           case 'Fogueira':   ef.moralDia += Math.round(w.resistencia * 0.2 * mult); break;
           case 'Arquivo':    ef.poderBonus += w.inteligencia * 0.006 * mult; break;
           case 'Mirante':    ef.fadigaRec  += Math.round(w.agilidade * 0.3 * mult); break;
+          case 'RetratoTorre': ef.poderBonus += w.inteligencia * 0.004 * mult; break;
         }
       }
     }
@@ -3472,6 +3512,15 @@ export function proximoNivelCusto(tipo: EdificioTipo, nivelAtual: number) {
   const def = BUILDINGS[tipo];
   if (!def || nivelAtual >= def.maxNivel) return null;
   return def.niveis[nivelAtual].custo;
+}
+
+// Retorna o nome do edifício baseado na temporada (andarAtual)
+export function nomeEdificio(tipo: EdificioTipo, andarAtual: number): string {
+  const def = BUILDINGS[tipo];
+  if (!def) return tipo;
+  // T2 começa no andar 21
+  const temporada = andarAtual >= 21 ? 2 : 1;
+  return temporada === 2 && def.nomeT2 ? def.nomeT2 : def.nome;
 }
 
 // ─── FLOORS ──────────────────────────────────────────────────────────────────
