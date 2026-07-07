@@ -209,91 +209,43 @@ export function Citadel() {
     return (
       <div key={tipo}
         className={`bg-gradient-to-b from-[#1C2333] to-[#161B22] border ${
-          canAfford ? 'border-primary/50 shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border-card-border'
-        } p-4 flex flex-col justify-between rounded-sm h-full relative overflow-hidden`}
+          canAfford ? 'border-primary/40' : 'border-card-border/50'
+        } p-3 flex flex-col justify-between rounded-sm h-full relative overflow-hidden`}
       >
         {built && (
-          <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[9px] text-primary font-bold tracking-widest px-2 py-1 rounded-bl-sm">
-            NVL {nivelAtual}{isMax ? ' • MÁX' : ''}
+          <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[8px] text-primary font-bold tracking-widest px-1.5 py-0.5 rounded-bl-sm">
+            L{nivelAtual}
           </div>
         )}
-        <div className="mb-3">
-          <div className="font-bold text-foreground font-cinzel text-lg">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
-          <div className="text-[10px] text-secondary mt-1.5 leading-relaxed tracking-wide">{def.descricao}</div>
+        <div className="mb-2">
+          <div className="font-bold text-foreground font-cinzel text-sm">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
+          <div className="text-[9px] text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
           {efeitoAtual && (
-            <div className="text-[10px] text-success mt-2 font-bold tracking-wide flex items-center gap-1">
-              <TrendingUp size={11} /> Atual: {efeitoAtual}
-            </div>
+            <div className="text-[8px] text-success mt-1 font-bold">+{efeitoAtual}</div>
           )}
           {built && POSTO_AFIM[tipo] && (() => {
-            const afim    = POSTO_AFIM[tipo]!;
             const workers = trabalhadoresDe(tipo, nivelAtual, state.npcs);
-            const totalSlots = nivelAtual;
-            return (
-              <div className="text-[10px] mt-2 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-secondary">
-                    <Hammer size={11} className="text-primary/70" />
-                    Trabalho ({PROFISSOES[afim].nome}):
-                  </span>
-                  <span className="text-primary font-bold">{workers.length}/{totalSlots}</span>
-                </div>
-                {workers.length > 0 && (
-                  <div className="ml-5 space-y-0.5 bg-black/30 border border-primary/20 rounded-sm p-2">
-                    {workers.map((w) => {
-                      const mult = getProfissao(w) === afim ? 1.5 : 1;
-                      const bonus = (() => {
-                        switch (tipo) {
-                          case 'Fazenda':    return Math.round(w.inteligencia * 0.5 * mult);
-                          case 'Enfermaria': return Math.round(w.inteligencia * 0.4 * mult);
-                          case 'Quartel':    return Math.round(w.forca * 0.6 * mult * 10) / 10;
-                          case 'Templo':     return Math.round(w.resistencia * 0.25 * mult);
-                          case 'Fogueira':   return Math.round(w.resistencia * 0.2 * mult);
-                          case 'Arquivo':    return Math.round(w.inteligencia * 0.6 * mult * 10) / 10;
-                          case 'Mirante':    return Math.round(w.agilidade * 0.3 * mult);
-                          case 'RetratoTorre': return Math.round(w.inteligencia * 0.4 * mult * 10) / 10;
-                          default: return 0;
-                        }
-                      })();
-                      return (
-                        <div key={w.id} className="flex items-center justify-between text-foreground/80 text-[9px]">
-                          <span>{w.nome}</span>
-                          <span className="text-success font-bold">+{bonus}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
+            return workers.length > 0 ? (
+              <div className="text-[8px] text-secondary mt-1">👥 {workers.length}/{nivelAtual}</div>
+            ) : null;
           })()}
         </div>
         {isMax ? (
-          <div className="w-full min-h-[48px] border border-primary/30 text-primary/70 text-xs tracking-[0.2em] font-cinzel font-bold rounded-sm flex items-center justify-center bg-primary/5">
-            NÍVEL MÁXIMO
+          <div className="w-full h-8 border border-primary/30 text-primary/60 text-[8px] tracking-widest font-cinzel font-bold rounded-sm flex items-center justify-center">
+            ✓ MÁX
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="text-[10px] text-primary/90 tracking-wide flex items-center gap-1 font-bold">
-              <ArrowUp size={11} /> {built ? `Nvl ${nivelAtual + 1}: ` : ''}{proximo!.resumo}
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {custo!.madeira ? <CostChip have={state.recursos.madeira} need={custo!.madeira} icon={Trees} /> : null}
-              {custo!.pedra   ? <CostChip have={state.recursos.pedra}   need={custo!.pedra}   icon={Mountain} /> : null}
-              {custo!.ferro   ? <CostChip have={state.recursos.ferro}   need={custo!.ferro}   icon={Zap} /> : null}
-            </div>
-            <button
-              disabled={!canAfford}
-              onClick={() => buildEdificio(tipo)}
-              className={`w-full min-h-[48px] border text-xs tracking-[0.2em] font-cinzel font-bold transition-all rounded-sm touch-manipulation ${
-                canAfford
-                  ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground active:scale-[0.98]'
-                  : 'border-card-border text-muted-foreground opacity-50 cursor-not-allowed bg-black/20'
-              }`}
-            >
-              {built ? 'MELHORAR' : 'CONSTRUIR'}
-            </button>
-          </div>
+          <button
+            disabled={!canAfford}
+            onClick={() => buildEdificio(tipo)}
+            className={`w-full h-8 border text-[8px] font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
+              canAfford
+                ? 'border-primary text-primary hover:bg-primary/20'
+                : 'border-card-border text-muted-foreground opacity-40 cursor-not-allowed'
+            }`}
+          >
+            {built ? `L${nivelAtual + 1}` : 'BUILD'}
+          </button>
         )}
       </div>
     );
@@ -425,13 +377,10 @@ export function Citadel() {
 
       {/* Infraestrutura */}
       <section>
-        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
+        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-2 border-t border-primary/20 pt-4">
           INFRAESTRUTURA
         </h3>
-        <p className="text-[10px] text-secondary/70 mb-4 -mt-2">
-          Aloque moradores ociosos aos edifícios na aba HABITANTES para potencializar os efeitos.
-        </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-2">
           {buildingOrder.map(tipo => renderEdificio(tipo))}
         </div>
       </section>
