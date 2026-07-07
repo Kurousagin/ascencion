@@ -1,6 +1,5 @@
 import { GameState } from '../types/game-state';
-import { generateNPC } from './npc';
-import { HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, RELIQUIAS_CATALOGO } from './game-data';
+import { generateNPC, HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, RELIQUIAS_CATALOGO } from './game-data';
 
 /**
  * Cidadelas de teste pré-populadas para validar features durante desenvolvimento.
