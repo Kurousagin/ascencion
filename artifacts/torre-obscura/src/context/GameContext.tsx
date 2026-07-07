@@ -45,6 +45,7 @@ interface GameContextType {
   state: GameState;
   hasSave: boolean;
   startNewGame: (lancamento?: LancamentoTemporada) => void;
+  startTestGame: (testSave: GameState) => void;
   adicionarNpcLancamento: (npcConfig: NpcLancamento) => void;
   continueGame: () => void;
   advanceDay: () => void;
@@ -577,6 +578,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
     }
     saveState(s);
+  };
+
+  const startTestGame = (testSave: GameState) => {
+    // Carrega cidadela de teste pré-populada para desenvolvimento/QA.
+    // Não libera primordials (test save não usa sistema de lançamento).
+    saveState(testSave);
   };
 
   // Adiciona o NPC sorteado no gacha de lançamento ao estado do jogo.
@@ -1667,6 +1674,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state: state as GameState,
       hasSave,
       startNewGame,
+      startTestGame,
       adicionarNpcLancamento,
       continueGame,
       advanceDay,
