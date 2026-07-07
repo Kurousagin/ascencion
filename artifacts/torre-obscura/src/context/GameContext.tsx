@@ -583,8 +583,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const startTestGame = (testSave: GameState) => {
     // Carrega cidadela de teste pré-populada para desenvolvimento/QA.
     // Não libera primordials (test save não usa sistema de lançamento).
-    setState(testSave);
+    console.log('[startTestGame] Loading test save:', { dia: testSave.dia, andar: testSave.andarAtual });
+    flushSync(() => setState(testSave));
     saveState(testSave);
+    console.log('[startTestGame] Test save loaded');
   };
 
   // Adiciona o NPC sorteado no gacha de lançamento ao estado do jogo.
