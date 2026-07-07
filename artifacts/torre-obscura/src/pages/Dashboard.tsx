@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
-import { ShieldAlert, Users, Bell, Gift, Check } from 'lucide-react';
-import { getEfeitos, POP_BASE, METAS_DIARIAS_META } from '../lib/game-data';
+import { ShieldAlert, Users, Bell, Gift, Check, Hammer } from 'lucide-react';
+import { getEfeitos, POP_BASE, METAS_DIARIAS_META, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
 import {
   isPushSupported,
   getPermissionState,
@@ -235,6 +235,33 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
           </button>
         </div>
       )}
+
+      <div className="space-y-3">
+        <h3 className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-2 border-b border-primary/20 pb-2">
+          <Hammer size={14} /> CONSTRUÇÕES (SLOTS OCUPADOS)
+        </h3>
+        <div className="grid grid-cols-1 gap-2">
+          {(['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'] as EdificioTipo[]).map(tipo => {
+            const edificio = state.edificios.find(e => e.tipo === tipo);
+            const nivelAtual = edificio?.nivel || 0;
+            if (nivelAtual === 0) return null;
+            const workers = trabalhadoresDe(tipo, nivelAtual, state.npcs);
+            const hasAfim = POSTO_AFIM[tipo];
+            return (
+              <div key={tipo} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-black/30 border border-primary/10 rounded">
+                <span className="font-cinzel text-primary">{nomeEdificio(tipo, state.andarAtual)}</span>
+                {hasAfim ? (
+                  <span className="text-secondary">
+                    <span className="font-bold text-success">{workers.length}</span>/{nivelAtual}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground italic">nv.{nivelAtual}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="mt-4 space-y-3">
         <h3 className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-2 border-b border-primary/20 pb-2">

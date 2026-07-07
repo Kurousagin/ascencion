@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import {
   BUILDINGS, getEfeitos, EdificioTipo, POSTO_AFIM, PROFISSOES,
-  NPC, getProfissao, calcCustoGacha, GACHA_BATCH, GACHA_ODDS,
+  NPC, getProfissao, calcCustoGacha, GACHA_BATCH, GACHA_ODDS, nomeEdificio, trabalhadoresDe,
 } from '../lib/game-data';
 import {
   Wheat, Trees, Mountain, Zap, TrendingUp, TrendingDown, ArrowUp,
@@ -218,7 +218,7 @@ export function Citadel() {
           </div>
         )}
         <div className="mb-3">
-          <div className="font-bold text-foreground font-cinzel text-lg">{def.nome.toUpperCase()}</div>
+          <div className="font-bold text-foreground font-cinzel text-lg">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
           <div className="text-[10px] text-secondary mt-1.5 leading-relaxed tracking-wide">{def.descricao}</div>
           {efeitoAtual && (
             <div className="text-[10px] text-success mt-2 font-bold tracking-wide flex items-center gap-1">
@@ -227,14 +227,43 @@ export function Citadel() {
           )}
           {built && POSTO_AFIM[tipo] && (() => {
             const afim    = POSTO_AFIM[tipo]!;
-            const workers = state.npcs.filter(n => n.vivo && !n.emExpedicao && n.posto === tipo);
+            const workers = trabalhadoresDe(tipo, nivelAtual, state.npcs);
+            const totalSlots = nivelAtual;
             return (
-              <div className="text-[10px] mt-2 flex items-start gap-1 text-secondary">
-                <Hammer size={11} className="text-primary/70 mt-0.5 shrink-0" />
-                <span>
-                  Trabalho ({PROFISSOES[afim].nome}): <span className="text-primary font-bold">{workers.length}/{nivelAtual}</span>
-                  {workers.length > 0 && <span className="text-foreground/70"> — {workers.map(w => w.nome).join(', ')}</span>}
-                </span>
+              <div className="text-[10px] mt-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-secondary">
+                    <Hammer size={11} className="text-primary/70" />
+                    Trabalho ({PROFISSOES[afim].nome}):
+                  </span>
+                  <span className="text-primary font-bold">{workers.length}/{totalSlots}</span>
+                </div>
+                {workers.length > 0 && (
+                  <div className="ml-5 space-y-0.5 bg-black/30 border border-primary/20 rounded-sm p-2">
+                    {workers.map((w) => {
+                      const mult = getProfissao(w) === afim ? 1.5 : 1;
+                      const bonus = (() => {
+                        switch (tipo) {
+                          case 'Fazenda':    return Math.round(w.inteligencia * 0.5 * mult);
+                          case 'Enfermaria': return Math.round(w.inteligencia * 0.4 * mult);
+                          case 'Quartel':    return Math.round(w.forca * 0.6 * mult * 10) / 10;
+                          case 'Templo':     return Math.round(w.resistencia * 0.25 * mult);
+                          case 'Fogueira':   return Math.round(w.resistencia * 0.2 * mult);
+                          case 'Arquivo':    return Math.round(w.inteligencia * 0.6 * mult * 10) / 10;
+                          case 'Mirante':    return Math.round(w.agilidade * 0.3 * mult);
+                          case 'RetratoTorre': return Math.round(w.inteligencia * 0.4 * mult * 10) / 10;
+                          default: return 0;
+                        }
+                      })();
+                      return (
+                        <div key={w.id} className="flex items-center justify-between text-foreground/80 text-[9px]">
+                          <span>{w.nome}</span>
+                          <span className="text-success font-bold">+{bonus}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -270,7 +299,7 @@ export function Citadel() {
     );
   };
 
-  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante'];
+  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'];
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
