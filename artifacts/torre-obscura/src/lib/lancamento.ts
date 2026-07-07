@@ -4,6 +4,7 @@
 // Para desativar o lançamento (fora do período), defina como null.
 
 import type { HabilidadeId, PassivaId } from './game-data';
+import { PRIMORDIAIS_LORE, VESTIGIOS_LORE, MARCADOS_LORE } from './lore-content';
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -74,13 +75,8 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
     forca: 22, agilidade: 18, inteligencia: 16, resistencia: 22,
     habilidade: 'guardiao',
     primordial: true,
-    cardLore: [
-      'Sobreviveu a eras antes da Torre existir. Não sabe o que é cansaço. Não conhece o que é medo.',
-      'Subiu. Até onde, ninguém sabe — ele não fala. A Torre ainda carrega as marcas da passagem dele em andares que você ainda não viu.',
-      'A Torre o reconhece antes de reconhecer você. Isso, sozinho, deveria dizer tudo.',
-      '"Eu esperei antes. Posso esperar de novo." — disse uma vez, sem contexto. Ninguém perguntou pelo quê.',
-    ],
-    cardLoreFinal: 'Em toda a extensão dos ecos, apenas você o recebeu.',
+    cardLore: PRIMORDIAIS_LORE['valdris'].cardLore,
+    cardLoreFinal: PRIMORDIAIS_LORE['valdris'].cardLoreFinal,
   },
   chanceValdris: 0.05,
 
@@ -95,11 +91,8 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
       habilidade: 'guardiao',
       vestigio: true,
       passivaId: 'veterano_das_profundezas' as PassivaId,
-      cardLore: [
-        'Voltou de onde outros não voltaram. A Torre o testou uma vez. Não tentou de novo.',
-        'Quando você pergunta onde foi, ele olha para um ponto fixo acima de você. Não é hostil. É que o que viu não tem nome nesta língua.',
-      ],
-      cardLoreFinal: 'Carrega o peso de andares que você ainda não conhece.',
+      cardLore: VESTIGIOS_LORE['corven'].cardLore,
+      cardLoreFinal: VESTIGIOS_LORE['corven'].cardLoreFinal,
     },
     {
       nome: 'Seris, a Decifradora',
@@ -108,11 +101,8 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
       habilidade: 'estrategista',
       vestigio: true,
       passivaId: 'leitura_da_torre' as PassivaId,
-      cardLore: [
-        'Lê a Torre como outros leem mapas. Não metaforicamente — literalmente encontra recursos onde a lógica diz que não deveria haver.',
-        'Passou por andares que não constam em nenhum registro. Quando você menciona um número específico, ela para de andar por um momento.',
-      ],
-      cardLoreFinal: 'A Torre mostra a ela o que esconde dos outros.',
+      cardLore: VESTIGIOS_LORE['seris'].cardLore,
+      cardLoreFinal: VESTIGIOS_LORE['seris'].cardLoreFinal,
     },
     {
       nome: 'Kael, o Sem-Rastro',
@@ -121,11 +111,8 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
       habilidade: 'explorador',
       vestigio: true,
       passivaId: 'rastro_vivo' as PassivaId,
-      cardLore: [
-        'Não deixa pegadas. Não por habilidade — a Torre simplesmente não registra sua passagem. Os registros têm lacunas exatas no formato dele.',
-        'A Torre sussurra coisas para ele. Ele anota. Quando você lê as notas, o texto mudou desde que ele escreveu.',
-      ],
-      cardLoreFinal: 'Ouve o que a Torre diz entre as paredes.',
+      cardLore: VESTIGIOS_LORE['kael'].cardLore,
+      cardLoreFinal: VESTIGIOS_LORE['kael'].cardLoreFinal,
     },
   ],
 
@@ -136,50 +123,35 @@ export const LANCAMENTO_ATIVO: LancamentoTemporada | null = {
       titulo: 'Sobrevivente Marcada da Temporada I',
       forca: 12, agilidade: 13, inteligencia: 10, resistencia: 12,
       habilidade: 'explorador',
-      cardLore: [
-        'Nunca olha para trás. Diz que o que ficou atrás dela não merece ser lembrado.',
-        'A Torre a encontrou entre ruínas de uma cidadela que tentou antes. Ela foi a última a deixar aquele lugar. Carrega o peso dos que ficaram.',
-      ],
+      cardLore: MARCADOS_LORE['aryn'].cardLore,
     },
     {
       nome: 'Soren, o Dobrado',
       titulo: 'Sobrevivente Marcado da Temporada I',
       forca: 14, agilidade: 10, inteligencia: 12, resistencia: 11,
       habilidade: 'guardiao',
-      cardLore: [
-        'Seu corpo carrega marcas de batalhas que ninguém mais se lembra de ter travado.',
-        'Dobrado — não quebrado. A Torre tentou quebrá-lo três vezes. Na quarta, parou de tentar.',
-      ],
+      cardLore: MARCADOS_LORE['soren'].cardLore,
     },
     {
       nome: 'Irae, a Visão',
       titulo: 'Sobrevivente Marcada da Temporada I',
       forca: 9, agilidade: 11, inteligencia: 15, resistencia: 12,
       habilidade: 'oraculo',
-      cardLore: [
-        'Vê coisas antes de acontecerem. Nunca avisa. Diz que avisar muda o que vê.',
-        'Ela sabia que chegaria até você antes do lançamento, antes da Torre acordar. O que mais ela sabe, você nunca vai descobrir.',
-      ],
+      cardLore: MARCADOS_LORE['irae'].cardLore,
     },
     {
       nome: 'Veth, o Silencioso',
       titulo: 'Sobrevivente Marcado da Temporada I',
       forca: 11, agilidade: 14, inteligencia: 11, resistencia: 11,
       habilidade: 'sombra',
-      cardLore: [
-        'Ninguém o viu chegar. Ninguém o vê partir. Está simplesmente lá, quando é necessário.',
-        'Os registros da Torre não mencionam seu nome. Existe uma lacuna onde ele deveria estar. Você tem a impressão de que isso foi intencional.',
-      ],
+      cardLore: MARCADOS_LORE['veth'].cardLore,
     },
     {
       nome: 'Kaet, a Estrategista',
       titulo: 'Sobrevivente Marcada da Temporada I',
       forca: 10, agilidade: 12, inteligencia: 14, resistencia: 11,
       habilidade: 'estrategista',
-      cardLore: [
-        'Nunca perdeu uma batalha que planejou. Perdeu todas as que não planejou. Agora planeja tudo.',
-        'A Torre a observou por muito tempo antes de agir. Escolheu o momento exato. Ela faria o mesmo.',
-      ],
+      cardLore: MARCADOS_LORE['kaet'].cardLore,
     },
   ],
 
@@ -211,13 +183,8 @@ export const LANCAMENTO_T2: LancamentoTemporada = {
     forca: 20, agilidade: 20, inteligencia: 28, resistencia: 22,
     habilidade: 'oraculo',
     primordial: true,
-    cardLore: [
-      'Não é uma pessoa. É um arquivo vivo do que a Torre apagou — cada memória excluída, cada nome reescrito, cada intenção original substituída por outra.',
-      'Fala em fragmentos de idiomas que ninguém mais usa. Às vezes para no meio de uma frase e fica olhando para um ponto fixo, como se estivesse ouvindo algo do outro lado.',
-      'A Torre o reconhece com algo próximo a medo. Não porque ele seja mais forte — mas porque ele lembra do que ela era antes de aprender a esquecer.',
-      '"Você perguntou sobre o andar um. Mas a pergunta certa é: o que havia antes do andar um? Eu sei. E vou te mostrar — quando você estiver pronto."',
-    ],
-    cardLoreFinal: 'Thael carrega o que a Torre tentou destruir. Em toda a extensão dos ecos, apenas você o recebeu.',
+    cardLore: PRIMORDIAIS_LORE['thael'].cardLore,
+    cardLoreFinal: PRIMORDIAIS_LORE['thael'].cardLoreFinal,
   },
   chanceValdris: 0.04,
 
@@ -228,60 +195,42 @@ export const LANCAMENTO_T2: LancamentoTemporada = {
       titulo: 'Sobrevivente Marcado da Temporada II',
       forca: 13, agilidade: 11, inteligencia: 12, resistencia: 13,
       habilidade: 'guardiao',
-      cardLore: [
-        'Lembra de duas vidas ao mesmo tempo. Em uma delas, chegou até o vigésimo andar e voltou. Na outra, nunca tentou. Não sabe qual é a verdadeira.',
-        'A Torre o fragmentou e depois remontou — mas as peças voltaram em ordem diferente. Ele funciona. Só não tem certeza de quem é o que funciona.',
-      ],
+      cardLore: MARCADOS_LORE['reth'].cardLore,
     },
     {
       nome: 'Mira, a Ouvinte',
       titulo: 'Sobrevivente Marcada da Temporada II',
       forca: 9, agilidade: 14, inteligencia: 13, resistencia: 13,
       habilidade: 'sombra',
-      cardLore: [
-        'Ouve o que a Torre está dizendo. Não metaforicamente — literalmente. A estrutura produz frequências que ela aprendeu a interpretar.',
-        'Nunca explica o que ouve. Diz que a tradução sempre perde algo essencial. Que o essencial é a parte que você precisa descobrir sozinho.',
-      ],
+      cardLore: MARCADOS_LORE['mira'].cardLore,
     },
     {
       nome: 'Caen, o Construtor',
       titulo: 'Sobrevivente Marcado da Temporada II',
       forca: 15, agilidade: 10, inteligencia: 11, resistencia: 13,
       habilidade: 'guardiao',
-      cardLore: [
-        'Descendente direto dos que ergueram a Torre. Carrega plantas arquitetônicas gravadas na memória — estruturas que não existem em nenhum dos vinte andares conhecidos.',
-        'Quando vê as paredes, toca como se reconhecesse o trabalho. "Meu bisavô fez esse bloco", disse uma vez, sobre um andar que nenhum humano deveria ter construído.',
-      ],
+      cardLore: MARCADOS_LORE['caen'].cardLore,
     },
     {
       nome: 'Liora, a Constante',
       titulo: 'Sobrevivente Marcada da Temporada II',
       forca: 10, agilidade: 12, inteligencia: 15, resistencia: 12,
       habilidade: 'estrategista',
-      cardLore: [
-        'Esteve presente em três versões diferentes do Intervalo. Em duas, a Torre a expulsou antes do vigésimo andar. Na terceira — esta — chegou mais longe.',
-        'Não demonstra surpresa com nada. Não porque seja corajosa, mas porque já viu versões de tudo. O que a surpreende são as variações pequenas — os detalhes que mudam entre as versões.',
-      ],
+      cardLore: MARCADOS_LORE['liora'].cardLore,
     },
     {
       nome: 'Aldric, o Arquivado',
       titulo: 'Sobrevivente Marcado da Temporada II',
       forca: 12, agilidade: 13, inteligencia: 13, resistencia: 11,
       habilidade: 'explorador',
-      cardLore: [
-        'A Torre tem um arquivo com seu nome. Não como visitante — como dado. Algo na estrutura o catalogou antes de ele entrar.',
-        'Encontrou a entrada no andar oito. Não leu o que estava escrito depois do nome. Diz que não estava pronto. Ainda não está — mas chegará.',
-      ],
+      cardLore: MARCADOS_LORE['aldric'].cardLore,
     },
     {
       nome: 'Vass, a Testemunha',
       titulo: 'Sobrevivente Marcada da Temporada II',
       forca: 11, agilidade: 11, inteligencia: 14, resistencia: 13,
       habilidade: 'oraculo',
-      cardLore: [
-        'Viu o momento em que a Torre foi construída. Não como visão ou profecia — como memória. Uma memória que não deveria ser dela.',
-        'Quando foi investigar de onde a memória vinha, encontrou Thael. Ele a reconheceu antes de ela falar. "Você esteve lá", disse. "Não fisicamente. Mas esteve."',
-      ],
+      cardLore: MARCADOS_LORE['vass'].cardLore,
     },
   ],
 

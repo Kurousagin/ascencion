@@ -19,14 +19,14 @@ A Torre não é um cenário passivo. Ela é um ser vivo, fracionado em ecos. Ao 
 |-----------|---------|----------------|------------------------------------------------------------|--------------------------------------------------------------------|
 | T1        | 1–20    | A Ascensão     | Sobrevivência. Mundo desconhecido. Nenhuma resposta.       | A entidade não é um inimigo — é um ser fragmentado.                |
 | T2        | 21–40   | O Intervalo    | Memória. Estranheza. Primeiros rumores de "mais andares."  | A Torre tem história antes do Andar 1. Alguém a construiu.         |
-| T3        | 41–60   | A Convergência | Confirmação. O número 100 é real. O Observador começa a ser visto. | Só quem completou os 16 Habitants das 3 primeiras camadas de T1+T2 recebe o fragmento que confirma os 100 andares. |
+| T3        | 41–60   | A Convergência | Confirmação. O número 100 é real. O Observador começa a ser visto. | Só quem completou os 19 Habitantes (16 + 3 Âncoras) de T1+T2 recebe o fragmento que confirma os 100 andares. |
 | T4        | 61–80   | O Preço        | Identidade. O Observador tem origem. Custa algo saber.     | A identidade parcial do Observador é revelada — e é perturbadora.  |
 | T5        | 81–100  | O Julgamento   | Síntese. Escolha. Não há vilão.                            | Andar 100 abre a Torre Original — o espaço multiplayer compartilhado. |
 
 ### Regra de progressão narrativa
 - **T1:** O jogador não sabe que há 100 andares. A Torre parece acabar no 20.
 - **T2:** Rumores, fragmentos ambíguos. Nada confirmado.
-- **T3:** Apenas quem completou TODOS os 16 Habitants das camadas 1, 2 e 3 (andares 1–15) vê o fragmento especial que confirma os 100 andares. Para todos os outros é apenas mais um sussurro.
+- **T3:** Apenas quem completou TODOS os 19 Habitantes de T1+T2 (16 Habitantes base + 3 Âncoras = 19 total, estrutura consistente entre temporadas) vê o fragmento especial que confirma os 100 andares. Para todos os outros é apenas mais um sussurro.
 - **T4:** A revelação do Observador NÃO deve ser dada em log ou diálogo direto. Deve emergir de fragmentos de Habitants e Sussurros que o jogador conecta sozinho.
 - **T5:** Não há resposta definitiva. O ser completo faz uma proposta. O jogador escolhe.
 
@@ -152,7 +152,7 @@ O seguinte está no código atual e deve ser mantido consistente nas próximas t
 |----------|----------------|------------|
 | Andares 21–100 | T2–T5 | Gameplay loop validado em T1 |
 | Thael, Moru, Vael, O Sem Nome (Primordiais) | T2–T5 | Gacha de lançamento de cada temporada |
-| Fragmento especial dos 16 Habitants (confirmação dos 100 andares) | T3 | Todos os 16 Habitants de T1+T2 implementados |
+| Fragmento especial dos 19 Habitantes (confirmação dos 100 andares) | T3 | Todos os 19 Habitantes de T1+T2 (16 base + 3 Âncoras) implementados |
 | Sistema dos 10 Pioneiros | Final de T1 | Backend multiplayer de ranking |
 | Revelação parcial do Observador | T4 | Seeds de T2 e T3 plantadas antes |
 | Torre Original (espaço compartilhado) | T5 | Toda a infraestrutura multiplayer |
