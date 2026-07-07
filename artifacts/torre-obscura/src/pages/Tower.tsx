@@ -133,12 +133,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
   return (
     <>
-    <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-3 border-b border-primary/30 relative flex items-end justify-between">
-        <div>
-          <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">TORRE OBSCURA</h2>
-          <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
-        </div>
+    <div className="p-4 space-y-3 pb-24 h-full overflow-y-auto custom-scrollbar">
+      <header className="pb-2 border-b border-primary/30 relative flex items-end justify-between">
+        <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">TORRE OBSCURA</h2>
         {/* Botão do Codex Obscuro */}
         <button
           onClick={() => { setCodexOpen(true); abrirCodex(); }}
@@ -214,7 +211,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         </div>
       ) : (
-        <div className={`bg-gradient-to-b border p-6 relative rounded-sm shadow-2xl overflow-hidden ${getTierBg(floorData.tier, isBoss)} ${isBoss && !isFarming ? 'shadow-[0_0_20px_rgba(248,81,73,0.3)]' : ''}`}>
+        <div className={`bg-gradient-to-b border p-4 relative rounded-sm overflow-hidden ${getTierBg(floorData.tier, isBoss)}`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[50px] pointer-events-none rounded-full" />
 
           {isBoss && !isFarming && (
@@ -310,57 +307,40 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
       )}
 
       {/* Histórico / andares conquistados (clicáveis para farm) */}
-      <div className="space-y-3 mt-10">
-        <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-b border-primary/20 pb-2">
-          HISTÓRICO DA ESCALADA
-          {conquistados.length > 0 && (
-            <span className="text-[9px] text-secondary normal-case tracking-normal ml-auto font-inter">toque para explorar</span>
-          )}
+      <div className="space-y-2">
+        <h3 className="text-xs font-cinzel text-primary tracking-widest border-b border-primary/20 pb-1">
+          HISTÓRICO
         </h3>
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
           {conquistadosMostrados.map(f => {
             const isSelected = farmAndar === f.floor;
             const habEst = state.habitantesEstado[f.floor];
             const habData = HABITANTES[f.floor];
             const isBossFloor = f.isBoss;
-            const bossEcoAtivo = isBossFloor && state.ecosCapitulo.includes(f.tier);
-            // ecos podem existir em boss floors (andares 5/10/15 com habitants)
             const ecoAtivo = state.ecos.includes(f.floor);
             const habCompletavel = habData && verificarQuestAndar(state, f.floor);
             const habEstIcon = habEst === 'descoberto' ? '👁' : habEst === 'quest_ativa' ? '⚡' : habEst === 'concluido' ? '✦' : null;
             return (
-              <div key={f.floor} className="flex gap-1 items-stretch">
-                <button
-                  onClick={() => {
-                    setFarmAndar(f.floor);
-                    setModalOpen(true);
-                  }}
-                  className={`flex-1 flex justify-between items-center p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
-                    isSelected
-                      ? 'bg-secondary/10 border-secondary text-foreground'
-                      : habCompletavel
-                        ? 'bg-gradient-to-r from-[#161B22] to-transparent border-success animate-pulse hover:border-success'
-                        : 'bg-gradient-to-r from-[#161B22] to-transparent border-card-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
-                      <span>{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
-                      <span>{f.nome}</span>
-                      {bossEcoAtivo && <span className="text-[9px] text-primary ml-0.5" title="Eco do Capítulo desbloqueado">✦</span>}
-                      {ecoAtivo && <span className="text-[9px] text-success ml-0.5" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
-                      {ecoAtivo && (
-                        <span className="text-[9px] text-success/80 font-bold">+{HABITANTES[f.floor]?.quest.ecoBonus}% LOOT</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
-                    {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}
-                  </span>
-                </button>
+              <button
+                key={f.floor}
+                onClick={() => {
+                  setFarmAndar(f.floor);
+                  setModalOpen(true);
+                }}
+                className={`p-2 rounded-sm border text-xs transition-all touch-manipulation text-left ${
+                  isSelected
+                    ? 'bg-secondary/10 border-secondary'
+                    : habCompletavel
+                      ? 'bg-gradient-to-r from-[#161B22]/50 to-transparent border-success/60'
+                      : 'border-card-border/60 hover:border-primary/40'
+                }`}
+              >
+                <div className="flex items-center gap-1 mb-1">
+                  <span>{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
+                  <span className="font-bold truncate">{f.nome}</span>
+                  {ecoAtivo && <span className="text-[7px] text-success">⚡</span>}
+                </div>
+                <div className="text-[8px] text-secondary">A{f.floor} · {f.tierName}</div>
                 {/* Botão do habitante (andares não-boss com habitante descoberto) */}
                 {habData && habEst && habEst !== 'oculto' && (
                   <button
