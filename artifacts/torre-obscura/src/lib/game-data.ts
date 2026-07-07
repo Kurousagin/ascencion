@@ -2530,6 +2530,143 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
   }
 }
 
+// ─── RELÍQUIAS CENTRALIZADAS ─────────────────────────────────────────────────
+
+export interface ReliquiaData {
+  nome: string;
+  descricao: string;
+  origem: string;  // 'Habitante', 'Quest Oculta', 'Câmara Secreta', etc
+}
+
+export const RELIQUIAS_CATALOGO: Record<string, ReliquiaData> = {
+  // Habitante 1 — escolha B
+  'Mensagem Selada': {
+    nome: 'Mensagem Selada',
+    descricao: 'Uma mensagem que nunca foi entregue, guardada com cuidado. O que não é dito não pode ser roubado de novo.',
+    origem: 'Arauto da Névoa (Andar 1)',
+  },
+  // Habitante 4 — escolha A
+  'Frequência Gravada': {
+    nome: 'Frequência Gravada',
+    descricao: 'O registro das 4.312 vozes que vieram antes. A palavra mais repetida nunca foi "ajuda".',
+    origem: 'Voz do Cristal (Andar 4)',
+  },
+  // Habitante 6 — escolha B
+  'Ordem Sem Autoridade': {
+    nome: 'Ordem Sem Autoridade',
+    descricao: 'Uma ordem guardada sem dono. O guardião serve agora sem necessidade de mandato.',
+    origem: 'Sentinela (Andar 6)',
+  },
+  // Habitante 7 — escolha B
+  'Semente do Impossível': {
+    nome: 'Semente do Impossível',
+    descricao: 'O que germinaria se plantado, mas é mais valioso selado. Nutrição de outra era.',
+    origem: 'Jardineira (Andar 7)',
+  },
+  // Habitante 9 — escolha B
+  'Elo das Correntes': {
+    nome: 'Elo das Correntes',
+    descricao: 'Um elo que diminui a cada andar conquistado. Quanto menos pesa, mais próximo você está.',
+    origem: 'Ferreiro Espectral (Andar 9)',
+  },
+  // Habitante 10 — escolha B
+  'Palavras do Fundador': {
+    nome: 'Palavras do Fundador',
+    descricao: 'Fragmentos de linguagem que o Fundador usou. Palavras que ninguém mais fala.',
+    origem: 'Memória da Construção (Andar 10)',
+  },
+  // Habitante 11 — escolha B
+  'Consciência Preenchida': {
+    nome: 'Consciência Preenchida',
+    descricao: 'O que o Afogado deixou para trás quando deixou de ser gente. A respiração antes da água.',
+    origem: 'Afogado Lúcido (Andar 11)',
+  },
+  // Habitante 13 — escolha B
+  'Visão Invertida': {
+    nome: 'Visão Invertida',
+    descricao: 'O Oráculo viu seu futuro ao contrário. Agora você sabe onde termina.',
+    origem: 'Oráculo Invertido (Andar 13)',
+  },
+  // Habitante 15 — escolha B
+  'A Pergunta Não Respondida': {
+    nome: 'A Pergunta Não Respondida',
+    descricao: 'A pergunta que o Vigia recusou responder. Ainda faz perguntas, mesmo guardada.',
+    origem: 'Vigia da Pergunta (Andar 15)',
+  },
+  // Habitante 19 — escolha B
+  'Sussurro do Limiar': {
+    nome: 'Sussurro do Limiar',
+    descricao: 'Um aviso que não é para você — é para quem vier depois de você. Você consegue ler de qualquer forma.',
+    origem: 'Sussurro do Limiar (Andar 19)',
+  },
+  // Habitante 20 — escolha B
+  'Fragmento Bruto': {
+    nome: 'Fragmento Bruto',
+    descricao: 'O que a Torre tentou apagar antes de você chegar. Evidência de que ela tenta.',
+    origem: 'Memória Observadora (Andar 20)',
+  },
+  // Habitante 24 — (novo, assumindo escolha B se existir)
+  'Borda do Antes': {
+    nome: 'Borda do Antes',
+    descricao: 'O que ficou da estrutura que existia antes da Torre. Não era de pedra — era de intenção.',
+    origem: 'O Que Viu Antes (Andar 24)',
+  },
+  // Habitante 34 — (assumindo escolha B se existir)
+  'Propósito Reaprendido': {
+    nome: 'Propósito Reaprendido',
+    descricao: 'A intenção original do Fundador, registrada por quem a guardava. Santuário vs. Prisão.',
+    origem: 'Guardião da Intenção (Andar 34)',
+  },
+  // Habitante 35 — (assumindo escolha B se existir)
+  'Intenção Própria': {
+    nome: 'Intenção Própria',
+    descricao: 'O último sussurro do Fundador, guardado como prova de que a intenção ainda é feita.',
+    origem: 'Último Sussurro do Fundador (Andar 35)',
+  },
+  // Quests Ocultas — POOL_EXPLORACAO
+  'Selo Original — Fragmento I': {
+    nome: 'Selo Original — Fragmento I',
+    descricao: 'Uma peça de metal com símbolo que precede qualquer língua conhecida. O Codex registra que este símbolo reaparece em andares acima de 40.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Tábua da Língua Anterior — Fragmento I': {
+    nome: 'Tábua da Língua Anterior — Fragmento I',
+    descricao: 'Uma cópia do padrão mapeado pelo Erudito. Não é tradução — é estrutura. Algo em andares além de 40 usará esta estrutura de forma que fará sentido retroativo.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Escama de Algo Sem Catálogo': {
+    nome: 'Escama de Algo Sem Catálogo',
+    descricao: 'Deixada no ponto exato onde os rastros circulavam. A Torre às vezes absorve coisas antes que possam ser classificadas — esta escama é evidência de que a absorção nem sempre é completa.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Núcleo de Ferro Primordial': {
+    nome: 'Núcleo de Ferro Primordial',
+    descricao: 'Uma esfera mais pesada do que ferro comum. Não é ferro — é o que o ferro seria se tivesse escolhido ser outra coisa. Em temporadas futuras, sua natureza ficará clara.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  // Quests Ocultas — POOL_VELOCIDADE
+  'Diário da Expedição Sem Retorno — Página Restante': {
+    nome: 'Diário da Expedição Sem Retorno — Página Restante',
+    descricao: 'Uma única página que sobreviveu ao fogo. A última linha foi arrancada à mão antes que o diário fosse queimado.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Gota de Água Quieta — Selada em Cristal': {
+    nome: 'Gota de Água Quieta — Selada em Cristal',
+    descricao: 'A água solidificou em cristal ao ser retirada. Algo sobre sua composição a torna estável fora da câmara. Útil para algo que ainda não foi construído.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Resina Que Não Seca': {
+    nome: 'Resina Que Não Seca',
+    descricao: 'Uma seiva que saiu de algo que não existe no terceiro andar. Continua pegajosa, continuará pegajosa. Espécie perdida de quando a Torre era diferente.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Flor Que Não Morre': {
+    nome: 'Flor Que Não Morre',
+    descricao: 'Colhida no Andar 17 onde a morte se respira como ar. Flores normais não existem lá. Esta existe.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+};
+
 // ─── QUESTS OCULTAS ──────────────────────────────────────────────────────────
 
 export type QuestOcultaReq =

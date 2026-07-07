@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS, RELIQUIAS_CATALOGO } from '../lib/game-data';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, Search } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
@@ -24,6 +24,8 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
   const [codexOpen, setCodexOpen] = useState(false);
   // Capítulo expandido no Codex (1-4); null = todos colapsados
   const [codexCapExpanded, setCodexCapExpanded] = useState<number | null>(1);
+  // Aba ativa no Codex: 'fragmentos' ou 'reliquias'
+  const [codexAbaAtiva, setCodexAbaAtiva] = useState<'fragmentos' | 'reliquias'>('fragmentos');
 
   // Quando o andar avança, sai do modo farm automaticamente.
   useEffect(() => { setFarmAndar(null); }, [state.andarAtual]);
@@ -448,8 +450,34 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               </Dialog.Close>
             </div>
 
+            {/* Abas */}
+            <div className="flex border-b border-primary/10 shrink-0">
+              <button
+                onClick={() => setCodexAbaAtiva('fragmentos')}
+                className={`flex-1 px-4 py-3 text-[11px] font-cinzel tracking-widest transition-colors ${
+                  codexAbaAtiva === 'fragmentos'
+                    ? 'bg-primary/20 text-primary border-b-2 border-primary'
+                    : 'text-secondary/60 hover:text-secondary'
+                }`}
+              >
+                FRAGMENTOS
+              </button>
+              <button
+                onClick={() => setCodexAbaAtiva('reliquias')}
+                className={`flex-1 px-4 py-3 text-[11px] font-cinzel tracking-widest transition-colors ${
+                  codexAbaAtiva === 'reliquias'
+                    ? 'bg-primary/20 text-primary border-b-2 border-primary'
+                    : 'text-secondary/60 hover:text-secondary'
+                }`}
+              >
+                RELÍQUIAS ({state.reliquias?.length ?? 0})
+              </button>
+            </div>
+
             {/* Conteúdo rolável */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+              {codexAbaAtiva === 'fragmentos' ? (
+              <>
               {Object.values(TEMPORADAS).map(temporada => {
                 const totalTemp = totalFragmentosTemporada(temporada.numero);
                 const desbTemp = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === temporada.numero).length;
@@ -544,12 +572,40 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   </div>
                 );
               })}
+              </>
+              ) : (
+              <div className="space-y-3">
+                {!state.reliquias || state.reliquias.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="text-4xl mb-3 opacity-30">◆</div>
+                    <p className="text-[10px] text-secondary/60 tracking-widest">NENHUMA RELÍQUIA COLETADA AINDA</p>
+                    <p className="text-[9px] text-white/30 mt-2 max-w-xs">Ganhe relíquias fazendo escolhas em habitante (escolha B), descobrindo quests ocultas, ou explorando câmaras secretas.</p>
+                  </div>
+                ) : (
+                  state.reliquias.map((reliquia, idx) => {
+                    const dados = RELIQUIAS_CATALOGO[reliquia];
+                    if (!dados) return null;
+                    return (
+                      <div key={idx} className="rounded-sm border border-white/10 bg-black/30 p-3 hover:bg-black/40 hover:border-primary/30 transition-colors">
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="text-[10px] text-primary/80 font-cinzel tracking-widest">{dados.nome}</div>
+                          <div className="text-[8px] text-secondary/50 whitespace-nowrap">◆ {dados.origem}</div>
+                        </div>
+                        <p className="text-[9px] text-white/60 leading-relaxed">{dados.descricao}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-primary/10 shrink-0">
               <p className="text-[9px] text-white/25 text-center tracking-wider italic">
-                Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.
+                {codexAbaAtiva === 'fragmentos'
+                  ? 'Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.'
+                  : 'Relíquias coletadas através de escolhas, quests ocultas e câmaras secretas. Úteis em Temporada III e além.'}
               </p>
             </div>
           </Dialog.Content>
