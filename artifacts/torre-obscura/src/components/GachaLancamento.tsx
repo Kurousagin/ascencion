@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import type { NpcLancamento, LancamentoTemporada } from '../lib/lancamento';
 import { useGame } from '../context/GameContext';
-import { GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT } from '../lib/onboarding-keys';
+import { GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_DONE, GACHA_T2_RESULT } from '../lib/onboarding-keys';
 import { getDeviceId } from '../lib/alliance-identity';
 import { checkPrimordialDisponivel, claimPrimordial } from '../lib/primordial-api';
 import { PASSIVAS, type PassivaId } from '../lib/game-data';
@@ -12,6 +12,7 @@ interface Props {
   open: boolean;
   lancamento: LancamentoTemporada;
   onClose: () => void;
+  tipo?: 'T1' | 'T2'; // qual temporada (default: T1)
 }
 
 type Fase = 'ritual' | 'revelando' | 'lore' | 'stats';
@@ -62,7 +63,7 @@ function CardRitual({ virado, delay = 0, onClick, ativo }: {
   );
 }
 
-export function GachaLancamento({ open, lancamento, onClose }: Props) {
+export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Props) {
   const { adicionarNpcLancamento } = useGame();
   const [fase, setFase] = useState<Fase>('ritual');
   const [cartasViradas, setCartasViradas] = useState([false, false, false]);
@@ -71,12 +72,16 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
   const [primordialDisponivel, setPrimordialDisponivel] = useState(true);
   const [confirmando, setConfirmando] = useState(false);
 
+  // Seleciona flags de localStorage baseado no tipo (T1 ou T2)
+  const flagDone = tipo === 'T2' ? GACHA_T2_DONE : GACHA_LANCAMENTO_DONE;
+  const flagResult = tipo === 'T2' ? GACHA_T2_RESULT : GACHA_LANCAMENTO_RESULT;
+
   // Ao abrir: recupera resultado salvo (refresh mid-gacha) ou verifica disponibilidade
   // global do primordial antes de sortear — evita oferecer Valdris se já foi reivindicado.
   useEffect(() => {
     if (!open) return;
 
-    const saved = localStorage.getItem(GACHA_LANCAMENTO_RESULT);
+    const saved = localStorage.getItem(flagResult);
     if (saved) {
       try {
         const recuperado = JSON.parse(saved) as NpcLancamento;
@@ -85,7 +90,7 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
         setFase('lore');
         return;
       } catch {
-        localStorage.removeItem(GACHA_LANCAMENTO_RESULT);
+        localStorage.removeItem(flagResult);
       }
     }
 
@@ -97,16 +102,16 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
     // Verificar disponibilidade global do primordial antes de sortear.
     // Guard de unmount evita setState após o modal fechar.
     let mounted = true;
-    const tipo = `primordial_t${lancamento.temporada}`;
-    checkPrimordialDisponivel(tipo, getDeviceId()).then(disponivel => {
+    const primordialTipo = `primordial_t${lancamento.temporada}`;
+    checkPrimordialDisponivel(primordialTipo, getDeviceId()).then(disponivel => {
       if (!mounted) return;
       setPrimordialDisponivel(disponivel);
       const npc = sortearNpc(lancamento, disponivel);
       setNpcResultado(npc);
-      localStorage.setItem(GACHA_LANCAMENTO_RESULT, JSON.stringify(npc));
+      localStorage.setItem(flagResult, JSON.stringify(npc));
     });
     return () => { mounted = false; };
-  }, [open]);
+  }, [open, flagResult]);
 
   // Bloqueia clique enquanto o sorteio ainda não foi resolvido
   const escolherCarta = (idx: number) => {
@@ -132,10 +137,10 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
       if (!claimed) {
         // Corrida: outro jogador reivindicou entre o check e o confirm.
         // Re-sorteia sem o primordial e mostra o novo resultado ao jogador.
-        localStorage.removeItem(GACHA_LANCAMENTO_RESULT);
+        localStorage.removeItem(flagResult);
         const npc = sortearNpc(lancamento, false); // força pool sem primordial
         setNpcResultado(npc);
-        localStorage.setItem(GACHA_LANCAMENTO_RESULT, JSON.stringify(npc));
+        localStorage.setItem(flagResult, JSON.stringify(npc));
         setFase('lore');
         setConfirmando(false);
         return;
@@ -143,8 +148,8 @@ export function GachaLancamento({ open, lancamento, onClose }: Props) {
     }
 
     adicionarNpcLancamento(npcResultado);
-    localStorage.setItem(GACHA_LANCAMENTO_DONE, '1');
-    localStorage.removeItem(GACHA_LANCAMENTO_RESULT);
+    localStorage.setItem(flagDone, '1');
+    localStorage.removeItem(flagResult);
     onClose();
   };
 

@@ -1,5 +1,4 @@
-import { GameState } from '../types/game-state';
-import { generateNPC, HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, RELIQUIAS_CATALOGO, CAPACIDADE_BASE } from './game-data';
+import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAPACIDADE_BASE } from './game-data';
 
 /**
  * Cidadelas de teste pré-populadas para validar features durante desenvolvimento.
@@ -43,10 +42,10 @@ function createTestSaveBasic(): GameState {
       capacidadeArmazem: CAPACIDADE_BASE,
     },
     npcs: [
-      generateNPC(1, 'comum'),
-      generateNPC(2, 'raro'),
-      generateNPC(3, 'comum'),
-      generateNPC(4, 'raro'),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
     ],
     edificios: [
       { tipo: 'Fogueira', nivel: 1 },
@@ -105,12 +104,12 @@ function createTestSaveCompleta(): GameState {
       capacidadeArmazem: CAPACIDADE_BASE + 500,
     },
     npcs: [
-      generateNPC(1, 'épico'),
-      generateNPC(2, 'épico'),
-      generateNPC(3, 'raro'),
-      generateNPC(4, 'raro'),
-      generateNPC(5, 'comum'),
-      generateNPC(6, 'comum'),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
     ],
     edificios: [
       { tipo: 'Fogueira', nivel: 3 },
@@ -180,12 +179,12 @@ function createTestSaveT2(): GameState {
       capacidadeArmazem: CAPACIDADE_BASE + 800,
     },
     npcs: [
-      generateNPC(1, 'épico'),
-      generateNPC(2, 'épico'),
-      generateNPC(3, 'épico'),
-      generateNPC(4, 'raro'),
-      generateNPC(5, 'raro'),
-      generateNPC(6, 'raro'),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
+      generateNPC(),
     ],
     edificios: [
       { tipo: 'Fogueira', nivel: 3 },

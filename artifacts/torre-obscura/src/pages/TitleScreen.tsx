@@ -90,7 +90,6 @@ export function TitleScreen() {
 
   // Carrega cidadela de teste
   const handleLoadTestGame = async () => {
-    console.log('[handleLoadTestGame] Starting');
     const code = testCode.trim().toUpperCase();
     if (!isValidTestCode(code)) {
       setTestError('Código inválido. Tente: TEST123, FULL ou T2');
@@ -101,18 +100,18 @@ export function TitleScreen() {
       setTestError('Não foi possível carregar cidadela de teste');
       return;
     }
-    console.log('[handleLoadTestGame] Clearing previous state');
     await dissolveAll();
-    console.log('[handleLoadTestGame] Calling startTestGame');
-    startTestGame(testSave);
-    console.log('[handleLoadTestGame] Scheduling dialog close');
-    // Garante que dialog fecha DEPOIS que React processa todos os renders
-    setTimeout(() => {
-      console.log('[handleLoadTestGame] Closing dialog now');
-      setTestCodeOpen(false);
-      setTestCode('');
-      setTestError('');
-    }, 0);
+    // IMPORTANTE: fecha o dialog ANTES de carregar o jogo. Carregar o jogo
+    // desmonta a TitleScreen (e com ela o Dialog do Radix). Se o Dialog ainda
+    // estiver `open` nesse instante, o Radix não roda o cleanup do modal e o
+    // <body> fica preso com `pointer-events: none` + `data-scroll-locked` —
+    // o jogo renderiza mas nada é clicável (a "lupa" não abre). Fechando aqui,
+    // o Radix restaura o <body> com a TitleScreen ainda montada; só então,
+    // no próximo tick, montamos o jogo.
+    setTestCodeOpen(false);
+    setTestCode('');
+    setTestError('');
+    setTimeout(() => startTestGame(testSave), 0);
   };
 
   return (
