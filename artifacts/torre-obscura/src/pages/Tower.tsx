@@ -552,7 +552,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                                       <span className={`text-[9px] tracking-wider font-cinzel ${desbloqueado ? 'text-primary/70' : 'text-white/30'}`}>
                                         {frag.titulo}
                                       </span>
-                                      {!desbloqueado && (
+                                      {frag.tipo === 'sussurro' && desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-secondary/70 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-secondary/30 bg-secondary/5">✦ RARO</span>
+                                      )}
+                                      {frag.tipo === 'sussurro' && !desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-white/15 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-white/5">RARO</span>
+                                      )}
+                                      {!desbloqueado && frag.tipo !== 'sussurro' && (
                                         <span className="ml-auto text-[8px] text-white/20 tracking-widest">BLOQUEADO</span>
                                       )}
                                     </div>

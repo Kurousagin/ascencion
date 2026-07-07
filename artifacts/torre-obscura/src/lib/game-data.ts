@@ -1562,7 +1562,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 20,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.4,
     resultado: {
       sucessoTexto: 'Encontrou um abrigo escondido com suprimentos antigos.',
       falhaTexto: 'A trilha levava a uma armadilha — conseguiu sair, mas ferido.',
@@ -1583,7 +1583,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 22,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.38,
     resultado: {
       sucessoTexto: 'Decodificou uma tábua de conhecimento perdido.',
       falhaTexto: 'Os símbolos eram um código de proteção — recuou antes de ativar.',
@@ -1602,7 +1602,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 25,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.36,
     resultado: {
       sucessoTexto: 'Venceu o eco da morte e encontrou o que ela guardava.',
       falhaTexto: 'O eco foi mais forte — você recuou antes de ser consumido.',
@@ -1623,7 +1623,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 24,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'O cristal revelou o acesso. Dentro, fragmentos de verdades antigas.',
       falhaTexto: 'Sem a bênção da Voz, a câmara permanece fechada.',
@@ -1641,7 +1641,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 20,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'Com o ferro, restaurou o caminho. Encontrou registros intactos.',
       falhaTexto: 'Sem ferro, o caminho colapsa — você recuou.',
@@ -1662,7 +1662,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 26,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'Passou pelo Limiar. Dentro, o que o Guardião vigila há eras.',
       falhaTexto: 'O Guardião bloqueou o caminho — não era hora.',
@@ -1683,7 +1683,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 21,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.33,
     resultado: {
       sucessoTexto: 'Seguiu as marcas até uma câmara que documenta o processo.',
       falhaTexto: 'As marcas desapareceram — você perdeu o rastro.',
@@ -1702,7 +1702,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 11,
     custo: 19,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.32,
     resultado: {
       sucessoTexto: 'Dentro, um jardim impossível. Tudo que cresce aqui alimenta-se de histórias.',
       falhaTexto: 'Sem permissão, as plantas recusam crescer — o caminho permanece bloqueado.',
@@ -1722,7 +1722,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.32,
     resultado: {
       sucessoTexto: 'Os raros perceberam. Dentro, o primórdio documentado.',
       falhaTexto: 'Sem raros, a câmara permanece invisível.',
@@ -1741,7 +1741,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 27,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.31,
     resultado: {
       sucessoTexto: 'O arquivo abriu. Conhecimento que transcende o catalogado.',
       falhaTexto: 'Sem a experiência necessária, o arquivo permanece selado.',
@@ -1762,7 +1762,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 30,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'A forja acendeu. Dentro, armas que o Ferreiro nunca terminou.',
       falhaTexto: 'A forja apagou — você não tinha suficiente morte para acendê-la.',
@@ -1784,7 +1784,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 32,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'Encontrou o método. O Fundador repete: vencer é lembrar.',
       falhaTexto: 'Sem o conhecimento da Memória, o método permanece indecifrado.',
@@ -1802,7 +1802,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 16,
     custo: 33,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'Os nomes apareceram. Cada um uma história que foi deletada.',
       falhaTexto: 'Os nomes permaneceram invisíveis — você não tinha direito de ler.',
@@ -1821,7 +1821,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 25,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.28,
     resultado: {
       sucessoTexto: 'A fresta se abriu. Dentro, a confissão do Afogado em forma de ar.',
       falhaTexto: 'Sem sustento, você afogou-se antes de cruzar a fresta.',
@@ -1840,7 +1840,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.27,
     resultado: {
       sucessoTexto: 'Sincronizou. O pulso compartilhou suas memórias.',
       falhaTexto: 'Desincronizado, o pulso expulsou você com força.',
@@ -1861,7 +1861,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 26,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.26,
     resultado: {
       sucessoTexto: 'O Oráculo revelou — você viu seu futuro ao contrário.',
       falhaTexto: 'A revelação era demais — você enlouqueceu temporariamente.',
@@ -1882,7 +1882,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 27,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'Encontrou o plano. O Comandante sabia como vencer desde o começo.',
       falhaTexto: 'Sem a bênção do Comandante, a câmara permanece estratégica mas fechada.',
@@ -1903,7 +1903,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 30,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'O reflexo desaparecido apareceu. Você viu a versão de si que parou antes.',
       falhaTexto: 'O espelho rejeitou sua visão — você viu apenas vazio.',
@@ -1921,7 +1921,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 16,
     custo: 31,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'A pergunta abriu seus olhos. A resposta você já sabia.',
       falhaTexto: 'Sem os incomuns, a pergunta permanece inaudível.',
@@ -1940,7 +1940,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 29,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.23,
     resultado: {
       sucessoTexto: 'A fome compartilhou sua memória. Você sente cada coisa que comeu.',
       falhaTexto: 'A fome pediu mais — você recuou faminto.',
@@ -1961,7 +1961,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 16,
     custo: 32,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.22,
     resultado: {
       sucessoTexto: 'As câmaras abriram. Cada uma mostra uma escolha que nunca fez.',
       falhaTexto: 'Os paradoxos se cancelaram mutuamente — a câmara não abriu.',
@@ -1980,7 +1980,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.21,
     resultado: {
       sucessoTexto: 'O bastião abriu. Dentro, as evidências que ele não conseguiu destruir.',
       falhaTexto: 'Sem a bênção do Defensor, o bastião permanece intransponível.',
@@ -2001,7 +2001,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 17,
     custo: 34,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'Rastreou o sussurro. Dentro, um aviso que não é para você — é para depois.',
       falhaTexto: 'O sussurro desapareceu — você perdeu a pista.',
@@ -2020,7 +2020,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 18,
     custo: 36,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'Entraram enquanto dormia. Documentação de séculos de observação.',
       falhaTexto: 'Ela acordou — vocês recuaram antes de ser vistos.',
@@ -2040,7 +2040,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 19,
     custo: 38,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'A verdade revelou-se. Não era o que você esperava.',
       falhaTexto: 'A verdade permaneceu oculta — você não estava pronto.',
@@ -3388,20 +3388,22 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
     tipo: 'Arquivo',
     nome: 'Arquivo',
     descricao: 'Cataloga os fragmentos da Torre. Aumenta o poder de expedição de eruditos e batedores.',
-    maxNivel: 2,
+    maxNivel: 3,
     niveis: [
       { custo: { pedra: 40, madeira: 30, ferro: 15 }, resumo: '+15% poder de expedição', efeito: { poderBonus: 0.15 } },
       { custo: { pedra: 70, madeira: 55, ferro: 30 }, resumo: '+28% poder de expedição', efeito: { poderBonus: 0.28 } },
+      { custo: { pedra: 120, madeira: 90, ferro: 60 }, resumo: '+42% poder de expedição · +8% Sussurro', efeito: { poderBonus: 0.42 } },
     ],
   },
   Mirante: {
     tipo: 'Mirante',
     nome: 'Mirante',
     descricao: 'Vigia os andares superiores. Reduz a fadiga das expedições e melhora a moral.',
-    maxNivel: 2,
+    maxNivel: 3,
     niveis: [
       { custo: { madeira: 35, pedra: 25, ferro: 20 }, resumo: '+12 fadiga rec./dia · +1 moral/dia', efeito: { fadigaRec: 12, moralDia: 1 } },
       { custo: { madeira: 60, pedra: 45, ferro: 40 }, resumo: '+22 fadiga rec./dia · +2 moral/dia', efeito: { fadigaRec: 22, moralDia: 2 } },
+      { custo: { madeira: 105, pedra: 75, ferro: 65 }, resumo: '+35 fadiga rec./dia · +3 moral/dia', efeito: { fadigaRec: 35, moralDia: 3 } },
     ],
   },
 };
