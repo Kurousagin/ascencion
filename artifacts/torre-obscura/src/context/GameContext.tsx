@@ -842,12 +842,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Sussurro da Torre: 15% de chance em qualquer vitória (farm ou avançar).
+      // Bônus: +15% se Rastro_Vivo passiva, +8% por nível de Arquivo.
       // Sorteia entre os sussurros do capítulo ainda não desbloqueados.
       let sussurro: FragmentoCodex | undefined;
       {
         const cap = capituloDoAndar(floorData.floor);
         const candidatos = (SUSSURROS_POR_CAPITULO[cap] ?? []).filter(id => !s.codexFragmentos.includes(id));
-        if (candidatos.length > 0 && Math.random() < (hasRastro ? 0.30 : 0.15)) {
+        const arquivoEd = s.edificios.find(e => e.tipo === 'Arquivo');
+        const arquivoBonus = arquivoEd ? arquivoEd.nivel * 0.08 : 0;
+        const sussurroChance = 0.15 + (hasRastro ? 0.15 : 0) + arquivoBonus;
+        if (candidatos.length > 0 && Math.random() < sussurroChance) {
           const id = candidatos[Math.floor(Math.random() * candidatos.length)];
           desbloquearFragmento(s, id);
           sussurro = CODEX_FRAGMENTOS[id];
