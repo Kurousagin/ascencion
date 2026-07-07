@@ -1,4 +1,13 @@
-# Patches para Migração de Lore — Aplicar após gerar `lore-content.ts`
+# Patches para Migração de Lore — ✅ APLICADOS
+
+**Status:** Todos os patches foram aplicados com sucesso em PR #8.
+- `lore-content.ts`: Criado com ~2000 linhas
+- `lore-camaras.ts`: Criado com ~500 linhas
+- `game-data.ts`: Refatorado com imports e referências
+- `lancamento.ts`: Atualizado com lore
+- `LORE_BIBLE.md`: Atualizado
+
+**Original:**
 
 ## 1. game-data.ts — Import e referências
 

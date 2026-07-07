@@ -198,6 +198,13 @@ Criaria segunda razão de escolha entre edifícios, além de poder/recursos brut
 | Ligação Arquivo ↔ Sussurro (+8% por nível) | ✅ FEITO | #8 |
 | 3º nível Arquivo/Mirante (padrão T1) | ✅ FEITO | #8 |
 
+### ✅ FEATURES ADICIONADAS
+
+| Item | Status | PR |
+|------|--------|-----|
+| Test Mode (Ctrl+Shift+T com saves pré-populados) | ✅ FEITO | #8 |
+| T2 Gacha Trigger (ao desbloquear andar 21+) | ✅ FEITO | #8 |
+
 ---
 
 ## 6. Recomendações pendentes para T3+
