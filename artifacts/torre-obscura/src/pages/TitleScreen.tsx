@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HelpCircle, Code } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
@@ -20,6 +20,19 @@ export function TitleScreen() {
   const [testCodeOpen, setTestCodeOpen] = useState(false);
   const [testCode, setTestCode] = useState('');
   const [testError, setTestError] = useState('');
+
+  // Atalho de teclado: Ctrl+Shift+T abre dialog de teste (funciona em dev e prod)
+  // Easter egg seguro — assumimos que apenas devs conhecem este atalho
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setTestCodeOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   let saveDay = 0;
   let saveVivos = 0;
@@ -162,20 +175,24 @@ export function TitleScreen() {
               </button>
             </div>
 
-            <div className="flex gap-2">
+            <div className={`flex gap-2 ${import.meta.env.DEV ? '' : 'flex-col'}`}>
               <button
                 onClick={() => setOnboardingOpen(true)}
-                className="flex-1 flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation"
+                className={`flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation ${
+                  import.meta.env.DEV ? 'flex-1' : 'w-full'
+                }`}
               >
                 <HelpCircle size={13} /> COMO JOGAR
               </button>
-              <button
-                onClick={() => setTestCodeOpen(true)}
-                className="flex-1 flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation"
-                title="Modo de teste para QA/desenvolvimento"
-              >
-                <Code size={13} /> TESTE
-              </button>
+              {import.meta.env.DEV && (
+                <button
+                  onClick={() => setTestCodeOpen(true)}
+                  className="flex-1 flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation"
+                  title="🧪 Modo de teste (apenas em desenvolvimento)"
+                >
+                  <Code size={13} /> TESTE
+                </button>
+              )}
             </div>
           </div>
 

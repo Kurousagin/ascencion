@@ -4,10 +4,19 @@ O **Test Mode** permite carregar cidadelas pré-populadas para testes de feature
 
 ## Como usar
 
+### 🖥️ Em Desenvolvimento (localhost)
 1. Na **TitleScreen** (tela inicial), clique no botão **TESTE** (canto inferior direito)
 2. Uma janela será aberta pedindo um **código de teste**
 3. Insira um dos códigos abaixo
 4. Clique em **CARREGAR**
+
+### 🌐 Em Produção / Build (Atalho de teclado)
+Se precisar acessar test mode em produção:
+1. Na TitleScreen, pressione **Ctrl+Shift+T**
+2. Dialog de teste abre (easter egg de segurança)
+3. Insira o código de teste normalmente
+
+> **Nota:** O botão TESTE só aparece em `import.meta.env.DEV` (Vite dev mode). Em produção é completamente removido pelo tree-shaking. O atalho de teclado é um fallback seguro para devs que conheçam o comando.
 
 ## Códigos disponíveis
 
