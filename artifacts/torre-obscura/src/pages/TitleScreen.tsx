@@ -90,6 +90,7 @@ export function TitleScreen() {
 
   // Carrega cidadela de teste
   const handleLoadTestGame = async () => {
+    console.log('[handleLoadTestGame] Starting');
     const code = testCode.trim().toUpperCase();
     if (!isValidTestCode(code)) {
       setTestError('Código inválido. Tente: TEST123, FULL ou T2');
@@ -100,9 +101,13 @@ export function TitleScreen() {
       setTestError('Não foi possível carregar cidadela de teste');
       return;
     }
+    console.log('[handleLoadTestGame] Clearing previous state');
     await dissolveAll();
+    console.log('[handleLoadTestGame] Calling startTestGame');
     startTestGame(testSave);
+    console.log('[handleLoadTestGame] Closing dialog');
     setTestCodeOpen(false);
+    console.log('[handleLoadTestGame] Dialog closed, resetting input');
     setTestCode('');
     setTestError('');
   };
