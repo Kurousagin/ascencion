@@ -126,6 +126,14 @@ O seguinte está no código atual e deve ser mantido consistente nas próximas t
 
 **Regra:** ao escrever qualquer lore de T2+, leia esta tabela e verifique se sua escrita contradiz ou se apoia em alguma dessas seeds.
 
+### Seeds Resolvidos em T2
+| Seed | Resolução |
+|------|-----------|
+| Mistério do nome apagado (Andar 29) | Sussurro VII · O Nome que Falta confirma o motivo: proteção deliberada contra a Torre usar o nome do Fundador. |
+
+### Ambiguidade Permanente do Fundador
+A identidade do Fundador **nunca é confirmada nem negada** nos diálogos. Ele é sempre "contam que", "dizem que", ou em primeira pessoa via ecos/sussurros — nunca como fato verificado. Isso é **proposital** e deve ser mantido em futuras temporadas. Câmaras Secretas podem antecipar revelações futuras de forma opcional/rara, mas o Fundador permanece como figura ambígua — conhecida apenas através de fragmentos e escolhas.
+
 ---
 
 ## 8. Regras Gerais de Escrita de Lore
@@ -158,3 +166,4 @@ O seguinte está no código atual e deve ser mantido consistente nas próximas t
 | Torre Original (espaço compartilhado) | T5 | Toda a infraestrutura multiplayer |
 | Evento "dois Primordiais no mesmo espaço" | Qualquer temporada | Sistema de detecção de anomalia no GameContext |
 | Explicação narrativa das Torres-Eco para o jogador | T2 (sutilmente) | Nenhuma — é apenas texto |
+| Resgate de Ardenas (presa no Intervalo, não afundada) | T3 | Depende do Andar 30 de T2 implementado |
