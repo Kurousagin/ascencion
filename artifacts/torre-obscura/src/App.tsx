@@ -13,6 +13,8 @@ import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
+import { CamaraDescobertaModal } from './components/CamaraDescobertaModal';
+import { ResultadoCamaraModal } from './components/ResultadoCamaraModal';
 import { GachaLancamento } from './components/GachaLancamento';
 import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
@@ -172,6 +174,10 @@ function MainGameInner() {
         </div>
       </div>
     </WarProvider>
+
+    {/* Câmaras secretas: evento de descoberta + resultado da exploração (globais) */}
+    <CamaraDescobertaModal />
+    <ResultadoCamaraModal />
 
     {/* Gacha de lançamento T1 — abre ao iniciar novo jogo na temporada ativa */}
     {LANCAMENTO_ATIVO && (

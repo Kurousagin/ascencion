@@ -1542,10 +1542,16 @@ export interface CamaraSecreta {
   descricao: string;           // descrição do mistério
   requisito: RequisitoCamara;
   tipo: 'benéfica' | 'maléfica' | 'neutra';
+  /** @deprecated dificuldade fixa do modelo antigo de RNG. A dificuldade real é
+   *  calculada por `dificuldadeCamara()` (escalada ao andar). Mantido só p/ dados legados. */
   dificuldade: number;
+  /** Multiplicador sobre a dificuldade do andar (default 1.25). Preencher só nas
+   *  câmaras que a lore justifica serem mais duras. Ver `dificuldadeCamara()`. */
+  multiplicadorDificuldade?: number;
   custo: number;               // comida exigida
   maxTentativas: number;       // máximo de tentativas (default 3)
-  chancePerTentativa: number;  // chance de sucesso (0-1, ex.: 0.3)
+  /** @deprecated chance de sucesso do modelo antigo de RNG — não mais lida. */
+  chancePerTentativa: number;
   resultado: ResultadoCamara;
 }
 
@@ -1661,6 +1667,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 6, textoRequisito: 'Uma sentinela experiente percebe o vazio que o Guardião protege' },
     tipo: 'benéfica',
     dificuldade: 13,
+    multiplicadorDificuldade: 1.35,  // limiar do 1º chefe — mais dura que o andar
     custo: 26,
     maxTentativas: 3,
     chancePerTentativa: 0.35,
@@ -1721,6 +1728,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem perceber onde a vida começou' },
     tipo: 'neutra',
     dificuldade: 14,
+    multiplicadorDificuldade: 1.4,  // primordial — germinou antes da Torre
     custo: 28,
     maxTentativas: 3,
     chancePerTentativa: 0.32,
@@ -1902,6 +1910,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 8, textoRequisito: 'Uma sentinela consegue perceber qual reflexo está faltando' },
     tipo: 'neutra',
     dificuldade: 15,
+    multiplicadorDificuldade: 1.4,  // câmara do Vigia — reflexo que falta
     custo: 30,
     maxTentativas: 3,
     chancePerTentativa: 0.25,
@@ -1920,6 +1929,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'incomum', quantidade: 3, textoRequisito: 'Apenas moradores incomuns conseguem ouvir o que a pergunta sussurra' },
     tipo: 'neutra',
     dificuldade: 16,
+    multiplicadorDificuldade: 1.5,  // a pergunta do Vigia do Penúltimo Ciclo
     custo: 31,
     maxTentativas: 3,
     chancePerTentativa: 0.25,
@@ -2019,6 +2029,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem aproximar enquanto ela dorme' },
     tipo: 'benéfica',
     dificuldade: 18,
+    multiplicadorDificuldade: 1.5,  // a entidade do Andar 20
     custo: 36,
     maxTentativas: 3,
     chancePerTentativa: 0.2,
@@ -2039,6 +2050,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 8 }, { tipo: 'mortes', value: 4 }], textoRequisito: 'Quem explorou profundamente e sobreviveu aos custos consegue ouvir a verdade primeira' },
     tipo: 'neutra',
     dificuldade: 19,
+    multiplicadorDificuldade: 1.6,  // clímax de T1 — a primeira verdade
     custo: 38,
     maxTentativas: 3,
     chancePerTentativa: 0.2,
@@ -2144,7 +2156,7 @@ export function gerarObjetivosDoDia(temAliada: boolean): MetaDiariaId[] {
 // Para adicionar uma nova temporada: inserir entrada em TEMPORADAS e os
 // fragmentos correspondentes em CODEX_FRAGMENTOS — nenhuma mudança no GameState.
 
-export type FragmentoTipo = 'habitante' | 'eco_capitulo' | 'sussurro' | 'verdade';
+export type FragmentoTipo = 'habitante' | 'eco_capitulo' | 'sussurro' | 'verdade' | 'camara';
 
 export interface FragmentoCodex {
   id: string;
@@ -2441,6 +2453,36 @@ export const SUSSURROS_POR_CAPITULO: Record<number, string[]> = {
   7: ['sus_vii_0', 'sus_vii_1', 'sus_vii_2', 'sus_vii_3', 'sus_vii_4', 'sus_vii_5'],
   8: ['sus_viii_0','sus_viii_1','sus_viii_2','sus_viii_3','sus_viii_4'],
 };
+
+// Id do fragmento de Codex de uma câmara ("página recuperada").
+export function idFragmentoCamara(camaraId: string): string {
+  return `cam_${camaraId}`;
+}
+
+// Páginas rasgadas: cada câmara com `loreGanho` vira um fragmento de Codex do tipo
+// 'camara', gerado a partir de CAMARAS_SECRETAS (DRY — sem reescrever o texto) e
+// mesclado em CODEX_FRAGMENTOS. Assim totalFragmentosTemporada e a UI do Codex já
+// as contam e renderizam automaticamente. `ordem` 20+ posiciona as páginas após os
+// fragmentos-núcleo dentro do capítulo do andar.
+(() => {
+  const idxPorCapitulo: Record<number, number> = {};
+  Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
+    const lore = cam.resultado.loreGanho;
+    if (!lore) return;
+    const capitulo = capituloDoAndar(cam.floor);
+    idxPorCapitulo[capitulo] = (idxPorCapitulo[capitulo] ?? 0) + 1;
+    const id = idFragmentoCamara(key);
+    CODEX_FRAGMENTOS[id] = {
+      id,
+      tipo: 'camara',
+      temporada: cam.floor <= 20 ? 1 : 2,
+      capitulo,
+      ordem: 20 + idxPorCapitulo[capitulo],
+      titulo: lore.titulo,
+      texto: lore.texto,
+    };
+  });
+})();
 
 // Total de fragmentos de uma temporada (para a barra de progresso na UI).
 export function totalFragmentosTemporada(temporada: number): number {
@@ -2878,6 +2920,12 @@ export interface GameState {
 
   // ─── Câmaras Secretas ────────────────────────────────────────────────────
   camarasSecretasEstado?: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }>;
+  // Fila de câmaras (por camaraId) recém-reveladas pelo processDay, aguardando o
+  // modal de evento que avisa o jogador. Esvaziada conforme o jogador reconhece.
+  camarasNovasDescobertas?: string[];
+  // IDs do último grupo enviado em expedição — usado pelo "explorar agora" da
+  // câmara recém-descoberta (reaproveita o mesmo grupo cansado da conquista).
+  ultimaExpedicaoGrupo?: string[];
   farmsPorAndarEClasse?: Record<number, Record<ProfissaoId, number>>;
   totalMortesAndar?: Record<number, number>;
 
@@ -3232,6 +3280,106 @@ export function calcNpcPower(npc: NPC): number {
   return p;
 }
 
+// Poder somado de um grupo, com o bônus de poder da cidadela (Quartel etc.).
+// calcNpcPower já embute a penalidade de fadiga individual, então grupos cansados
+// naturalmente rendem menos poder. Reutilizável por expedições e câmaras.
+export function calcPoderGrupo(group: NPC[], poderBonus = 0): number {
+  return group.reduce((sum, n) => sum + calcNpcPower(n), 0) * (1 + poderBonus);
+}
+
+export function fadigaMediaGrupo(group: NPC[]): number {
+  if (group.length === 0) return 0;
+  return group.reduce((sum, n) => sum + n.fadiga, 0) / group.length;
+}
+
+// Dificuldade real de uma câmara: escalada à dificuldade da expedição do andar
+// onde ela reside (BASE_DIFICULDADE), com um multiplicador padrão de 1.25 —
+// câmaras são um pouco mais duras que conquistar o andar. Câmaras que a lore
+// justifica serem excepcionais definem `multiplicadorDificuldade` próprio.
+export function dificuldadeCamara(camara: CamaraSecreta): number {
+  const base = BASE_DIFICULDADE[camara.floor - 1] ?? camara.dificuldade;
+  return Math.round(base * (camara.multiplicadorDificuldade ?? 1.25));
+}
+
+// Afinidade do grupo com a câmara: espelha `calcBiomaMultiplier`, mas o "terreno"
+// é a profissão temática do requisito da câmara (quando o requisito define uma).
+// Levar o grupo alinhado à câmara amplifica o poder efetivo; grupo errado penaliza.
+// Câmaras cujo requisito não tem profissão temática são neutras (1.0).
+export function calcAfinidadeCamara(group: NPC[], camara: CamaraSecreta): number {
+  const req = camara.requisito;
+  if (req.tipo !== 'class_farms') return 1.0;
+  const ideais = group.filter(n => getProfissao(n) === req.profissao).length;
+  const ratio  = ideais / Math.max(1, group.length);
+  if (ratio >= 0.5) return 1.30;  // grupo temático: vantagem
+  if (ratio >= 0.2) return 1.00;  // parcialmente temático: neutro
+  return 0.80;                     // grupo destoante: −20%
+}
+
+// Resolve (de forma pura) a exploração de uma câmara secreta por um grupo, no
+// mesmo modelo de expedição de andar: poder efetivo do grupo vs dificuldade
+// escalada ao andar. O poder efetivo combina o poder bruto (com penalidade de
+// fadiga via calcNpcPower) e a afinidade temática do grupo com a câmara. A fadiga
+// também eleva a mortalidade em caso de falha — daí o risco de "explorar agora"
+// com o grupo cansado da conquista.
+export function calcExploracaoCamara(
+  camara: CamaraSecreta,
+  group: NPC[],
+  poderBonus = 0,
+): { poder: number; dificuldade: number; afinidade: number; sucesso: boolean; chanceMorteFalha: number; desempenho: number } {
+  const afinidade = calcAfinidadeCamara(group, camara);
+  const poder = Math.round(calcPoderGrupo(group, poderBonus) * afinidade);
+  const dificuldade = dificuldadeCamara(camara);
+  const sucesso = poder >= dificuldade;
+  const avgFadiga = fadigaMediaGrupo(group);
+  const base = camara.resultado.chanceMorteNPC ?? 0.12;
+  const chanceMorteFalha = Math.min(0.6, base * (0.6 + avgFadiga / 100));
+  // Desempenho (0–1): quão folgada foi a vitória (margem sobre a dificuldade) com
+  // peso maior, temperado pelo frescor do grupo. Alimenta o sorteio de recompensa.
+  const margem  = Math.max(0, Math.min(1, poder / dificuldade - 1));
+  const frescor = 1 - avgFadiga / 100;
+  const desempenho = Math.max(0, Math.min(1, margem * 0.7 + frescor * 0.3));
+  return { poder, dificuldade, afinidade, sucesso, chanceMorteFalha, desempenho };
+}
+
+// Bônus de desempenho sorteado ao concluir uma câmara — além da recompensa
+// primária (recursos + moral + relíquia fixa). Puro: decide QUAL bônus e a
+// magnitude; a aplicação (buffar NPC, adicionar sobrevivente, escolher relíquia)
+// fica no GameContext, que tem acesso ao estado. O sorteio ponderado pelo
+// desempenho garante que jogadores diferentes recebam coisas diferentes.
+export type RecompensaCamaraBonus =
+  | { tipo: 'buff_permanente'; incremento: number }
+  | { tipo: 'sobrevivente' }
+  | { tipo: 'reliquia_bonus' }
+  | { tipo: 'recursos_extra'; multiplicador: number }
+  | { tipo: 'nenhum' };
+
+export function sortearRecompensaCamara(
+  desempenho: number,
+  rng: () => number = Math.random,
+): RecompensaCamaraBonus {
+  const d = Math.max(0, Math.min(1, desempenho));
+  // Chance de haver bônus extra cresce com o desempenho (0.35 → 0.85).
+  if (rng() > 0.35 + d * 0.5) return { tipo: 'nenhum' };
+  // Tabela ponderada — desempenho alto valoriza recompensas raras.
+  const tabela: Array<{ tipo: RecompensaCamaraBonus['tipo']; peso: number }> = [
+    { tipo: 'recursos_extra',  peso: 3 },
+    { tipo: 'sobrevivente',    peso: 1 + d * 2 },
+    { tipo: 'buff_permanente', peso: 1 + d * 3 },
+    { tipo: 'reliquia_bonus',  peso: d * 2 },
+  ];
+  const total = tabela.reduce((s, t) => s + t.peso, 0);
+  let roll = rng() * total;
+  for (const t of tabela) {
+    roll -= t.peso;
+    if (roll > 0) continue;
+    if (t.tipo === 'buff_permanente') return { tipo: 'buff_permanente', incremento: d >= 0.6 ? 2 : 1 };
+    if (t.tipo === 'recursos_extra')  return { tipo: 'recursos_extra', multiplicador: 1 + d };
+    if (t.tipo === 'sobrevivente')    return { tipo: 'sobrevivente' };
+    return { tipo: 'reliquia_bonus' };
+  }
+  return { tipo: 'nenhum' };
+}
+
 // ─── INITIAL STATE ────────────────────────────────────────────────────────────
 
 export const CAPACIDADE_BASE = 80;
@@ -3302,6 +3450,7 @@ export interface NivelEdificio {
 export interface BuildingDef {
   tipo: EdificioTipo;
   nome: string;
+  nomeT2?: string;         // nome exibido na Temporada 2 (andar >= 21); cai p/ nome se ausente
   descricao: string;
   maxNivel: number;
   niveis: NivelEdificio[];

@@ -1,4 +1,4 @@
-import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAPACIDADE_BASE } from './game-data';
+import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAMARAS_SECRETAS, CAPACIDADE_BASE } from './game-data';
 
 /**
  * Cidadelas de teste pré-populadas para validar features durante desenvolvimento.
@@ -20,6 +20,16 @@ function populateHabitanteEstado(maxFloor: number): Record<number, 'oculto' | 'd
     if (floor <= maxFloor) {
       estado[floor] = 'concluido'; // Todos os habitantes já foram descobertos e completados
     }
+  });
+  return estado;
+}
+
+// Helper: marca como DESCOBERTAS todas as câmaras secretas até maxFloor, para a
+// cidadela de teste ter tudo desbloqueado e pronto para explorar.
+function populateCamaras(maxFloor: number): Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }> {
+  const estado: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }> = {};
+  Object.entries(CAMARAS_SECRETAS).forEach(([id, cam]) => {
+    if (cam.floor <= maxFloor) estado[id] = { descoberta: true, tentativas: 0, encontrada: false };
   });
   return estado;
 }
@@ -75,7 +85,7 @@ function createTestSaveBasic(): GameState {
     ],
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: {},
+    camarasSecretasEstado: populateCamaras(5),
     farmsPorAndarEClasse: {},
     totalMortesAndar: {},
     reliquias: [
@@ -147,7 +157,7 @@ function createTestSaveCompleta(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: {},
+    camarasSecretasEstado: populateCamaras(20),
     farmsPorAndarEClasse: {},
     totalMortesAndar: {},
     reliquias: [
@@ -221,7 +231,7 @@ function createTestSaveT2(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: {},
+    camarasSecretasEstado: populateCamaras(30),
     farmsPorAndarEClasse: {},
     totalMortesAndar: {},
     reliquias: [
