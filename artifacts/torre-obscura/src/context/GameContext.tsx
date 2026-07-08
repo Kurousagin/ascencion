@@ -949,8 +949,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
-      // Verificar câmaras secretas desbloqueadas
+      // Verificar câmaras secretas desbloqueadas. Só andares já conquistados podem
+      // revelar câmaras — evita descobrir câmaras de andares distantes só porque um
+      // requisito global (recursos, mortes totais) foi atingido cedo.
       Object.entries(CAMARAS_SECRETAS).forEach(([camaraId, camara]) => {
+        if (camara.floor > s.andarAtual) return;
         if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };

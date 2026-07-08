@@ -44,10 +44,18 @@ export function SelecaoMoradores({ npcs, selectedIds, onToggle, emptyLabel = 'Ne
                 <span className="text-[9px] px-1.5 py-[1px] bg-secondary/20 text-secondary border border-secondary/30 rounded-sm tracking-wider uppercase">
                   {n.habilidade}
                 </span>
-                <span className="text-[9px] text-white/40">Fadiga {Math.round(n.fadiga)}</span>
+                <span className="flex items-center gap-2">
+                  <span className={`text-[9px] ${n.sanidade < 50 ? 'text-destructive' : 'text-white/40'}`}>Sanidade {Math.round(n.sanidade)}</span>
+                  <span className="text-[9px] text-white/40">Fadiga {Math.round(n.fadiga)}</span>
+                </span>
               </div>
-              <div className="w-full bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5">
-                <div className={`h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{ width: `${100 - n.fadiga}%` }} />
+              <div className="flex gap-1">
+                <div className="flex-1 bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5" title="Sanidade">
+                  <div className={`h-full ${n.sanidade < 30 ? 'bg-destructive' : n.sanidade < 50 ? 'bg-warning' : 'bg-[#4A9EFF]'}`} style={{ width: `${n.sanidade}%` }} />
+                </div>
+                <div className="flex-1 bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5" title="Vigor (100 − fadiga)">
+                  <div className={`h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{ width: `${100 - n.fadiga}%` }} />
+                </div>
               </div>
             </div>
           </div>
