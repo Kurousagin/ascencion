@@ -3,7 +3,7 @@ import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
-  getMsPerDay, MS_PER_GAME_DAY_BASE,
+  getMsPerDay, MS_PER_GAME_DAY_BASE, gerarNomeNpc,
   type CamaraSecreta, type NPC, type ProfissaoId,
 } from './game-data';
 
@@ -141,6 +141,23 @@ describe('sortearRecompensaCamara (bônus por desempenho)', () => {
 
   it('desempenho alto libera buff permanente de +2', () => {
     expect(sortearRecompensaCamara(1, seq([0, 0.6]))).toEqual({ tipo: 'buff_permanente', incremento: 2 });
+  });
+});
+
+describe('gerarNomeNpc (nobreza no nome)', () => {
+  it('plebeus (Comum/Incomum) recebem só o primeiro nome, sem casa', () => {
+    for (let i = 0; i < 30; i++) {
+      expect(gerarNomeNpc('Comum').sobrenome).toBeUndefined();
+      expect(gerarNomeNpc('Incomum').sobrenome).toBeUndefined();
+    }
+  });
+
+  it('nobres (Raro+) recebem sobrenome/casa embutido no nome de exibição', () => {
+    for (const r of ['Raro', 'Épico', 'Lendário', 'Divino'] as const) {
+      const { nome, sobrenome } = gerarNomeNpc(r);
+      expect(sobrenome).toBeTruthy();
+      expect(nome).toContain(sobrenome!);
+    }
   });
 });
 

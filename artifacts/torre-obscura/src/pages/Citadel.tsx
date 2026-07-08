@@ -214,14 +214,14 @@ export function Citadel() {
       >
         {built && (
           <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[8px] text-primary font-bold tracking-widest px-1.5 py-0.5 rounded-bl-sm">
-            L{nivelAtual}
+            NÍVEL {nivelAtual}
           </div>
         )}
         <div className="mb-2">
           <div className="font-bold text-foreground font-cinzel text-sm">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
           <div className="text-[9px] text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
           {efeitoAtual && (
-            <div className="text-[8px] text-success mt-1 font-bold">+{efeitoAtual}</div>
+            <div className="text-[8px] text-success mt-1 font-bold">{efeitoAtual}</div>
           )}
           {built && POSTO_AFIM[tipo] && (() => {
             const workers = trabalhadoresDe(tipo, nivelAtual, state.npcs);
@@ -230,21 +230,36 @@ export function Citadel() {
             ) : null;
           })()}
         </div>
+
+        {/* Custo e ganho do próximo nível */}
+        {!isMax && proximo && (
+          <div className="mb-2 space-y-1">
+            <div className="text-[8px] text-primary/70 leading-snug">
+              Nível {nivelAtual + 1}: <span className="text-success">{proximo.resumo}</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {custo?.madeira ? <CostChip have={state.recursos.madeira} need={custo.madeira} icon={Trees} /> : null}
+              {custo?.pedra   ? <CostChip have={state.recursos.pedra}   need={custo.pedra}   icon={Mountain} /> : null}
+              {custo?.ferro   ? <CostChip have={state.recursos.ferro}   need={custo.ferro}   icon={Zap} /> : null}
+            </div>
+          </div>
+        )}
+
         {isMax ? (
           <div className="w-full h-8 border border-primary/30 text-primary/60 text-[8px] tracking-widest font-cinzel font-bold rounded-sm flex items-center justify-center">
-            ✓ MÁX
+            ✓ NÍVEL MÁX
           </div>
         ) : (
           <button
             disabled={!canAfford}
             onClick={() => buildEdificio(tipo)}
-            className={`w-full h-8 border text-[8px] font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
+            className={`w-full h-8 border text-[9px] tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
               canAfford
                 ? 'border-primary text-primary hover:bg-primary/20'
                 : 'border-card-border text-muted-foreground opacity-40 cursor-not-allowed'
             }`}
           >
-            {built ? `L${nivelAtual + 1}` : 'BUILD'}
+            {built ? 'MELHORAR' : 'CONSTRUIR'}
           </button>
         )}
       </div>
