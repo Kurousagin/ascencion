@@ -439,7 +439,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.2em] text-base leading-tight flex items-center gap-2">
                   <BookOpen size={14} /> CODEX OBSCURO
                 </Dialog.Title>
-                {Object.values(TEMPORADAS).map(t => {
+                {Object.values(TEMPORADAS).filter(t => t.numero <= (t2Desbloqueado ? 2 : 1)).map(t => {
                   const total = totalFragmentosTemporada(t.numero);
                   const desbloqueados = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === t.numero).length;
                   return (
@@ -484,7 +484,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
               {codexAbaAtiva === 'fragmentos' ? (
               <>
-              {Object.values(TEMPORADAS).map(temporada => {
+              {Object.values(TEMPORADAS).filter(t => t.numero <= (t2Desbloqueado ? 2 : 1)).map(temporada => {
                 const totalTemp = totalFragmentosTemporada(temporada.numero);
                 const desbTemp = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === temporada.numero).length;
                 // Determinar capítulos dinamicamente baseado na temporada
@@ -896,6 +896,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               const afinidadeCam = calcAfinidadeCamara(grupoSel, cam);
               const poderGrupo = calcPoderGrupo(grupoSel, ef.poderBonus) * afinidadeCam;
               const dificuldadeCam = dificuldadeCamara(cam);
+              const sanidadeMediaGrupo = grupoSel.length ? Math.round(grupoSel.reduce((a, n) => a + n.sanidade, 0) / grupoSel.length) : 0;
               const semComida = state.recursos.comida < cam.custo;
               const podeExplorar = !esgotada && !semComida && camaraGrupo.length > 0;
               return (
@@ -966,12 +967,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         {' · '}dificuldade <span className="text-foreground font-bold">{dificuldadeCam}</span>
                       </div>
 
-                      <SelecaoMoradores
-                        npcs={disponiveis}
-                        selectedIds={camaraGrupo}
-                        onToggle={id => setCamaraGrupo(g => g.includes(id) ? g.filter(x => x !== id) : [...g, id])}
-                        emptyLabel="Nenhum morador apto para a incursão."
-                      />
+                      <div className="max-h-[34vh] overflow-y-auto custom-scrollbar pr-1 -mr-1">
+                        <SelecaoMoradores
+                          npcs={disponiveis}
+                          selectedIds={camaraGrupo}
+                          onToggle={id => setCamaraGrupo(g => g.includes(id) ? g.filter(x => x !== id) : [...g, id])}
+                          emptyLabel="Nenhum morador apto para a incursão."
+                        />
+                      </div>
 
                       <div className="space-y-2 bg-black/40 p-3 rounded-sm border border-primary/10">
                         <div className="flex justify-between items-center">
@@ -988,6 +991,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             </span>
                           </div>
                         )}
+                        {grupoSel.length > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-secondary font-cinzel tracking-widest text-[10px]">SANIDADE MÉDIA</span>
+                            <span className={`font-bold text-xs ${sanidadeMediaGrupo < 50 ? 'text-destructive' : sanidadeMediaGrupo < 70 ? 'text-warning' : 'text-[#4A9EFF]'}`}>
+                              {sanidadeMediaGrupo}{sanidadeMediaGrupo < 50 ? ' · abala o poder' : ''}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center">
                           <span className="text-secondary font-cinzel tracking-widest text-[10px]">CUSTO</span>
                           <span className={`font-bold flex items-center gap-2 ${semComida ? 'text-destructive' : 'text-foreground'}`}>
@@ -1001,8 +1012,8 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         disabled={!podeExplorar}
                         className={`w-full h-12 flex items-center justify-center gap-2 font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm transition-colors ${
                           podeExplorar
-                            ? 'bg-secondary/20 border border-secondary/50 text-secondary hover:bg-secondary/30'
-                            : 'bg-card-border/30 text-white/30 border border-card-border cursor-not-allowed'
+                            ? 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(212,175,55,0.25)] hover:brightness-110'
+                            : 'bg-card-border/30 text-white/40 border border-card-border cursor-not-allowed'
                         }`}
                       >
                         <DoorOpen size={16} /> {semComida ? 'COMIDA INSUFICIENTE' : camaraGrupo.length === 0 ? 'SELECIONE O GRUPO' : 'EXPLORAR CÂMARA'}
@@ -1097,9 +1108,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             </span>
                           </div>
 
-                          {/* Barra de fadiga */}
-                          <div className="w-full bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5">
-                            <div className={`h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{width: `${100 - n.fadiga}%`}} />
+                          {/* Barras de sanidade e vigor (fadiga) */}
+                          <div className="flex gap-1">
+                            <div className="flex-1 bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5" title={`Sanidade ${Math.round(n.sanidade)}${n.sanidade < 50 ? ' — abala o poder' : ''}`}>
+                              <div className={`h-full ${n.sanidade < 30 ? 'bg-destructive' : n.sanidade < 50 ? 'bg-warning' : 'bg-[#4A9EFF]'}`} style={{width: `${n.sanidade}%`}} />
+                            </div>
+                            <div className="flex-1 bg-background h-1.5 flex rounded-sm overflow-hidden border border-white/5" title={`Vigor ${100 - Math.round(n.fadiga)} (fadiga ${Math.round(n.fadiga)})`}>
+                              <div className={`h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{width: `${100 - n.fadiga}%`}} />
+                            </div>
                           </div>
                         </div>
                       </div>
