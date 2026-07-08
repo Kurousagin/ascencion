@@ -949,11 +949,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
-      // Verificar câmaras secretas desbloqueadas. Só andares já conquistados podem
-      // revelar câmaras — evita descobrir câmaras de andares distantes só porque um
-      // requisito global (recursos, mortes totais) foi atingido cedo.
+      // Descoberta de câmaras: só a(s) câmara(s) do ANDAR recém-explorado podem ser
+      // reveladas nesta volta — a descoberta é fruto de explorar aquele andar e,
+      // no retorno, perceber que o requisito foi atingido (narrativa da janela
+      // dourada). Evita revelar câmaras de andares distantes por um requisito global.
       Object.entries(CAMARAS_SECRETAS).forEach(([camaraId, camara]) => {
-        if (camara.floor > s.andarAtual) return;
+        if (camara.floor !== floorData.floor) return;
         if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
@@ -1684,6 +1685,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     s.camarasSecretasEstado[camaraId] = est;
+    // Remove esta câmara da fila de descobertas no MESMO setState — evita que uma
+    // chamada separada a reconhecerCamaraDescoberta (lendo state stale) sobrescreva
+    // este resultado (encontrada/recompensas) no "explorar agora".
+    s.camarasNovasDescobertas = (s.camarasNovasDescobertas ?? []).filter(id => id !== camaraId);
     setResultadoCamara({ camaraId, sucesso, poder, dificuldade, mortos, recompensas });
     saveState(s);
   };
