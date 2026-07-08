@@ -13,10 +13,12 @@ import { useGame } from '../context/GameContext';
 import { CAMARAS_SECRETAS } from '../lib/game-data';
 
 export function CamaraDescobertaModal() {
-  const { state, explorarCamaraSecreta, reconhecerCamaraDescoberta } = useGame();
+  const { state, explorarCamaraSecreta, reconhecerCamaraDescoberta, lastExpeditionResult, ultimoResultadoCamara } = useGame();
   const camId = state?.camarasNovasDescobertas?.[0] ?? null;
   const cam = camId ? CAMARAS_SECRETAS[camId] : undefined;
-  const open = !!cam;
+  // Só abre DEPOIS de o jogador fechar o resultado da expedição (vitória/derrota)
+  // e o resultado de uma exploração de câmara — a janela dourada é o próximo passo.
+  const open = !!cam && !lastExpeditionResult && !ultimoResultadoCamara;
 
   // Grupo do "explorar agora": os moradores da última expedição que ainda estão
   // aptos (vivos e não mobilizados). Se ninguém restou, só resta explorar depois.
@@ -27,8 +29,10 @@ export function CamaraDescobertaModal() {
 
   const explorarAgora = () => {
     if (!camId) return;
+    // explorarCamaraSecreta já remove a câmara da fila (dequeue atômico); NÃO
+    // chamar reconhecerCamaraDescoberta aqui — leria state stale e sobrescreveria
+    // o resultado (câmara voltaria a ser explorável).
     explorarCamaraSecreta(camId, grupoAgora);
-    reconhecerCamaraDescoberta();
   };
 
   return (

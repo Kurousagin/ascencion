@@ -1686,6 +1686,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     s.camarasSecretasEstado[camaraId] = est;
+    // Remove esta câmara da fila de descobertas no MESMO setState — evita que uma
+    // chamada separada a reconhecerCamaraDescoberta (lendo state stale) sobrescreva
+    // este resultado (encontrada/recompensas) no "explorar agora".
+    s.camarasNovasDescobertas = (s.camarasNovasDescobertas ?? []).filter(id => id !== camaraId);
     setResultadoCamara({ camaraId, sucesso, poder, dificuldade, mortos, recompensas });
     saveState(s);
   };
