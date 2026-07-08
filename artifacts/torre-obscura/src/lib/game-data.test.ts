@@ -3,7 +3,7 @@ import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
-  verificarRequisitoCamara, calcNpcPower,
+  verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
   type CamaraSecreta, type NPC, type ProfissaoId, type GameState,
 } from './game-data';
 
@@ -178,6 +178,23 @@ describe('calcNpcPower — sanidade influencia o poder', () => {
     const abalado = npcFull({ sanidade: 20 });
     expect(calcNpcPower(abalado)).toBeLessThan(calcNpcPower(forte));
     expect(calcNpcPower(abalado)).toBeCloseTo(calcNpcPower(forte) * 0.75, 5);
+  });
+});
+
+describe('gerarNomeNpc (nobreza no nome)', () => {
+  it('plebeus (Comum/Incomum) recebem só o primeiro nome, sem casa', () => {
+    for (let i = 0; i < 30; i++) {
+      expect(gerarNomeNpc('Comum').sobrenome).toBeUndefined();
+      expect(gerarNomeNpc('Incomum').sobrenome).toBeUndefined();
+    }
+  });
+
+  it('nobres (Raro+) recebem sobrenome/casa embutido no nome de exibição', () => {
+    for (const r of ['Raro', 'Épico', 'Lendário', 'Divino'] as const) {
+      const { nome, sobrenome } = gerarNomeNpc(r);
+      expect(sobrenome).toBeTruthy();
+      expect(nome).toContain(sobrenome!);
+    }
   });
 });
 

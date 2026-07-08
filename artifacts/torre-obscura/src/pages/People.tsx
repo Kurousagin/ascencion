@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
+import { humorDe, vinculosDe } from '../npc-engine';
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -114,9 +115,19 @@ export function People() {
 
     const dominantStat = Math.max(npc.forca, npc.agilidade, npc.inteligencia, npc.resistencia);
     let domLetter = 'F';
-    if (dominantStat === npc.agilidade) domLetter = 'A';
-    else if (dominantStat === npc.inteligencia) domLetter = 'I';
-    else if (dominantStat === npc.resistencia) domLetter = 'R';
+    let domKey: 'forca' | 'agilidade' | 'inteligencia' | 'resistencia' = 'forca';
+    if (dominantStat === npc.agilidade) { domLetter = 'A'; domKey = 'agilidade'; }
+    else if (dominantStat === npc.inteligencia) { domLetter = 'I'; domKey = 'inteligencia'; }
+    else if (dominantStat === npc.resistencia) { domLetter = 'R'; domKey = 'resistencia'; }
+    const poder = Math.round(calcNpcPower(npc) * 10) / 10;
+    const humor = humorDe(npc);
+    const humorCor = humor.tom === 'bom' ? 'text-success' : humor.tom === 'critico' ? 'text-destructive' : humor.tom === 'ruim' ? 'text-warning' : 'text-secondary';
+    const vinculosResolvidos = vinculosDe(state, npc.id)
+      .map(v => { const o = state.npcs.find(n => n.id === v.id && n.vivo); return o ? { id: v.id, nome: o.nome, afinidade: v.afinidade } : null; })
+      .filter((v): v is { id: string; nome: string; afinidade: number } => v !== null);
+    const aliados = vinculosResolvidos.filter(v => v.afinidade > 0).slice(0, 2);
+    const rival = vinculosResolvidos.filter(v => v.afinidade < 0).slice(-1);
+    const vinculosMostrar = [...aliados, ...rival];
 
     return (
       <div 
@@ -135,9 +146,16 @@ export function People() {
                 {domLetter}
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-foreground text-lg font-inter">{npc.nome}</span>
                   <span className="text-[10px]" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
+                  <span
+                    className="text-[10px] font-cinzel font-bold px-1.5 py-0.5 rounded-sm border flex items-center gap-1 tracking-wider"
+                    style={{ color: rarityColor, borderColor: `${rarityColor}55`, backgroundColor: `${rarityColor}14` }}
+                    title="Poder de combate (stats + habilidade, penalizado por fadiga)"
+                  >
+                    <Swords size={10} /> {poder.toFixed(1)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
@@ -210,22 +228,72 @@ export function People() {
           {isExpanded && (
             <div className="mt-4 pt-4 border-t border-white/5">
               <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
-                <div className="bg-black/30 py-2 border border-white/5 rounded-sm">
-                  <div className="text-[9px] text-secondary mb-1 tracking-widest">FOR</div>
-                  <div className="font-bold text-foreground font-cinzel text-sm">{npc.forca}</div>
+                {([
+                  { key: 'forca',        label: 'FOR', value: npc.forca },
+                  { key: 'agilidade',    label: 'AGI', value: npc.agilidade },
+                  { key: 'inteligencia', label: 'INT', value: npc.inteligencia },
+                  { key: 'resistencia',  label: 'RES', value: npc.resistencia },
+                ] as const).map(stat => {
+                  const isDom = stat.key === domKey;
+                  return (
+                    <div
+                      key={stat.key}
+                      className={`py-2 border rounded-sm relative ${isDom ? 'bg-primary/10 border-primary/50' : 'bg-black/30 border-white/5'}`}
+                    >
+                      <div className={`text-[9px] mb-1 tracking-widest ${isDom ? 'text-primary/80' : 'text-secondary'}`}>{stat.label}</div>
+                      <div className={`font-bold font-cinzel text-sm ${isDom ? 'text-primary' : 'text-foreground'}`}>{stat.value}</div>
+                      {isDom && <div className="absolute top-0.5 right-1 text-[7px] text-primary/70">▲</div>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Identidade: profissão + habilidade e seus efeitos */}
+              <div className="grid grid-cols-2 gap-2 mb-1">
+                <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
+                  <div className="text-[9px] text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                    {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
+                  </div>
+                  <div className="text-[10px] text-white/55 leading-snug">{PROFISSOES[getProfissao(npc)].descricao}</div>
                 </div>
-                <div className="bg-black/30 py-2 border border-white/5 rounded-sm">
-                  <div className="text-[9px] text-secondary mb-1 tracking-widest">AGI</div>
-                  <div className="font-bold text-foreground font-cinzel text-sm">{npc.agilidade}</div>
+                <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
+                  <div className="text-[9px] text-secondary tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                    {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
+                  </div>
+                  <div className="text-[10px] text-white/55 leading-snug">{HABILIDADES[npc.habilidade].descricao}</div>
                 </div>
-                <div className="bg-black/30 py-2 border border-white/5 rounded-sm">
-                  <div className="text-[9px] text-secondary mb-1 tracking-widest">INT</div>
-                  <div className="font-bold text-foreground font-cinzel text-sm">{npc.inteligencia}</div>
+              </div>
+
+              {/* Motor de vida: humor, casa e vínculos */}
+              <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-secondary tracking-widest">HUMOR</span>
+                  <span className={`text-[10px] font-bold ${humorCor}`}>{humor.rotulo}</span>
                 </div>
-                <div className="bg-black/30 py-2 border border-white/5 rounded-sm">
-                  <div className="text-[9px] text-secondary mb-1 tracking-widest">RES</div>
-                  <div className="font-bold text-foreground font-cinzel text-sm">{npc.resistencia}</div>
-                </div>
+                {npc.sobrenome && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-secondary tracking-widest">CASA</span>
+                    <span className="text-[10px] text-primary/80 flex items-center gap-1">
+                      {npc.casaFundador && <span title="Fundador da casa">♜</span>}
+                      {npc.casaFundador ? `Fundador · Casa ${npc.sobrenome}` : `Casa ${npc.sobrenome}`}
+                    </span>
+                  </div>
+                )}
+                {vinculosMostrar.length > 0 && (
+                  <div>
+                    <div className="text-[9px] text-secondary tracking-widest mb-1">VÍNCULOS</div>
+                    <div className="flex flex-wrap gap-1">
+                      {vinculosMostrar.map(v => (
+                        <span
+                          key={v.id}
+                          className={`text-[9px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                        >
+                          {v.afinidade >= 0 ? '♥' : '⚔'} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex justify-around text-[10px] text-muted-foreground font-inter bg-[#0D1117] py-2 rounded-sm border border-card-border">
                 <div>SAN: <span className="text-foreground">{Math.floor(npc.sanidade)}</span>/100</div>
