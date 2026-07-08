@@ -143,6 +143,13 @@ export interface NPC {
   // em expedições. A passiva permanece ativa enquanto ele estiver vivo e no grupo.
   vestigio?: boolean;
   passivaId?: PassivaId;
+  // ─── Motor de vida (npc-engine) ───────────────────────────────────────────
+  // `nome` continua sendo a string de exibição completa. `sobrenome` isola a CASA
+  // (linhagem) para a lógica social/adoção. `casaFundador` marca quem ergueu a
+  // própria casa (prestígio). `fama` acumula feitos e habilita fundar casa.
+  sobrenome?: string;
+  casaFundador?: boolean;
+  fama?: number;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
@@ -2931,6 +2938,11 @@ export interface GameState {
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
+
+  // ─── Motor de vida (npc-engine) ───────────────────────────────────────────
+  // Afinidade entre NPCs, por par. Chave canônica `parKey(idA,idB)` (ids ordenados);
+  // valor −100..100. Ausência = 0 (desconhecidos). Ver src/npc-engine/relationships.
+  relacionamentos?: Record<string, number>;
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -2952,10 +2964,48 @@ export const NAMES = [
   'Auren', 'Belath', 'Corda', 'Dael', 'Esra', 'Feld', 'Grael', 'Havan',
   'Izel', 'Kael', 'Lyren', 'Marek', 'Noel', 'Owan', 'Pael', 'Quel',
   'Raen', 'Savel', 'Tael', 'Uwen', 'Varek', 'Wyren', 'Zael',
+  // Expansão D — ampliação (reduz colisões de nome)
+  'Alric', 'Bryn', 'Cael', 'Dorn', 'Edda', 'Fenn', 'Gerda', 'Hakon',
+  'Ilsa', 'Joran', 'Katla', 'Leif', 'Morwen', 'Nael', 'Odra', 'Perrin',
+  'Ragnvald', 'Sela', 'Torvald', 'Undis', 'Vesna', 'Wulf', 'Ysera', 'Zeru',
+  'Aveline', 'Boran', 'Cressa', 'Doran', 'Emeric', 'Fiora', 'Galen', 'Hesper',
+  'Ingrid', 'Joris', 'Kestra', 'Lorne', 'Maeve', 'Nero', 'Ondine', 'Peregrin',
+  'Rurik', 'Solveig', 'Tamsin', 'Ulfr', 'Vidar', 'Wilda', 'Yorick', 'Zephyra',
+];
+
+// Sobrenomes / casas — sabor medieval. Concedidos apenas a NPCs nobres (Raro+)
+// em gerarNomeNpc; plebeus permanecem com nome único. Misto de casas ("de X",
+// "da Torre Negra") e patronímicos/epítetos de linhagem.
+export const SOBRENOMES = [
+  'de Corval', 'de Vhalen', 'de Ashryn', 'de Morgane', 'de Sorne', 'de Brakka',
+  'da Torre Negra', 'da Ravina', 'do Vão', 'do Ocaso', 'da Foz Cinzenta', 'do Ermo',
+  'Bramido', 'Coração-de-Pedra', 'Mão-de-Ferro', 'Punho-Cinza', 'Olho-Torto',
+  'Corvo', 'Lobo', 'Alcateia', 'Escudo-Rúnico', 'Sangue-Frio', 'Voz-Cava',
+  'Vael', 'Corne', 'Draven', 'Halloran', 'Verrick', 'Osric', 'Malvos', 'Renard',
+  'Thornwald', 'Greymoor', 'Ravenshold', 'Blackmere', 'Duskbane', 'Ironvale',
+  'Wyrmsbane', 'Ashford', 'Grimsdottir', 'Karsgaard', 'Nordval', 'Sturmhal',
+  'da Fenda', 'do Selo', 'da Névoa', 'dos Ecos', 'do Limiar', 'da Vigília',
 ];
 
 export function getRandomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// True para raridades consideradas "nobres" (recebem casa/sobrenome ao nascer).
+export function ehRaridadeNobre(raridade: Raridade): boolean {
+  return raridade === 'Raro' || raridade === 'Épico' || raridade === 'Lendário' || raridade === 'Divino';
+}
+
+// Nome de um NPC gerado. Plebeus (Comum/Incomum) recebem só o primeiro nome;
+// nobres (Raro+) ganham um sobrenome/casa medieval, reforçando o status e
+// praticamente eliminando colisões. Retorna nome de exibição + a casa isolada
+// (undefined para plebeus). Vestígios/primordiais têm nomes próprios
+// (lancamento.ts) e não passam por aqui.
+export function gerarNomeNpc(raridade: Raridade): { nome: string; sobrenome?: string } {
+  const primeiro = NAMES[Math.floor(Math.random() * NAMES.length)];
+  if (!ehRaridadeNobre(raridade)) return { nome: primeiro };
+  const sobrenome = SOBRENOMES[Math.floor(Math.random() * SOBRENOMES.length)];
+  return { nome: `${primeiro} ${sobrenome}`, sobrenome };
 }
 
 export function getRandomHabilidade(): HabilidadeId {
@@ -2963,7 +3013,7 @@ export function getRandomHabilidade(): HabilidadeId {
   return ids[Math.floor(Math.random() * ids.length)];
 }
 
-function calcRaridade(npc: Omit<NPC, 'raridade' | 'habilidade'>): Raridade {
+function calcRaridade(npc: Pick<NPC, 'forca' | 'agilidade' | 'inteligencia' | 'resistencia'>): Raridade {
   const total = npc.forca + npc.agilidade + npc.inteligencia + npc.resistencia;
   if (total >= 44) return 'Épico';
   if (total >= 34) return 'Raro';
@@ -3092,7 +3142,6 @@ export function statTreinamento(npc: NPC): 'forca' | 'agilidade' | 'resistencia'
 export const generateNPC = (isObscuro = false): NPC => {
   const base = {
     id: crypto.randomUUID(),
-    nome: NAMES[Math.floor(Math.random() * NAMES.length)],
     forca: isObscuro ? getRandomInt(8, 15) : getRandomInt(2, 10),
     agilidade: isObscuro ? getRandomInt(8, 15) : getRandomInt(2, 10),
     inteligencia: isObscuro ? getRandomInt(8, 15) : getRandomInt(2, 10),
@@ -3105,9 +3154,13 @@ export const generateNPC = (isObscuro = false): NPC => {
     emExpedicao: false,
     posto: null,
   };
+  const raridade = calcRaridade(base);
+  const { nome, sobrenome } = gerarNomeNpc(raridade);
   return {
     ...base,
-    raridade: calcRaridade(base),
+    nome,
+    sobrenome,
+    raridade,
     habilidade: getRandomHabilidade(),
   };
 };
@@ -3158,9 +3211,11 @@ export function generateNpcGacha(forcadoRaridade?: Raridade): NPC {
     raridade === 'Raro'    ? getRandomInt(65, 90) :
     raridade === 'Incomum' ? getRandomInt(60, 85) :
                              getRandomInt(55, 80);
+  const { nome, sobrenome } = gerarNomeNpc(raridade);
   const base = {
     id: crypto.randomUUID(),
-    nome: NAMES[Math.floor(Math.random() * NAMES.length)],
+    nome,
+    sobrenome,
     forca:        getRandomInt(min, max),
     agilidade:    getRandomInt(min, max),
     inteligencia: getRandomInt(min, max),

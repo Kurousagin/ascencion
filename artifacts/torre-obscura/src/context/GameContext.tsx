@@ -22,6 +22,7 @@ import {
   CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
   sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
+import { tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, type PromocaoResultado } from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
 import { getDeviceId } from '../lib/alliance-identity';
@@ -176,6 +177,22 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  // Ao concluir uma sessão de treino/estudo: registra o feito e, se a promoção
+  // levou o morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa
+  // e narra o momento. Centraliza o gancho do motor de vida usado em treino e estudo.
+  const promoverEnobrecer = (s: GameState, npc: NPC) => {
+    registrarFeito(npc, 'treino_concluido');
+    const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
+    if (!promo) return;
+    if (promo.tipo === 'adocao') {
+      addLog(s, 'descoberta', `A CASA ${promo.casa.toUpperCase()} acolhe ${npc.nome.toUpperCase()} — um plebeu ascende à nobreza.`);
+    } else if (promo.tipo === 'fundacao') {
+      addLog(s, 'vitoria', `${npc.nome.toUpperCase()} ergue a própria linhagem — nasce a Casa ${promo.casa}.`);
+    } else {
+      addLog(s, 'info', `${npc.nome.toUpperCase()} conquista um sobrenome ao alcançar a nobreza.`);
+    }
+  };
+
   // Registra progresso de uma meta diária no draft (idempotente por dia).
   // Só marca metas que estão nos objetivos de hoje e ainda não concluídas.
   const registrarProgressoMetaDiaria = (draft: GameState, id: MetaDiariaId) => {
@@ -235,44 +252,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
     draft.recursos.comida += ef.comidaDia;
 
-    // 2. Consumo de comida
+    // 2. Consumo de comida (economia). A penalidade por-NPC e as mortes por
+    //    inanição ficam a cargo do motor de vida (ver colônia + tickNpcs abaixo).
     const comidaNecessaria = vivos.length * 1.2;
+    let houveFome = false;
     if (draft.recursos.comida >= comidaNecessaria) {
       draft.recursos.comida -= comidaNecessaria;
       draft.diasSemComida = 0; // alimentados — zera o contador
     } else {
       draft.recursos.comida = 0;
       draft.diasSemComida = (draft.diasSemComida ?? 0) + 1;
-
-      // Penalidade base (todo dia de fome)
-      vivos.forEach(n => { n.sanidade -= 5; n.lealdade -= 3; });
-
-      if (draft.diasSemComida >= 2) {
-        // A partir do 2º dia consecutivo: chance crescente de morte por inanição.
-        // Fórmula: 5% por dia extra (dia 2 = 5%, dia 3 = 10%, dia 4 = 15%, …, max 50%).
-        const chanceBase = Math.min(0.50, (draft.diasSemComida - 1) * 0.05);
-        let mortes = 0;
-        vivos.forEach(n => {
-          // NPCs de lançamento são imunes à morte por inanição.
-          if (n.lancamento) return;
-          if (Math.random() < chanceBase) {
-            n.vivo = false;
-            n.posto = null;
-            n.emExpedicao = false;
-            mortes++;
-          }
-        });
-        const diasStr = `${draft.diasSemComida}º dia`;
-        if (mortes > 0) {
-          addLog(draft, 'morte',
-            `INANIÇÃO (${diasStr} sem comida): ${mortes} morador(es) pereceu de fome.`);
-        } else {
-          addLog(draft, 'alerta',
-            `FOME CRÍTICA (${diasStr}): chance de morte ${Math.round(chanceBase * 100)}% por dia. Providencie comida!`);
-        }
-      } else {
-        addLog(draft, 'alerta', 'FOME: Suprimentos insuficientes. Moral e sanidade caindo.');
-      }
+      houveFome = true;
     }
 
     // 2.5 Superlotação — penalidades quando moradores próprios excedem capPopulacao.
@@ -308,61 +298,34 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // 3. Outros efeitos de edifícios (moral / sanidade)
-    // Edifícios contribuem, mas limitados a +2/dia — múltiplos edifícios não devem
-    // cancelar o decaimento natural indefinidamente.
+    // 3. Moral de edifícios (colônia). A sanidade/dia de edifícios é aplicada
+    //    por-NPC dentro do motor de vida.
     draft.moral += Math.min(2, ef.moralDia);
-    if (ef.sanidadeDia) vivos.forEach(n => { n.sanidade += ef.sanidadeDia; });
 
     // 3.5 Decaimento natural da moral — A Torre corrói tudo. Acima de 80 decai mais
     // rápido (estado de euforia insustentável). A moral exige atenção constante.
     draft.moral -= draft.moral >= 80 ? 2 : 1;
 
-    // 4. Recuperação de fadiga (base + enfermaria + curandeiro) — não vale para
-    //    quem está mobilizado na guerra (o front acumula fadiga em avancarGuerra).
-    // Superlotação reduz a recuperação: cada NPC excedente corta 4 pontos de rec.
-    // (excedente=1 → -4 rec, excedente=3 → rec zerada, excedente≥3+ sem recuperação)
-    vivos.filter(n => !n.emGuerra).forEach(n => {
-      let rec = 10 + ef.fadigaRec;
-      if (n.habilidade === 'curandeiro') rec += 15;
-      if (excedente > 0) rec = Math.max(0, rec - excedente * 4);
-      n.fadiga = Math.max(0, n.fadiga - rec);
-    });
-
-    // 4. Habilidades passivas diárias
-    vivos.forEach(n => {
-      if (n.habilidade === 'berserker') n.lealdade = Math.max(0, n.lealdade - 1);
-      if (n.habilidade === 'oraculo')   n.sanidade  = Math.min(100, n.sanidade + 5);
-    });
-
-    // 5. Variação de moral/lealdade por estado geral
-    // Bônus de lealdade só em moral alta (>70) e reduzido — recompensa manutenção.
-    if (draft.moral > 70) vivos.forEach(n => { n.lealdade = Math.min(100, n.lealdade + 0.2); });
-    if (draft.moral < 40) vivos.forEach(n => { n.lealdade -= 1; });
-
+    // Clamp da moral antes de alimentar o motor (a variação de lealdade pela
+    // moral usa este valor).
     draft.moral = Math.max(0, Math.min(100, draft.moral));
-    vivos.forEach(n => {
-      n.lealdade = Math.max(0, Math.min(100, n.lealdade));
-      n.sanidade = Math.max(0, Math.min(100, n.sanidade));
-      n.fadiga   = Math.max(0, Math.min(100, n.fadiga));
-    });
 
-    // 6. Traição (habilidade 'sombra' reduz chance à metade)
-    vivos.forEach(n => {
-      if (n.lealdade < 30) {
-        let chance = n.obscuro ? 0.2 : 0.1;
-        if (n.habilidade === 'sombra') chance *= 0.5;
-        if (Math.random() < chance) {
-          if (Math.random() < 0.5) {
-            const roubo = getRandomInt(5, 20);
-            draft.recursos.comida = Math.max(0, draft.recursos.comida - roubo);
-            addLog(draft, 'traicao', `${n.nome.toUpperCase()} ROUBOU COMIDA (${roubo})`);
-          } else {
-            draft.moral -= 8;
-            addLog(draft, 'traicao', `${n.nome.toUpperCase()} SABOTOU O GRUPO (-8 Moral)`);
-          }
-        }
-      }
+    // ── MOTOR DE VIDA (npc-engine) ────────────────────────────────────────────
+    // Toda a evolução por-NPC do dia — fome/inanição, sanidade de edifícios,
+    // recuperação de fadiga, passivas, lealdade pela moral, clamps, traição e
+    // convívio/afinidade — roda aqui, a partir das condições da colônia.
+    tickNpcs({
+      draft,
+      colonia: {
+        fome: houveFome,
+        diasSemComida: draft.diasSemComida,
+        excedente,
+        moral: draft.moral,
+        sanidadeDia: ef.sanidadeDia,
+        fadigaRec: ef.fadigaRec,
+      },
+      rng: Math.random,
+      log: (tipo, mensagem) => addLog(draft, tipo, mensagem),
     });
 
     // 7. Eventos aleatórios (15% por dia) — mais negativos, moral mais difícil
@@ -688,6 +651,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
     if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
+    // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
+    if (!parsed.relacionamentos) parsed.relacionamentos = {};
+    parsed.npcs.forEach(n => {
+      if (n.fama === undefined) n.fama = 0;
+      // Nobres legados guardam o sobrenome embutido no `nome`; recupera a casa
+      // para habilitá-los como adotantes. Ignora primordiais/vestígios, cujos
+      // nomes são epítetos ("Valdris, o Eterno"), não casas.
+      if (!n.sobrenome && !n.lancamento && !n.vestigio && n.nome.includes(' ') && !n.nome.includes(',')) {
+        n.sobrenome = n.nome.split(' ').slice(1).join(' ');
+      }
+    });
     // Migração: campo lancamento nos NPCs (saves anteriores não têm)
     parsed.npcs.forEach(n => { if (n.lancamento === undefined) n.lancamento = false; });
     // Migração: campo primordialNivel + normalização de stats base canônicos.
@@ -960,6 +934,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
+          aplicarLuto(s, n.id, n.nome).forEach(l => addLog(s, l.tipo, l.mensagem));
           resultVitoria.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
@@ -970,6 +945,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
+          registrarFeito(n, 'expedicao_sobrevivida');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1030,6 +1006,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
           addLog(s, 'morte', `${n.nome.toUpperCase()} CAIU NO ANDAR ${floorData.floor}.`);
+          aplicarLuto(s, n.id, n.nome).forEach(l => addLog(s, l.tipo, l.mensagem));
           resultFalha.mortos.push({ nome: n.nome, profissao: getProfissao(n), habilidade: n.habilidade, raridade: n.raridade });
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
@@ -1040,6 +1017,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
+          registrarFeito(n, 'expedicao_sobrevivida');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1424,6 +1402,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    promoverEnobrecer(s, npc);
     saveState(s);
   };
 
@@ -1476,6 +1455,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    promoverEnobrecer(s, npc);
     saveState(s);
     setState(s);
   };
@@ -1627,6 +1607,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (sucesso) {
       est.encontrada = true;
+      group.forEach(n => registrarFeito(n, 'camara_vencida'));
       const floorData = FLOORS[camara.floor - 1];
 
       // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).
@@ -1693,6 +1674,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (vivo && vivo.vivo && Math.random() < chanceMorteFalha) {
           vivo.vivo = false;
           mortos.push(vivo.nome);
+          aplicarLuto(s, vivo.id, vivo.nome).forEach(l => addLog(s, l.tipo, l.mensagem));
         }
       });
       mortos.forEach(nome => addLog(s, 'morte', `${nome.toUpperCase()} não voltou da ${camara.titulo} (Andar ${camara.floor}).`));
