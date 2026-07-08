@@ -19,7 +19,8 @@ import {
   QuestOculta, gerarQuestOculta, verificarQuestOculta,
   atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
   MetaDiariaId, hojeStrLocal, gerarObjetivosDoDia, METAS_DIARIAS_META,
-  CAMARAS_SECRETAS, verificarRequisitoCamara,
+  CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
+  sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
@@ -41,10 +42,21 @@ export interface ExpeditionResult {
   questOculta?: { titulo: string; icone: string }; // câmara oculta descoberta ao explorar
 }
 
+// Resultado da última tentativa de exploração de câmara secreta (para o modal).
+export interface ResultadoExploracaoCamara {
+  camaraId: string;
+  sucesso: boolean;
+  poder: number;
+  dificuldade: number;
+  mortos: string[];               // nomes dos moradores perdidos na falha
+  recompensas: string[];          // recompensas concedidas nesta incursão (sucesso)
+}
+
 interface GameContextType {
   state: GameState;
   hasSave: boolean;
   startNewGame: (lancamento?: LancamentoTemporada) => void;
+  startTestGame: (testSave: GameState) => void;
   adicionarNpcLancamento: (npcConfig: NpcLancamento) => void;
   continueGame: () => void;
   advanceDay: () => void;
@@ -79,8 +91,14 @@ interface GameContextType {
   interagirHabitante: (floor: number) => void;
   // Habitantes: resolve a escolha ramificada de uma quest em 'aguardando_escolha'.
   resolverEscolhaHabitante: (floor: number, opcaoId: 'a' | 'b') => void;
-  // TODO: Câmaras Secretas: vasculha os destroços de um andar de chefe já conquistado.
-  // vasculharCamaraSecreta: (floor: number) => void;
+  // Câmaras Secretas: explora uma câmara descoberta como expedição (grupo vs
+  // dificuldade). Sucesso revela lore + recompensa; falha gasta tentativa e pode matar.
+  explorarCamaraSecreta: (camaraId: string, npcIds: string[]) => void;
+  // Resultado da última exploração de câmara (para o modal); limpar ao fechar.
+  ultimoResultadoCamara: ResultadoExploracaoCamara | null;
+  limparResultadoCamara: () => void;
+  // Câmaras Secretas: reconhece (fecha) o modal de evento da câmara recém-descoberta.
+  reconhecerCamaraDescoberta: () => void;
   // Metas Diárias: gera as metas do dia (no-op se já geradas hoje).
   gerarMetasDiarias: (temAliada: boolean) => void;
   // Metas Diárias: registra progresso de uma meta a partir de consumidores externos.
@@ -130,6 +148,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<GameState | null>(null);
   const [hasSave, setHasSave] = useState(false);
   const [expeditionResult, setExpeditionResult] = useState<ExpeditionResult | null>(null);
+  const [resultadoCamara, setResultadoCamara] = useState<ResultadoExploracaoCamara | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -579,6 +598,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  const startTestGame = (testSave: GameState) => {
+    // Carrega cidadela de teste pré-populada para desenvolvimento/QA.
+    // Não libera primordials (test save não usa sistema de lançamento).
+    console.log('[startTestGame] Loading test save:', { dia: testSave.dia, andar: testSave.andarAtual });
+    // saveState já chama setState internamente
+    saveState(testSave);
+    console.log('[startTestGame] Test save loaded, state should be updated');
+  };
+
   // Adiciona o NPC sorteado no gacha de lançamento ao estado do jogo.
   // Chamado pelo GachaLancamento após o jogador confirmar o resultado.
   const adicionarNpcLancamento = (npcConfig: NpcLancamento) => {
@@ -615,6 +643,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     let parsed: GameState;
     try {
       parsed = JSON.parse(saved) as GameState;
+      console.log('[continueGame] Loaded from storage:', { dia: parsed.dia, andar: parsed.andarAtual });
+      setState(parsed);
     } catch {
       localStorage.removeItem('torre_obscura_save');
       setHasSave(false);
@@ -653,6 +683,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Migração: escolhas dos habitantes, câmaras secretas e metas diárias.
     if (!parsed.habitantesEscolhaFeita)  parsed.habitantesEscolhaFeita = {};
     if (!parsed.camarasSecretasEstado)   parsed.camarasSecretasEstado = {};
+    if (!parsed.camarasNovasDescobertas) parsed.camarasNovasDescobertas = [];
+    if (!parsed.ultimaExpedicaoGrupo)    parsed.ultimaExpedicaoGrupo = [];
     if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
     if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
@@ -762,6 +794,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
 
+    // Guarda o grupo desta expedição para o "explorar agora" de câmaras.
+    s.ultimaExpedicaoGrupo = [...npcIds];
+
     // Meta diária: expedição enviada (conta a tentativa, não exige vitória).
     registrarProgressoMetaDiaria(s, 'explorar');
 
@@ -842,12 +877,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Sussurro da Torre: 15% de chance em qualquer vitória (farm ou avançar).
+      // Bônus: +15% se Rastro_Vivo passiva, +8% por nível de Arquivo.
       // Sorteia entre os sussurros do capítulo ainda não desbloqueados.
       let sussurro: FragmentoCodex | undefined;
       {
         const cap = capituloDoAndar(floorData.floor);
         const candidatos = (SUSSURROS_POR_CAPITULO[cap] ?? []).filter(id => !s.codexFragmentos.includes(id));
-        if (candidatos.length > 0 && Math.random() < (hasRastro ? 0.30 : 0.15)) {
+        const arquivoEd = s.edificios.find(e => e.tipo === 'Arquivo');
+        const arquivoBonus = arquivoEd ? arquivoEd.nivel * 0.08 : 0;
+        const sussurroChance = 0.15 + (hasRastro ? 0.15 : 0) + arquivoBonus;
+        if (candidatos.length > 0 && Math.random() < sussurroChance) {
           const id = candidatos[Math.floor(Math.random() * candidatos.length)];
           desbloquearFragmento(s, id);
           sussurro = CODEX_FRAGMENTOS[id];
@@ -942,6 +981,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
           else s.camarasSecretasEstado[camaraId].descoberta = true;
           addLog(s, 'descoberta', `CÂMARA SECRETA REVELADA — ${camara.titulo} (Andar ${camara.floor}) pode ser explorada!`);
+          // Enfileira para o modal de evento que chama a atenção do jogador.
+          s.camarasNovasDescobertas = [...(s.camarasNovasDescobertas ?? []), camaraId];
         }
       });
 
@@ -1553,9 +1594,126 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ─── CÂMARAS SECRETAS ────────────────────────────────────────────────────
-  // TODO: Implement vasculharCamaraSecreta function for camera exploration
-  // const vasculharCamaraSecreta = (floor: number) => {
-  // };
+  // Explora uma câmara descoberta como uma EXPEDIÇÃO: o grupo escolhido enfrenta
+  // a câmara (poder do grupo vs dificuldade — ver calcExploracaoCamara). Sucesso
+  // revela a lore (loreGanho) e concede a recompensa; falha gasta uma tentativa e
+  // pode matar moradores (mortalidade escalada pela fadiga do grupo). Chave por
+  // camaraId (ex.: "5_1"). Custo de comida cobrado por tentativa.
+  const explorarCamaraSecreta = (camaraId: string, npcIds: string[]) => {
+    if (!state || npcIds.length === 0) return;
+    const camara: CamaraSecreta | undefined = CAMARAS_SECRETAS[camaraId];
+    if (!camara) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
+    const est = s.camarasSecretasEstado[camaraId] ?? { descoberta: true, tentativas: 0, encontrada: false };
+    if (!est.descoberta || est.encontrada) return;
+    if (est.tentativas >= camara.maxTentativas) return;
+
+    const group = s.npcs.filter(n => npcIds.includes(n.id) && n.vivo && !n.emExpedicao && !n.emGuerra);
+    if (group.length === 0) return;
+    if (s.recursos.comida < camara.custo) return;
+    s.recursos.comida -= camara.custo;
+    est.tentativas += 1;
+
+    const ef = getEfeitos(s.edificios, s.npcs);
+    const cap = ef.capacidadeArmazem;
+    const { poder, dificuldade, sucesso, chanceMorteFalha, desempenho } = calcExploracaoCamara(camara, group, ef.poderBonus);
+    const r = camara.resultado;
+    const mortos: string[] = [];
+    const recompensas: string[] = [];
+
+    // Toda incursão cansa o grupo (como uma expedição).
+    group.forEach(n => { n.fadiga = Math.min(100, n.fadiga + 12); });
+
+    if (sucesso) {
+      est.encontrada = true;
+      const floorData = FLOORS[camara.floor - 1];
+
+      // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).
+      const creditar = (rec: 'comida' | 'madeira' | 'pedra' | 'ferro', val: number) => {
+        if (val > 0) s.recursos[rec] = Math.min(cap, s.recursos[rec] + val);
+      };
+      const base = calcRecompensaAndar(camara.floor, floorData.bioma);
+      creditar('comida', base.comida); creditar('madeira', base.madeira);
+      creditar('pedra', base.pedra);   creditar('ferro', base.ferro);
+      const recStr = [
+        base.comida  ? `+${base.comida} comida`   : '',
+        base.madeira ? `+${base.madeira} madeira` : '',
+        base.pedra   ? `+${base.pedra} pedra`     : '',
+        base.ferro   ? `+${base.ferro} ferro`     : '',
+      ].filter(Boolean).join(' · ');
+      if (recStr) recompensas.push(recStr);
+
+      if (r.moralBonus) { s.moral = Math.min(100, s.moral + r.moralBonus); recompensas.push(`+${r.moralBonus} moral`); }
+      if (r.reliquia)   { s.reliquias = [...(s.reliquias ?? []), r.reliquia]; recompensas.push(`Relíquia: ${r.reliquia}`); }
+
+      // Página do Codex ("página rasgada" volta ao livro).
+      if (desbloquearFragmento(s, idFragmentoCamara(camaraId))) recompensas.push('Página Recuperada (Codex)');
+
+      // Bônus de desempenho — sorteado, para que jogadores diferentes ganhem coisas diferentes.
+      const bonus = sortearRecompensaCamara(desempenho);
+      if (bonus.tipo === 'recursos_extra') {
+        const extra = { comida: Math.round(base.comida * (bonus.multiplicador - 1)), madeira: Math.round(base.madeira * (bonus.multiplicador - 1)), pedra: Math.round(base.pedra * (bonus.multiplicador - 1)), ferro: Math.round(base.ferro * (bonus.multiplicador - 1)) };
+        creditar('comida', extra.comida); creditar('madeira', extra.madeira);
+        creditar('pedra', extra.pedra);   creditar('ferro', extra.ferro);
+        recompensas.push('Espólio abundante (recursos extras)');
+      } else if (bonus.tipo === 'buff_permanente') {
+        const alvo = group[Math.floor(Math.random() * group.length)];
+        const npc = s.npcs.find(n => n.id === alvo.id);
+        if (npc) {
+          const statKey = statTreinamento(npc);
+          npc[statKey] += bonus.incremento;
+          npc.raridade = recalcRaridade(npc);
+          const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : statKey === 'inteligencia' ? 'INT' : 'FOR';
+          recompensas.push(`${npc.nome} +${bonus.incremento} ${statLabel} permanente`);
+        }
+      } else if (bonus.tipo === 'sobrevivente') {
+        const popViva = s.npcs.filter(n => n.vivo).length;
+        if (popViva < ef.capPopulacao) {
+          const novo = generateNPC(Math.random() < 0.1);
+          s.npcs.push(novo);
+          recompensas.push(`Sobrevivente resgatado: ${novo.nome}`);
+        }
+      } else if (bonus.tipo === 'reliquia_bonus') {
+        const disponivel = Object.keys(RELIQUIAS_CATALOGO).find(nome => !(s.reliquias ?? []).includes(nome));
+        if (disponivel) { s.reliquias = [...(s.reliquias ?? []), disponivel]; recompensas.push(`Relíquia: ${disponivel}`); }
+      }
+
+      addLog(s, 'descoberta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.sucessoTexto}${recompensas.length ? ` [${recompensas.join(' · ')}]` : ''}`);
+    } else {
+      if (r.recursosPerdidos?.comida)  s.recursos.comida  = Math.max(0, s.recursos.comida  - r.recursosPerdidos.comida);
+      if (r.recursosPerdidos?.madeira) s.recursos.madeira = Math.max(0, s.recursos.madeira - r.recursosPerdidos.madeira);
+      if (r.recursosPerdidos?.pedra)   s.recursos.pedra   = Math.max(0, s.recursos.pedra   - r.recursosPerdidos.pedra);
+      if (r.recursosPerdidos?.ferro)   s.recursos.ferro   = Math.max(0, s.recursos.ferro   - r.recursosPerdidos.ferro);
+      if (r.moralPerdido) s.moral = Math.max(0, s.moral - r.moralPerdido);
+      // Mortalidade escalada pela fadiga: cada membro do grupo rola a chance.
+      group.forEach(n => {
+        if (n.lancamento) return; // primordiais não morrem aqui
+        const vivo = s.npcs.find(x => x.id === n.id);
+        if (vivo && vivo.vivo && Math.random() < chanceMorteFalha) {
+          vivo.vivo = false;
+          mortos.push(vivo.nome);
+        }
+      });
+      mortos.forEach(nome => addLog(s, 'morte', `${nome.toUpperCase()} não voltou da ${camara.titulo} (Andar ${camara.floor}).`));
+      addLog(s, 'alerta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.falhaTexto}`);
+    }
+
+    s.camarasSecretasEstado[camaraId] = est;
+    setResultadoCamara({ camaraId, sucesso, poder, dificuldade, mortos, recompensas });
+    saveState(s);
+  };
+
+  const limparResultadoCamara = () => setResultadoCamara(null);
+
+  // Reconhece (remove da fila) a câmara recém-descoberta atualmente no modal de evento.
+  const reconhecerCamaraDescoberta = () => {
+    if (!state) return;
+    if (!state.camarasNovasDescobertas || state.camarasNovasDescobertas.length === 0) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    s.camarasNovasDescobertas = (s.camarasNovasDescobertas ?? []).slice(1);
+    saveState(s);
+  };
 
   // ─── METAS DIÁRIAS ───────────────────────────────────────────────────────
   const gerarMetasDiarias = (temAliada: boolean) => {
@@ -1663,6 +1821,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state: state as GameState,
       hasSave,
       startNewGame,
+      startTestGame,
       adicionarNpcLancamento,
       continueGame,
       advanceDay,
@@ -1687,6 +1846,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       estudarNpc,
       interagirHabitante,
       resolverEscolhaHabitante,
+      explorarCamaraSecreta,
+      ultimoResultadoCamara: resultadoCamara,
+      limparResultadoCamara,
+      reconhecerCamaraDescoberta,
       gerarMetasDiarias,
       registrarMetaDiaria,
       reivindicarPresenteDaTorre,

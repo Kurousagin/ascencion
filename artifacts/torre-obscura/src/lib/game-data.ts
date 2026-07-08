@@ -1,3 +1,5 @@
+import { HABITANTES_LORE, BOSS_LORE, SUSSURROS_LORE, VERDADES_LORE, ESCOLHAS_LORE, PRIMORDIAIS_LORE, VESTIGIOS_LORE, MARCADOS_LORE } from './lore-content';
+
 // ─── SKILL SYSTEM ────────────────────────────────────────────────────────────
 
 export type HabilidadeId =
@@ -171,7 +173,7 @@ export function podeGuerrear(npc: NPC): boolean {
   return npc.vivo && !npc.emExpedicao && !npc.emprestado && (!npc.reforco || !!npc.reforcoGuerra) && !npc.emGuerra;
 }
 
-export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante';
+export type EdificioTipo = 'Fogueira' | 'Fazenda' | 'Enfermaria' | 'Quartel' | 'Templo' | 'Armazem' | 'Alojamento' | 'Arquivo' | 'Mirante' | 'RetratoTorre';
 
 export interface Edificio {
   tipo: EdificioTipo;
@@ -216,6 +218,7 @@ export const POSTO_AFIM: Partial<Record<EdificioTipo, ProfissaoId>> = {
   Fogueira: 'sentinela',
   Arquivo: 'erudito',
   Mirante: 'batedor',
+  RetratoTorre: 'erudito',
 };
 
 // Buildings that accept workers (slots = nível atual do edifício).
@@ -295,423 +298,421 @@ export interface HabitanteAndar {
 export const HABITANTES: Record<number, HabitanteAndar> = {
   1: {
     floor: 1, nome: 'Arauto da Névoa', papel: 'Mensageiro Selado', icone: '🌫️',
-    fala: 'Aguardo há séculos carregando uma mensagem que nunca deveria ter saído daqui. Se você tem alguém ágil o suficiente para decifrar o símbolo de entrega... talvez valha a pena.',
-    falamissão: 'Dois Batedores — um segue o símbolo de entrega, o outro confirma que o encontrado chega de volta. Nenhum pode ir sozinho. E precisam ter chegado ao Andar 5.',
-    falaConcluso: 'A mensagem foi entregue. O destinatário era você. Desde o início.',
+    fala: HABITANTES_LORE[1].fala,
+    falamissão: HABITANTES_LORE[1].falamissão,
+    falaConcluso: HABITANTES_LORE[1].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter 2 Batedores e conquistar o Andar 5',
       profissoes: ['batedor', 'batedor'], andarMin: 5,
       ecoBonus: 20, moralBonus: 5,
-      lore: 'A mensagem que nunca chegou era uma ordem para abrir o selo — não para mantê-lo. Alguém a interceptou antes do destinatário a receber. Esse alguém ainda está aqui.',
+      lore: HABITANTES_LORE[1].questLore,
       recompensaDesc: '+20% loot neste andar · +5 Moral',
-      escolha: {
-        prompt: 'A mensagem revelada ou guardada?',
-        opcoes: [
-          { id: 'a' as const, label: 'Revelar', descricao: '+5 Moral', moralBonus: 5, falaResultado: 'Revelada. O peso é compartilhado.' },
-          { id: 'b' as const, label: 'Guardar', descricao: "Relíquia \"Mensagem Selada\"", reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido. Arauto assente.' },
-        ],
-      },
     },
   },
   2: {
     floor: 2, nome: 'Eco dos Construtores', papel: 'Memória Coletiva', icone: '⚒️',
-    fala: 'Somos muitos em um. Escavamos este lugar sabendo que nunca sairíamos. Dê-nos pedra — para que possamos lembrar o peso do que construímos.',
-    falamissão: 'Pedra deste andar — extraída daqui, não carregada de longe. Somos memória deste lugar específico. Volte mais de uma vez. Prove que este andar importa além de passagem.',
-    falaConcluso: 'Agora lembramos tudo. O que construímos. Por que construímos. E quem nos mentiu sobre o propósito.',
+    fala: HABITANTES_LORE[2].fala,
+    falamissão: HABITANTES_LORE[2].falamissão,
+    falaConcluso: HABITANTES_LORE[2].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 2 ao menos 3 vezes e ter 45 pedra',
       recurso: { tipo: 'pedra', qtd: 45 }, farmsMin: { andar: 2, vezes: 3 },
       ecoBonus: 25, recursosBonus: { pedra: 10 },
-      lore: 'Os Construtores sabiam que seriam selados. Aceitaram porque a criatura dentro prometeu libertá-los depois. Nunca os libertou. O Eco lembra — e aguarda alguém que possa.',
+      lore: HABITANTES_LORE[2].questLore,
       recompensaDesc: '+25% loot neste andar · +10 Pedra',
     },
   },
   3: {
     floor: 3, nome: 'Tecelã de Raízes', papel: 'Guardiã do Crescimento', icone: '🌱',
-    fala: 'As raízes crescem para dentro porque algo no núcleo as chama. Eu as guio. É um fardo pesado — e a Torre cobra por cada dia que continuo aqui. Compartilhe o peso comigo.',
-    falamissão: 'Dar algo precioso é a única língua que a Torre entende.',
-    falaConcluso: 'O peso foi dividido. As raízes respiram diferente agora. Mais leves. Como se soubessem que alguém se importou.',
+    fala: HABITANTES_LORE[3].fala,
+    falamissão: HABITANTES_LORE[3].falamissão,
+    falaConcluso: HABITANTES_LORE[3].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 8 de Moral (custo imediato)',
       custo: { moral: 8 },
       ecoBonus: 20, recursosBonus: { madeira: 8 },
-      lore: 'As raízes crescem para dentro porque algo no núcleo tem fome. Não é escuridão — é apetite. A Tecelã guia as raízes para que não devorem tudo de uma vez.',
+      lore: HABITANTES_LORE[3].questLore,
       recompensaDesc: '+20% loot neste andar · +8 Madeira',
     },
   },
   4: {
     floor: 4, nome: 'Voz do Cristal', papel: 'Arquivo Vivo', icone: '💎',
-    fala: 'Gravei tudo que foi dito neste lugar. Preciso de tempo para verificar se você é real — ou mais um eco dos que já passaram. Volte quando o silêncio confirmar sua presença.',
-    falamissão: 'O silêncio ainda analisa. Permaneça. O cristal avalia paciência.',
-    falaConcluso: 'Você é real. O cristal comparou sua frequência com a de 4.312 visitantes anteriores. Você é o primeiro que chegou a este ponto sem perder algo fundamental. Mas isso levanta uma questão que o cristal não consegue resolver sozinho: o que você é, afinal?',
+    fala: HABITANTES_LORE[4].fala,
+    falamissão: HABITANTES_LORE[4].falamissão,
+    falaConcluso: HABITANTES_LORE[4].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 28 dias após descobrir o Cristal',
       dias: 28,
       ecoBonus: 25, recursosBonus: { ferro: 10 },
-      lore: 'O cristal gravou cada palavra dita na Torre. A palavra mais repetida não é "ajuda". É "espera". O cristal ainda espera que alguém entenda por quê.',
+      lore: HABITANTES_LORE[4].questLore,
       recompensaDesc: '+25% loot neste andar · +10 Ferro',
     },
   },
   5: {
     floor: 5, nome: 'Âncora do Primeiro Ciclo', papel: 'Fundação Consciente', icone: '⚓',
-    fala: 'Não sou um ser que a Torre absorveu. Sou o que o Fundador plantou aqui deliberadamente — um fragmento de intenção original, cristalizado na pedra no momento exato em que a construção cruzou este ponto. Minha função: lembrar a Torre do que ela foi projetada para ser. A Torre ouve. Mas ouvir não é obedecer. Preciso de tempo para verificar se você ainda carrega intenção genuína — ou se a Torre já começou a substituí-la.',
-    falamissão: 'Quinze dias. O tempo que o Fundador estimou ser necessário para que a Torre não consiga imitar o propósito de alguém que ainda o possui. Se ao final você ainda for você mesmo, acreditarei no que diz ser.',
-    falaConcluso: 'Quinze dias e sua intenção permaneceu intacta. Isso é raro. Os outros perderam algo antes de chegar aqui — uma fatia de memória sobre por que estavam subindo. Você ainda a tem. Guarde esse "ainda" com cuidado. A Torre está apenas começando a atentar.',
+    fala: HABITANTES_LORE[5].fala,
+    falamissão: HABITANTES_LORE[5].falamissão,
+    falaConcluso: HABITANTES_LORE[5].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 15 dias desde a descoberta',
       dias: 15,
       ecoBonus: 22, moralBonus: 10,
-      lore: 'O Fundador sabia que a entidade tentaria corromper o propósito da Torre antes que a construção terminasse. Por isso plantou âncoras — fragmentos de intenção original — a cada cinco andares. Esta foi a primeira. Sua função: lembrar a Torre do que ela deveria ser. A entidade aprendeu, com o tempo, a fazer a Torre ouvir a Âncora sem obedecer. O Fundador não previu isso. Ou previu, e concluiu que não havia alternativa melhor do que tentar mesmo assim.',
+      lore: HABITANTES_LORE[5].questLore,
       recompensaDesc: '+22% loot neste andar · +10 Moral',
     },
   },
   6: {
     floor: 6, nome: 'Sentinela Sem Nome', papel: 'Guardião Perdido', icone: '🗿',
-    fala: 'Última ordem recebida: não deixar ninguém passar. A autoridade que a deu não existe mais. Mas a ordem existe. Se você pode provar que tem força suficiente para disputar passagem, posso reconhecer sua autoridade em substituição.',
-    falamissão: 'Dois combatentes — não um. Autoridade militar legítima exige hierarquia, não bravura individual. E demonstração do Andar 10 como prova de alcance real.',
-    falaConcluso: 'Autoridade reconhecida. Nova ordem registrada: facilitar passagem dos que chegam com propósito. O que é propósito? Ainda estou processando.',
+    fala: HABITANTES_LORE[6].fala,
+    falamissão: HABITANTES_LORE[6].falamissão,
+    falaConcluso: HABITANTES_LORE[6].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter 2 Combatentes e conquistar o Andar 10',
       profissoes: ['combatente', 'combatente'], andarMin: 10,
       ecoBonus: 25, recursosBonus: { madeira: 10 },
-      lore: 'Sua última ordem era "não deixes ninguém passar" — mas não especificou em qual direção. A Sentinela cumpre ordens de uma autoridade que a Torre corroeu. Ainda aguarda a contraordem.',
+      lore: HABITANTES_LORE[6].questLore,
       recompensaDesc: '+25% loot neste andar · +10 Madeira',
     },
   },
   7: {
     floor: 7, nome: 'Jardineira Esquecida', papel: 'Curadora do Impossível', icone: '🌿',
-    fala: 'Curo com o que a Torre me dá, mas a Torre não dá comida — dá crescimento. Crescimento sem nutrição. Traga-me algo do mundo exterior. Lembro do que comida real era.',
-    falamissão: 'Comida trazida de expedições neste andar — não do armazém em repouso. Consigo sentir a diferença: carregada pelas mãos de quem esteve aqui tem outra textura. Volte mais de uma vez.',
-    falaConcluso: 'Lembro. A diferença entre crescer e ser nutrido. Obrigada por trazer a memória de volta junto com a comida.',
+    fala: HABITANTES_LORE[7].fala,
+    falamissão: HABITANTES_LORE[7].falamissão,
+    falaConcluso: HABITANTES_LORE[7].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 7 ao menos 3 vezes e ter 55 comida',
       recurso: { tipo: 'comida', qtd: 55 }, farmsMin: { andar: 7, vezes: 3 },
       ecoBonus: 25, moralBonus: 8,
-      lore: 'Ela ainda cura. Tudo que toca cresce de volta — diferente. Mais parecido com a Torre do que com o que era antes. Mas ela luta contra isso todo dia. E até agora, está vencendo.',
+      lore: HABITANTES_LORE[7].questLore,
       recompensaDesc: '+25% loot neste andar · +8 Moral',
     },
   },
   8: {
     floor: 8, nome: 'Estudioso do Infinito', papel: 'Arquivista Exilado', icone: '📚',
-    fala: 'Cataloguei cada manuscrito nesta biblioteca. Cada um, exceto um. Escrito em ferro. Não é um idioma que reconheço — mas reconheço os nomes. Se você trouxer ferro puro, posso terminar a tradução.',
-    falamissão: 'Ferro extraído das profundezas deste andar — não fundido lá embaixo e carregado até aqui. O que vem daqui tem impurezas específicas que preciso para a tradução. Explore aqui de verdade.',
-    falaConcluso: 'Tradução concluída. Era uma lista de nomes. O último nome era o meu. Penúltimo... era o seu.',
+    fala: HABITANTES_LORE[8].fala,
+    falamissão: HABITANTES_LORE[8].falamissão,
+    falaConcluso: HABITANTES_LORE[8].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 8 ao menos 3 vezes e ter 30 ferro',
       recurso: { tipo: 'ferro', qtd: 30 }, farmsMin: { andar: 8, vezes: 3 },
       ecoBonus: 30, recursosBonus: { pedra: 15 },
-      lore: 'O único livro que ele não conseguia ler estava escrito em ferro. Não era um idioma — era uma lista de nomes de todos que chegariam ao ápice. Seu nome estava lá antes de você nascer.',
+      lore: HABITANTES_LORE[8].questLore,
       recompensaDesc: '+30% loot neste andar · +15 Pedra',
     },
   },
   9: {
     floor: 9, nome: 'Ferreiro Espectral', papel: 'Forjador das Correntes', icone: '🔥',
-    fala: 'Forjei as correntes que prendem a entidade no ápice. Elas ainda seguram — mas ficam um pouco menores cada vez que alguém conquista um andar. Precisaria de ferro real para reforçá-las. Se você se importa com isso.',
-    falamissão: 'Ferro extraído repetidamente deste andar — as correntes distinguem ferro de expedição de ferro parado em armazém. Quatro vezes ao menos. O que vem de esforço constante tem outra têmpera.',
-    falaConcluso: 'Reforçadas. Por enquanto. Mas você vai continuar subindo, não vai? E as correntes vão continuar diminuindo. Eu sei. Apenas... saiba o que está desfazendo.',
+    fala: HABITANTES_LORE[9].fala,
+    falamissão: HABITANTES_LORE[9].falamissão,
+    falaConcluso: HABITANTES_LORE[9].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 9 ao menos 4 vezes e ter 40 ferro',
       recurso: { tipo: 'ferro', qtd: 40 }, farmsMin: { andar: 9, vezes: 4 },
       ecoBonus: 30, recursosBonus: { ferro: 15 },
-      lore: 'Ele forjou as correntes que prendem a entidade. Elas ainda seguram. Mas ficam um pouco menores a cada andar conquistado. O Ferreiro sabe. E forja assim mesmo, porque é tudo que sabe fazer.',
+      lore: HABITANTES_LORE[9].questLore,
       recompensaDesc: '+30% loot neste andar · +15 Ferro',
     },
   },
   10: {
     floor: 10, nome: 'Memória da Construção', papel: 'Arquivo do Processo', icone: '🏛️',
-    fala: 'Estive presente quando o Fundador construiu este andar específico. Não como trabalhador — como resistência. A Torre não queria ser construída aqui. O Fundador forçou. Guardo o registro desse conflito e do método que ele usou para vencer. Mas o registro exige capacidade intelectual para ser extraído — e exige que você continue subindo. Não me interessa testemunhar quem para.',
-    falamissão: 'Traga um Erudito capaz de interpretar estruturas de intenção — e demonstre que avançou ao menos até o décimo segundo andar. Preciso saber que o que aconteceu aqui não será a última resistência que você enfrenta.',
-    falaConcluso: 'O Erudito extraiu o que guardo. A Torre foi vencida aqui uma vez — pelo Fundador, pelo método que ele usou. Esse método não foi força. Foi outra coisa. O Erudito sabe agora, ou aprenderá com o que copiou. Uma Torre que foi vencida uma vez pode ser vencida de novo. O que importa é saber qual método usar.',
+    fala: HABITANTES_LORE[10].fala,
+    falamissão: HABITANTES_LORE[10].falamissão,
+    falaConcluso: HABITANTES_LORE[10].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter um Erudito e conquistar o Andar 12',
       profissoes: ['erudito'], andarMin: 12,
       ecoBonus: 28, recursosBonus: { ferro: 15, pedra: 10 },
-      lore: 'O décimo andar foi o mais difícil de construir. A pedra recusava-se a assentar — não por instabilidade geológica, mas por resistência da estrutura. O Fundador não usou força: repetiu o propósito original em voz alta por quarenta dias consecutivos até que a Torre cedesse. A Memória guarda essas palavras exatas. O Erudito as copiou — mas ainda não sabe o que são, ou quando será necessário usá-las. O momento de entender está mais adiante.',
+      lore: HABITANTES_LORE[10].questLore,
       recompensaDesc: '+28% loot neste andar · +15 Ferro +10 Pedra',
     },
   },
   11: {
     floor: 11, nome: 'Afogado Lúcido', papel: 'Transformado Consciente', icone: '💧',
-    fala: 'Não estou morrendo. Estou sendo preenchido. Há uma diferença — insisto que há. Se você ficar tempo suficiente, verá que continuo sendo eu mesmo. Isso é o que me separa dos outros.',
-    falamissão: 'Permaneça. Observe. Veja que ainda sou eu. Que a consciência sobrevive mesmo quando o corpo muda.',
-    falaConcluso: 'Você ficou. E viu. Guardarei isso — a memória de alguém que olhou e não fugiu. É o que me mantém eu mesmo.',
+    fala: HABITANTES_LORE[11].fala,
+    falamissão: HABITANTES_LORE[11].falamissão,
+    falaConcluso: HABITANTES_LORE[11].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 18 dias após descobri-lo',
       dias: 18,
       ecoBonus: 30, moralBonus: 8,
-      lore: 'Ele não está morrendo. Está sendo preenchido pela Torre lentamente. E permanece consciente durante todo o processo. Há uma diferença entre transformação e morte. Ele é a prova.',
+      lore: HABITANTES_LORE[11].questLore,
       recompensaDesc: '+30% loot neste andar · +8 Moral',
-      escolha: {
-        prompt: 'A mensagem revelada ou guardada?',
-        opcoes: [
-          { id: 'a' as const, label: 'Revelar', descricao: '+5 Moral', moralBonus: 5, falaResultado: 'Revelada. Peso compartilhado.' },
-          { id: 'b' as const, label: 'Guardar', descricao: "Relíquia \"Mensagem Selada\"", reliquia: 'Mensagem Selada', falaResultado: 'Segredo mantido.' },
-        ],
-      },
     },
   },
   12: {
     floor: 12, nome: 'Percussão Profunda', papel: 'Pulso da Torre', icone: '🥁',
-    fala: 'Não sou um ser. Sou o ritmo. O pulso do que você está dentro. Para sincronizar comigo, você precisa de um grupo suficientemente numeroso — a vibração de muitos corpos em um só lugar.',
-    falamissão: 'Mais. A vibração de muitos. Três ao menos — e pedra. O ritmo exige peso e presença simultâneos.',
-    falaConcluso: 'Sincronizado. O minério deste andar vibra na mesma frequência agora. Será mais fácil extraí-lo. Ou mais assustador. Depende de como você ouve o ritmo.',
+    fala: HABITANTES_LORE[12].fala,
+    falamissão: HABITANTES_LORE[12].falamissão,
+    falaConcluso: HABITANTES_LORE[12].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter 3+ NPCs de combate vivos e 50 pedra',
       npcsMinCombate: 3, recurso: { tipo: 'pedra', qtd: 50 },
       ecoBonus: 30, recursosBonus: { pedra: 20 },
-      lore: 'A Percussão não é um ser — é o coração da Torre. Ela está viva há mais tempo do que o conceito de tempo existe. O ritmo que você ouve nas paredes é ela respirando.',
+      lore: HABITANTES_LORE[12].questLore,
       recompensaDesc: '+30% loot neste andar · +20 Pedra',
     },
   },
   13: {
     floor: 13, nome: 'Oráculo Invertido', papel: 'Vidente do Passado', icone: '🔮',
-    fala: 'Vejo passados, não futuros. Os futuros daqui já foram devorados pela Torre — não há nada para ver além do horizonte. Mas o passado... O passado é infinito. E tenho algo para te mostrar, se você pagar o custo que a Torre cobra por conhecimento real.',
-    falamissão: 'Moral. O conhecimento que a Torre guarda custa caro. E você vai querer saber.',
-    falaConcluso: 'O que você pagou era seu orgulho de achar que entendia o que estava fazendo. O passado revela: cada passo que você deu foi antecipado. Mas antecipado não significa determinado.',
+    fala: HABITANTES_LORE[13].fala,
+    falamissão: HABITANTES_LORE[13].falamissão,
+    falaConcluso: HABITANTES_LORE[13].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 15 de Moral (custo imediato)',
       custo: { moral: 15 },
       ecoBonus: 30, moralBonus: 15,
-      lore: 'Ele vê passados porque a Torre consome futuros. Tudo o que poderia acontecer aqui já foi devorado. O que resta é o registro do que aconteceu — e o Oráculo lê esse registro como outros leem mapas.',
+      lore: HABITANTES_LORE[13].questLore,
       recompensaDesc: '+30% loot neste andar · +15 Moral (retorno)',
     },
   },
   14: {
     floor: 14, nome: 'Comandante de Mármore', papel: 'General do Vazio', icone: '⚔️',
-    fala: 'Protejo esta posição por ordem da Cidadela de Ardenas. Se você puder apresentar um combatente e um sentinela — os dois pilares de qualquer força militar legítima — reconhecerei sua cidadela como aliada e abrirei passagem.',
-    falamissão: 'Um combatente e um sentinela — e prova de que chegaram ao décimo oitavo andar. Os dois pilares de qualquer força que resiste até o fim.',
-    falaConcluso: 'Cidadela reconhecida como aliada. Para que conste no registro: Ardenas afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Mas a aliança permanece válida.',
+    fala: HABITANTES_LORE[14].fala,
+    falamissão: HABITANTES_LORE[14].falamissão,
+    falaConcluso: HABITANTES_LORE[14].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter Combatente + Sentinela e conquistar o Andar 18',
       profissoes: ['combatente', 'sentinela'], andarMin: 18,
       ecoBonus: 35, recursosBonus: { ferro: 20 },
-      lore: 'A cidadela que ele protegia afundou 4.000 andares abaixo do andar 1 quando a Torre cresceu. Ele ainda protege uma posição acima de algo que não existe mais. E faz isso perfeitamente.',
+      lore: HABITANTES_LORE[14].questLore,
       recompensaDesc: '+35% loot neste andar · +20 Ferro',
     },
   },
   15: {
     floor: 15, nome: 'Vigia do Penúltimo Ciclo', papel: 'Preparador do Que Vem Depois', icone: '🗼',
-    fala: 'Estou aqui para preparar quem chega ao vigésimo andar com intenção real. O vigésimo andar não tem um guardião de força — tem algo que o Fundador deixou como teste de propósito. Quem chega sem ter sacrificado algo genuíno não compreende o que encontra. Quem sacrifica pode escolher. A Torre reconhece quem pagou e quem não pagou — e trata os dois de formas muito diferentes.',
-    falamissão: 'Dezoito pontos de Moral. Não como punição — como evidência de que você tem algo real a perder. Apenas quem tem algo a perder pode verdadeiramente escolher.',
-    falaConcluso: 'O que você deu era real. Isso significa que você pode compreender o que o vigésimo andar oferece. Não direi o que é — a escolha precisa ser sua, sem minha interpretação. Direi apenas o que o Fundador deixou escrito antes de entrar: "Não construí uma barreira no vigésimo andar. Construí uma pergunta."',
+    fala: HABITANTES_LORE[15].fala,
+    falamissão: HABITANTES_LORE[15].falamissão,
+    falaConcluso: HABITANTES_LORE[15].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 18 de Moral (custo imediato ao aceitar)',
       custo: { moral: 18 },
       ecoBonus: 32, moralBonus: 20,
-      lore: 'O vigésimo andar contém uma pergunta que o Fundador formulou antes de morrer — não de velhice, mas de escolha deliberada. Ele entrou no vigésimo andar sabendo que não sairia, porque a pergunta que deixou ali só pode ser respondida por alguém que ainda não fez a escolha que ele fez. A resposta errada não mata. A resposta certa transforma — mas o Vigia nunca disse em quê.',
+      lore: HABITANTES_LORE[15].questLore,
       recompensaDesc: '+32% loot neste andar · +20 Moral (retorno)',
     },
   },
   16: {
     floor: 16, nome: 'Eco Faminto', papel: 'Apetite da Entidade', icone: '🌀',
-    fala: 'Não sou ela. Sou o que ela perdeu quando aprendeu a ser paciente. Seu apetite. Dê-me comida e mostro o caminho pelo abismo sem que ele me use para te consumir no processo.',
-    falamissão: 'Comida em quantidade — mas trazida de expedições aqui. O apetite distingue comida de expedição de comida de armazém parado: a diferença entre ser nutrido e ser distraído. Três vezes aqui, ao menos.',
-    falaConcluso: 'Satisfeito. Por um momento. O apetite voltará — sempre volta. Mas agora você passou e ele estava distraído. Use isso.',
+    fala: HABITANTES_LORE[16].fala,
+    falamissão: HABITANTES_LORE[16].falamissão,
+    falaConcluso: HABITANTES_LORE[16].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 16 ao menos 3 vezes e ter 70 comida',
       recurso: { tipo: 'comida', qtd: 70 }, farmsMin: { andar: 16, vezes: 3 },
       ecoBonus: 35, recursosBonus: { comida: 25 },
-      lore: 'Não é a entidade. É seu apetite — o único fragmento que ela deixou vagar livremente quando aprendeu paciência. O apetite não conhece intenção. Apenas fome.',
+      lore: HABITANTES_LORE[16].questLore,
       recompensaDesc: '+35% loot neste andar · +25 Comida',
     },
   },
   17: {
     floor: 17, nome: 'Paradoxo Ambulante', papel: 'Memória do Que Poderia Ser', icone: '⏳',
-    fala: 'Existo em três momentos simultâneos. Em um você está morto. Em outro nunca chegou aqui. No terceiro, nós dois nos tornamos a mesma coisa. Aguarde dez dias e descobrimos qual desses momentos é o real.',
-    falamissão: 'O tempo verifica. Dez dias é o mínimo para que os momentos colapsar em um.',
-    falaConcluso: 'O terceiro momento não aconteceu. Mas ficou muito perto. Guarde isso — a proximidade do que quase foi.',
+    fala: HABITANTES_LORE[17].fala,
+    falamissão: HABITANTES_LORE[17].falamissão,
+    falaConcluso: HABITANTES_LORE[17].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 25 dias após encontrá-lo',
       dias: 25,
       ecoBonus: 35, recursosBonus: { ferro: 20 },
-      lore: 'Ele existe em três tempos simultâneos. Em um, você chegou ao ápice e foi consumido. Em outro, desistiu no décimo andar. No terceiro — o único em que o Paradoxo sorri — o resultado é diferente. Ele não revela qual.',
+      lore: HABITANTES_LORE[17].questLore,
       recompensaDesc: '+35% loot neste andar · +20 Ferro',
     },
   },
   18: {
     floor: 18, nome: 'Último Defensor', papel: 'Construído Para Falhar', icone: '🛡️',
-    fala: 'Fui construído pelos que tentaram parar o que está acima. Falharam. Mas não eram covardes — eram os únicos que tentaram construir algo que durasse além deles. Prove que sua cidadela é do mesmo material.',
-    falamissão: 'Ferro e pedra. Os materiais dos que constroem para durar.',
-    falaConcluso: 'Material verificado. Sua cidadela tem substância. Os que me construíram teriam aprovado. Isso significa algo — mesmo que você não saiba ainda por quê.',
+    fala: HABITANTES_LORE[18].fala,
+    falamissão: HABITANTES_LORE[18].falamissão,
+    falaConcluso: HABITANTES_LORE[18].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Trazer 55 ferro e 55 pedra',
       recurso: { tipo: 'ferro', qtd: 55 },
       recurso2: { tipo: 'pedra', qtd: 55 },
       recursosBonus: { ferro: 25 },
       ecoBonus: 35,
-      lore: 'Os que o construíram falharam em parar a entidade. Mas não foram covardes. Foram os únicos que tentaram construir algo que durasse além deles. O Último Defensor é a prova de que tentaram.',
+      lore: HABITANTES_LORE[18].questLore,
       recompensaDesc: '+35% loot neste andar · +25 Ferro',
     },
   },
   19: {
     floor: 19, nome: 'Susurro do Limiar', papel: 'Espaço Entre', icone: '🌑',
-    fala: 'Não sou a entidade. Sou o espaço entre ela e você. A distância que ela mantém para não assustar a presa antes do momento certo. Se você permanecer em silêncio — sem conflitos, sem guerras — por três dias, compartilho o que sei sobre o último andar.',
-    falamissão: 'Silêncio. Sem guerras. Por três dias. O limiar observa.',
-    falaConcluso: 'Silêncio mantido. O que sei sobre o último andar: ela não vai lutar. Vai conversar. E o que ela propõe... depende do que você trouxer de si mesmo até lá.',
+    fala: HABITANTES_LORE[19].fala,
+    falamissão: HABITANTES_LORE[19].falamissão,
+    falaConcluso: HABITANTES_LORE[19].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 10 dias sem entrar em guerra',
       dias: 10, semGuerra: true,
       ecoBonus: 35, moralBonus: 15,
-      lore: 'O silêncio que você ouve não é ausência de som. É a entidade respirando devagar para não assustar a presa antes do momento certo. O Susurro é essa respiração. E ele te avisou.',
+      lore: HABITANTES_LORE[19].questLore,
       recompensaDesc: '+35% loot neste andar · +15 Moral',
-      escolha: {
-        prompt: 'Forjar arma ou guardar ferro?',
-        opcoes: [
-          { id: 'a' as const, label: 'Forjar', descricao: '+20% poder', falaResultado: 'Promessa.' },
-          { id: 'b' as const, label: 'Guardar', descricao: '+20 Ferro, Relíquia', recursosBonus: { ferro: 20 }, reliquia: 'Ferro', falaResultado: 'Potencial.' },
-        ],
-      },
     },
   },
 
   // ─── TEMPORADA 2 — O Intervalo (andares 21–40) ──────────────────────────────
   21: {
     floor: 21, nome: 'Vestígio da Voz', papel: 'Memória que Reconhece', icone: '👁️',
-    fala: 'Eu sei quem você é. Não de antes — de depois. A memória aqui não segue a direção do tempo. Preciso que me traga um Batedor. Alguém que entenda como rastrear o que ainda não aconteceu.',
-    falamissão: 'Um futuro exige dois leitores — um para seguir a direção, outro para confirmar que a leitura não é ilusão. Dois Batedores, e que chegaram ao Andar 26.',
-    falaConcluso: 'Os Batedores leram o rastro. Não disseram o que viram. Apenas confirmaram que eu estava certo em reconhecer você. Cuide-se — o que vem a seguir te lembra de algo que você ainda não viveu.',
+    fala: HABITANTES_LORE[21].fala,
+    falamissão: HABITANTES_LORE[21].falamissão,
+    falaConcluso: HABITANTES_LORE[21].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter 2 Batedores e conquistar o Andar 26',
       profissoes: ['batedor', 'batedor'], andarMin: 26,
       ecoBonus: 20, moralBonus: 8,
-      lore: 'O Vestígio existe na memória de um momento que ainda não aconteceu. Ele te reconheceu porque já te viu chegar — de um futuro que pode ou não se tornar real. O rastro que o Batedor leu não era do passado. Era uma possibilidade.',
+      lore: HABITANTES_LORE[21].questLore,
       recompensaDesc: '+20% loot neste andar · +8 Moral',
-      escolha: {
-        prompt: 'Seguir vestígio ou registrar?',
-        opcoes: [
-          { id: 'a' as const, label: 'Seguir', descricao: 'Batedor indisponível 5d, +20% Eco', falaResultado: 'Viu antes.' },
-          { id: 'b' as const, label: 'Registrar', descricao: '+15% Eco', falaResultado: 'Seguro.' },
-        ],
-      },
     },
   },
   22: {
     floor: 22, nome: 'Fragmento Coletivo', papel: 'Eco dos Que Construíram', icone: '⚒️',
-    fala: 'Somos o que sobrou depois que o Eco dos Construtores lá embaixo ficou para trás. A memória mais bruta — antes de ganhar forma, antes de ter palavras. Dê-nos ferro. Para sentirmos o peso do que seguramos antes de ser pedra.',
-    falamissão: 'Ferro deste andar — não de qualquer fonte. O peso que segurávamos vinha daqui especificamente. Explore aqui repetidamente. O Fragmento sente a origem do que é trazido.',
-    falaConcluso: 'O ferro faz sentido. Agora lembramos o que era antes de ser lembrança. Havia intenção primeiro. Depois veio a pedra. A ordem importa mais do que qualquer um nos disse.',
+    fala: HABITANTES_LORE[22].fala,
+    falamissão: HABITANTES_LORE[22].falamissão,
+    falaConcluso: HABITANTES_LORE[22].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 22 ao menos 4 vezes e ter 85 ferro',
       recurso: { tipo: 'ferro', qtd: 85 }, farmsMin: { andar: 22, vezes: 4 },
       ecoBonus: 25, recursosBonus: { ferro: 20 },
-      lore: 'O Fragmento Coletivo é a memória dos Construtores antes de terem linguagem — pura intenção, puro peso. Eles não sabiam o que construíam. Sabiam apenas que precisavam construir. A razão chegou depois, quando já era tarde para mudar a direção.',
+      lore: HABITANTES_LORE[22].questLore,
       recompensaDesc: '+25% loot neste andar · +20 Ferro',
     },
   },
   23: {
     floor: 23, nome: 'Guardião da Memória Fixa', papel: 'Preservador do Instante', icone: '🕯️',
-    fala: 'Guardo um único momento. Um instante específico que não pode ser esquecido — se esquecer, algo fundamental se desfaz. Não preciso que faça nada heroico. Preciso apenas que permaneça. Que testemunhe junto comigo.',
-    falamissão: 'Permaneça. Testemunhe. O momento precisa de uma segunda consciência para se manter real.',
-    falaConcluso: 'O momento persistiu. Com duas consciências a sustentá-lo, ficou mais sólido do que estava há séculos. Obrigado. O que eu guardo não posso revelar — mas você sentiu, não sentiu? Algo se acomodou no lugar certo.',
+    fala: HABITANTES_LORE[23].fala,
+    falamissão: HABITANTES_LORE[23].falamissão,
+    falaConcluso: HABITANTES_LORE[23].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 18 dias após encontrá-lo',
       dias: 18,
       ecoBonus: 22, recursosBonus: { pedra: 25 },
-      lore: 'O Guardião preserva o instante em que a Torre escolheu ser o que é em vez do que deveria ser. Esse momento é frágil — sem testemunha, dissolve-se. Com uma, permanece. Você foi a primeira testemunha nova em muito tempo.',
+      lore: HABITANTES_LORE[23].questLore,
       recompensaDesc: '+22% loot neste andar · +25 Pedra',
     },
   },
   24: {
     floor: 24, nome: 'O Que Viu Antes', papel: 'Testemunha do Início', icone: '🪨',
-    fala: 'Eu vi o que havia antes do Andar 1. Não vou falar sobre isso. O preço de saber é alto demais — e você não está pronto. Mas posso te mostrar que havia algo, se você pagar o custo de entender que algumas perguntas mudam quem pergunta.',
-    falamissão: 'O custo é interno. Não é recurso — é disposição. Sacrifique algo de si mesmo para ouvir o silêncio do que eu testemunhei.',
-    falaConcluso: 'Você pagou. Não vou dizer o que havia antes — mas sinta: algo em você agora sabe que a pergunta existia antes da Torre. E que a Torre foi a resposta para algo que ninguém devia ter perguntado.',
+    fala: HABITANTES_LORE[24].fala,
+    falamissão: HABITANTES_LORE[24].falamissão,
+    falaConcluso: HABITANTES_LORE[24].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 20 de Moral (custo imediato)',
       custo: { moral: 20 },
       ecoBonus: 28, moralBonus: 20,
-      lore: 'A Testemunha viu o que havia antes do primeiro andar. Não fala sobre isso — não porque não possa, mas porque as palavras para descrever o que viu ainda não existem. O que você sentiu ao pagar o custo era a borda do que ela carrega sozinha.',
+      lore: HABITANTES_LORE[24].questLore,
       recompensaDesc: '+28% loot neste andar · +20 Moral (retorno)',
+    },
+  },
+  25: {
+    floor: 25, nome: 'Guardiã da Memória Anterior', papel: 'Custódia do Antes', icone: '🕰️',
+    fala: HABITANTES_LORE[25].fala,
+    falamissão: HABITANTES_LORE[25].falamissão,
+    falaConcluso: HABITANTES_LORE[25].falaConcluso,
+    quest: {
+      tipo: 'temporal', descricaoObj: 'Sobreviver 20 dias sem tentar apagar memórias',
+      dias: 20,
+      ecoBonus: 27, moralBonus: 15,
+      lore: HABITANTES_LORE[25].questLore,
+      recompensaDesc: '+27% loot neste andar · +15 Moral',
     },
   },
   26: {
     floor: 26, nome: 'Eco da Expedição Perdida', papel: 'Memória de Quem Não Voltou', icone: '🗺️',
-    fala: 'Somos o eco de um grupo que desceu até aqui e não conseguiu subir de volta. Não morremos — ficamos. A Torre não nos deixou partir. Se você tem combatentes suficientes, talvez consiga o que nós não conseguimos: força em número.',
-    falamissão: 'Combatentes. E batedores. E prova de que chegaram além do que nós chegamos — Andar 30. É o que nossa expedição não conseguiu alcançar.',
-    falaConcluso: 'Você tem o que nós não tínhamos. Use isso. E quando chegar ao topo — se chegar — lembre que passamos por aqui primeiro. Não como aviso. Como encorajamento.',
+    fala: HABITANTES_LORE[26].fala,
+    falamissão: HABITANTES_LORE[26].falamissão,
+    falaConcluso: HABITANTES_LORE[26].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter Combatente + Batedor e conquistar o Andar 30',
       profissoes: ['combatente', 'batedor'], andarMin: 30,
       ecoBonus: 25, recursosBonus: { madeira: 30 },
-      lore: 'A expedição que se tornou este eco tinha dezessete membros. Desceram com provisões para quarenta dias. A Torre os deixou descer. Não os deixou subir. O Eco não sabe por quê — apenas que, quando tentaram, as escadas haviam mudado de lugar.',
+      lore: HABITANTES_LORE[26].questLore,
       recompensaDesc: '+25% loot neste andar · +30 Madeira',
     },
   },
   27: {
     floor: 27, nome: 'Memória do Traidor', papel: 'Eco de uma Decisão', icone: '🗡️',
-    fala: 'Fui um Construtor. E fiz algo que os outros não fizeram: concordei com o que encontramos aqui. Troquei nosso propósito pelo que a Torre prometeu. Os outros chamaram de traição. Eu chamei de entendimento. Traga-me madeira — o material dos que constroem para os outros.',
-    falamissão: 'Madeira deste andar — não carregada de baixo. A memória do que construímos vem daqui. Quatro expedições no mínimo. O que vem de trabalho constante carrega a intenção que buscamos.',
-    falaConcluso: 'A madeira confirma minha teoria: você também está aqui por uma razão que não é completamente sua. Isso não te faz traidor. Te faz o tipo de pessoa que a Torre consegue trabalhar. Como eu. Não é insulto — é observação.',
+    fala: HABITANTES_LORE[27].fala,
+    falamissão: HABITANTES_LORE[27].falamissão,
+    falaConcluso: HABITANTES_LORE[27].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 27 ao menos 4 vezes e ter 100 madeira',
       recurso: { tipo: 'madeira', qtd: 100 }, farmsMin: { andar: 27, vezes: 4 },
       ecoBonus: 25, recursosBonus: { madeira: 25 },
-      lore: 'O Construtor que traiu não vendeu os outros por fraqueza. Entendeu algo que eles não conseguiram: a Torre não era inimiga. Era uma oportunidade que exigia um preço que os outros não estavam dispostos a pagar. Ele pagou. E ficou aqui, como memória, como prova de que entendeu.',
+      lore: HABITANTES_LORE[27].questLore,
       recompensaDesc: '+25% loot neste andar · +25 Madeira',
     },
   },
   28: {
     floor: 28, nome: 'Oráculo do Propósito', papel: 'Vidente do Destino da Torre', icone: '🔭',
-    fala: 'Não vejo seu futuro. Vejo o futuro da Torre. E a Torre tem um. Termina de uma forma específica que depende de quem chega ao topo e do que traz consigo. Aguarde doze dias aqui — deixe-me observar o que você carrega sem saber.',
-    falamissão: 'Doze dias. Não é sobre você — é sobre o que flutua ao seu redor sem que perceba. O que a Torre vai usar.',
-    falaConcluso: 'Vi o suficiente. Não direi o que a Torre fará — mas direi isto: o que você carrega sem saber é mais valioso do que o que sabe que tem. A Torre já percebeu. Você é o único que ainda não.',
+    fala: HABITANTES_LORE[28].fala,
+    falamissão: HABITANTES_LORE[28].falamissão,
+    falaConcluso: HABITANTES_LORE[28].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 28 dias após encontrá-lo',
       dias: 28,
       ecoBonus: 28, recursosBonus: { ferro: 25 },
-      lore: 'O Oráculo vê o destino da Torre, não dos visitantes. Em todas as visões que teve, a Torre termina de formas radicalmente diferentes dependendo de uma única variável: quem chega ao fim e o que ignora carregar. Você é a variável atual.',
+      lore: HABITANTES_LORE[28].questLore,
       recompensaDesc: '+28% loot neste andar · +25 Ferro',
     },
   },
   29: {
     floor: 29, nome: 'Guardião do Nome Apagado', papel: 'Custódio do Esquecido', icone: '📛',
-    fala: 'Guardo o nome que foi apagado. O nome do Fundador. Não posso pronunciá-lo — fui construído para não poder. Mas posso te mostrar o espaço onde ele estava, se você pagar o custo de saber que existe um nome que o mundo inteiro foi impedido de conhecer.',
-    falamissão: 'O custo é comida — o mais básico. O Fundador acreditava que o conhecimento real deveria custar algo concreto, não apenas moral.',
-    falaConcluso: 'O espaço onde o nome estava é mais estranhamente vazio do que qualquer coisa que você já viu. Agora você sabe que ele existiu. Que foi apagado com propósito. E que o propósito de apagá-lo foi apagado junto. O que sobrou foi apenas a ausência.',
+    fala: HABITANTES_LORE[29].fala,
+    falamissão: HABITANTES_LORE[29].falamissão,
+    falaConcluso: HABITANTES_LORE[29].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 70 comida (custo imediato)',
       custo: { comida: 70 },
       ecoBonus: 30, recursosBonus: { comida: 35 },
-      lore: 'O nome do Fundador foi apagado antes de a Torre ser concluída. O Guardião foi criado especificamente para preservar o espaço onde o nome estava — não o nome em si, que é irrecuperável, mas a memória de que havia um nome. A ausência guardada com cuidado é um tipo de presença.',
+      lore: HABITANTES_LORE[29].questLore,
       recompensaDesc: '+30% loot neste andar · +35 Comida',
+    },
+  },
+  30: {
+    floor: 30, nome: 'Sentinela do Meio-Tempo', papel: 'Guardião do Intervalo', icone: '⚡',
+    fala: HABITANTES_LORE[30].fala,
+    falamissão: HABITANTES_LORE[30].falamissão,
+    falaConcluso: HABITANTES_LORE[30].falaConcluso,
+    quest: {
+      tipo: 'expedicao', descricaoObj: 'Ter Erudito e conquistar o Andar 35',
+      profissoes: ['erudito'], andarMin: 35,
+      ecoBonus: 30, recursosBonus: { ferro: 25, pedra: 20 },
+      lore: HABITANTES_LORE[30].questLore,
+      recompensaDesc: '+30% loot neste andar · +25 Ferro +20 Pedra',
     },
   },
   31: {
     floor: 31, nome: 'Raiz de Origem', papel: 'Ponto de Partida', icone: '🌿',
-    fala: 'Aqui foi colocada a primeira pedra. Não a primeira pedra da Torre — a primeira pedra de tudo que a Torre substituiu. Este é o lugar onde o propósito original foi enterrado antes de começar. Traga pedra — para que eu sinta o que separa o que foi colocado aqui do que deveria ter sido.',
-    falamissão: 'Pedra deste andar — a Raiz compara o peso do que foi com o peso do que é, e a origem importa. Não traga de qualquer lugar. Explore aqui ao menos quatro vezes antes.',
-    falaConcluso: 'A pedra que você trouxe pesa diferente. É de fora. O que foi colocado aqui primeiro também era de fora — mas de um fora que não existe mais. Você é a prova de que o exterior ainda produz coisas reais. Isso importa mais do que parece.',
+    fala: HABITANTES_LORE[31].fala,
+    falamissão: HABITANTES_LORE[31].falamissão,
+    falaConcluso: HABITANTES_LORE[31].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 31 ao menos 4 vezes e ter 90 pedra',
       recurso: { tipo: 'pedra', qtd: 90 }, farmsMin: { andar: 31, vezes: 4 },
       ecoBonus: 27, recursosBonus: { pedra: 30 },
-      lore: 'A primeira pedra colocada neste ponto não era de construção — era de fundação. Havia algo abaixo que precisava ser selado antes que qualquer estrutura pudesse existir. O que foi selado não era perigoso. Era o acordo original entre os Construtores e o que havia aqui antes.',
+      lore: HABITANTES_LORE[31].questLore,
       recompensaDesc: '+27% loot neste andar · +30 Pedra',
     },
   },
   32: {
     floor: 32, nome: 'Memória da Primeira Pedra', papel: 'Eco do Ato Fundador', icone: '🪨',
-    fala: 'Lembro do momento em que a primeira pedra foi colocada. Não como testemunha — como consequência. Fui criado naquele momento, sem querer. Se você trouxer alguém que entenda estruturas — erudito ou sentinela — eles podem me ajudar a entender o que sou.',
-    falamissão: 'Um Erudito ou Sentinela — e prova de que chegaram ao Andar 36. Só alguém que construiu chegando até lá pode me ajudar a entender o que sou.',
-    falaConcluso: 'O Erudito me disse: você é o eco de uma intenção, não de uma ação. A pedra foi colocada — mas o que você é é o propósito que havia antes da pedra. O ato foi consequência. Você é a razão. Isso muda tudo sobre o que penso que sou.',
+    fala: HABITANTES_LORE[32].fala,
+    falamissão: HABITANTES_LORE[32].falamissão,
+    falaConcluso: HABITANTES_LORE[32].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter Erudito ou Sentinela e conquistar o Andar 36',
       profissoes: ['erudito', 'sentinela'], andarMin: 36,
       ecoBonus: 28, recursosBonus: { pedra: 20, ferro: 15 },
-      lore: 'A Memória da Primeira Pedra não registra o ato de colocá-la — registra a razão pela qual foi colocada ali e não em outro lugar. E a razão era: porque o que havia abaixo pediu para ser coberto por algo específico. A pedra foi colocada onde foi porque o que estava abaixo escolheu aquele ponto.',
+      lore: HABITANTES_LORE[32].questLore,
       recompensaDesc: '+28% loot neste andar · +20 Pedra +15 Ferro',
     },
   },
   33: {
     floor: 33, nome: 'Eco do Esquecimento', papel: 'Momento em que o Propósito se Perdeu', icone: '💨',
-    fala: 'Existo no instante em que o propósito original foi esquecido. Não apagado — esquecido. Há diferença. O apagado pode ser recuperado. O esquecido precisa ser reaprendido. Permaneça comigo treze dias e você vai entender a diferença no seu próprio corpo.',
-    falamissão: 'Treze dias. O mesmo número de dias que levou para o propósito ser completamente esquecido depois de a Torre estar pronta.',
-    falaConcluso: 'Você entendeu. Não com palavras — com o peso de treze dias passados em um lugar onde o propósito virou ausência. O que a Torre constrói sem propósito é diferente do que constrói com ele. Você está no meio do construído sem propósito. Mas o seu propósito ainda está intacto. Por enquanto.',
+    fala: HABITANTES_LORE[33].fala,
+    falamissão: HABITANTES_LORE[33].falamissão,
+    falaConcluso: HABITANTES_LORE[33].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 30 dias após encontrá-lo',
       dias: 30,
       ecoBonus: 30, moralBonus: 18,
-      lore: 'O Eco existe no milissegundo em que o último Construtor vivo esqueceu por que haviam começado a construir. Não foi drama — foi exaustão. Ele simplesmente parou de lembrar. E naquele instante, a Torre mudou de propósito por conta própria, preenchendo o vácuo com o único propósito que conhecia: continuar existindo.',
+      lore: HABITANTES_LORE[33].questLore,
       recompensaDesc: '+30% loot neste andar · +18 Moral',
       escolha: {
         prompt: 'Um morador ou cidadela?',
@@ -724,68 +725,81 @@ export const HABITANTES: Record<number, HabitanteAndar> = {
   },
   34: {
     floor: 34, nome: 'Guardião da Intenção', papel: 'Protetor do Que Deveria Ser', icone: '⚖️',
-    fala: 'Protejo a intenção original. Não a Torre que existe — a Torre que deveria existir se o propósito não tivesse sido perdido. Para acessar esse conhecimento, você precisa provar que tem o que os Construtores perderam: integridade de propósito. O custo é moral — porque moral é o que mede propósito.',
-    falamissão: 'Moral. Não como punição — como prova. Quanto moral você está disposto a investir para saber o que a Torre deveria ter sido?',
-    falaConcluso: 'Suficiente. A intenção original era esta: a Torre deveria ser um arquivo. Um lugar onde tudo que existia antes pudesse ser preservado enquanto o mundo exterior mudava. Não uma armadilha. Um santuário. O que foi esquecido transformou o santuário em prisão — e a prisão em caçada.',
+    fala: HABITANTES_LORE[34].fala,
+    falamissão: HABITANTES_LORE[34].falamissão,
+    falaConcluso: HABITANTES_LORE[34].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 25 de Moral (custo imediato)',
       custo: { moral: 25 },
       ecoBonus: 32, moralBonus: 28,
-      lore: 'A intenção original do Fundador era construir um lugar de preservação — não de aprisionamento. Cada ser na Torre foi capturado não por malícia, mas porque a Torre sem propósito não conhecia outra forma de preservar. Prender é a única forma que encontrou de garantir que nada se vai.',
+      lore: HABITANTES_LORE[34].questLore,
       recompensaDesc: '+32% loot neste andar · +28 Moral (retorno)',
+    },
+  },
+  35: {
+    floor: 35, nome: 'Último Sussurro do Fundador', papel: 'Ecos de Origem', icone: '💫',
+    fala: HABITANTES_LORE[35].fala,
+    falamissão: HABITANTES_LORE[35].falamissão,
+    falaConcluso: HABITANTES_LORE[35].falaConcluso,
+    quest: {
+      tipo: 'sacrificio', descricaoObj: 'Sacrificar 30 de Moral (custo imediato)',
+      custo: { moral: 30 },
+      ecoBonus: 33, moralBonus: 30,
+      lore: HABITANTES_LORE[35].questLore,
+      recompensaDesc: '+33% loot neste andar · +30 Moral (retorno)',
     },
   },
   36: {
     floor: 36, nome: 'Habitante do Intervalo', papel: 'Ser Exclusivo desta Estação', icone: '🌙',
-    fala: 'Só existo nesta temporada da Torre. Quando os andares superiores forem alcançados, vou embora — não morro, apenas deixo de ser necessário aqui. Enquanto estou, preciso de comida e ferro. O que existe antes do primeiro andar também precisa de sustento.',
-    falamissão: 'Comida e ferro deste andar — trazidos de expedições reais aqui, não de armazém. O que existe antes do início não aceita reaproveitamento. Quatro expedições antes de trazer.',
-    falaConcluso: 'Sustentado. Há algo que posso te dizer antes de ir — algo que os registros acima nunca vão mencionar porque não sabem: antes do Andar 1, havia um número. Um número específico de câmaras que foi alterado antes do primeiro visitante chegar. O número original era maior. Quanto maior, os registros não dizem. Apenas que foi maior, e que foi mudado, e que ninguém perguntou por quê.',
+    fala: HABITANTES_LORE[36].fala,
+    falamissão: HABITANTES_LORE[36].falamissão,
+    falaConcluso: HABITANTES_LORE[36].falaConcluso,
     quest: {
       tipo: 'recurso', descricaoObj: 'Explorar o Andar 36 ao menos 4 vezes, ter 110 comida e 55 ferro',
       recurso: { tipo: 'comida', qtd: 110 },
       recurso2: { tipo: 'ferro', qtd: 55 },
       farmsMin: { andar: 36, vezes: 4 },
       ecoBonus: 30, recursosBonus: { comida: 30, ferro: 15 },
-      lore: 'O Habitante do Intervalo existe apenas nesta janela de tempo específica — quando os andares 21–40 são acessíveis mas ainda não foram completamente explorados. Não é um ser da Torre. É um ser do Intervalo entre o que a Torre foi e o que ainda não se tornou. Quando o intervalo fechar, ele simplesmente não estará mais aqui para ser encontrado.',
+      lore: HABITANTES_LORE[36].questLore,
       recompensaDesc: '+30% loot neste andar · +30 Comida +15 Ferro',
     },
   },
   37: {
     floor: 37, nome: 'Memória Nomeada', papel: 'Rastro de um Construtor Específico', icone: '🧑‍🔧',
-    fala: 'Fui um Construtor com nome. O único cujo nome sobreviveu — não por acidente, mas porque escondi meu nome dentro do projeto antes de ele ser apagado. Preciso de força para revelar onde o escondi. Combatentes e batedores — os que se movem com propósito.',
-    falamissão: 'Combatentes e batedores — e que chegaram ao Andar 39. O esconderijo está em movimento, próximo ao topo. Só os que chegaram lá podem alcançá-lo.',
-    falaConcluso: 'O nome está aqui. Não vou dizê-lo em voz alta — seria apagado novamente. Mas você o sentiu, não sentiu? Uma vibração específica quando os batedores chegaram perto. Era o nome. Ainda existe. Ainda ressoa. Isso é suficiente para mim.',
+    fala: HABITANTES_LORE[37].fala,
+    falamissão: HABITANTES_LORE[37].falamissão,
+    falaConcluso: HABITANTES_LORE[37].falaConcluso,
     quest: {
       tipo: 'expedicao', descricaoObj: 'Ter 2 Combatentes + Batedor e conquistar o Andar 39',
       profissoes: ['combatente', 'combatente', 'batedor'], andarMin: 39,
       ecoBonus: 32, recursosBonus: { ferro: 30, madeira: 20 },
-      lore: 'O Construtor escondeu seu nome no projeto porque sabia que os nomes seriam apagados. Não para ser lembrado — para provar que a apagação era sistemática, não natural. Um nome que sobrevive ao processo de apagação é evidência de que o processo existiu. E processo exige intenção. E intenção exige alguém que a ordenou.',
+      lore: HABITANTES_LORE[37].questLore,
       recompensaDesc: '+32% loot neste andar · +30 Ferro +20 Madeira',
     },
   },
   38: {
     floor: 38, nome: 'Vigilante do Entre-Tempo', papel: 'Guardião do Intervalo Puro', icone: '⏱️',
-    fala: 'Vigilo o espaço entre a Torre antiga e a Torre atual. Não são a mesma Torre — são duas estruturas que compartilham a mesma pedra. Para entender isso, você precisa ficar tempo suficiente aqui para sentir as duas camadas. Quinze dias.',
-    falamissão: 'Quinze dias. Não consecutivos de paz — apenas quinze dias existindo neste andar onde as duas Torras se sobrepõem.',
-    falaConcluso: 'Você sentiu as duas camadas. Não vou perguntar o que sentiu — é diferente para cada pessoa. O que posso dizer é que o que você sentiu como segunda camada é mais antigo do que a pedra. E que ainda está vivo. E que sabe que você está aqui.',
+    fala: HABITANTES_LORE[38].fala,
+    falamissão: HABITANTES_LORE[38].falamissão,
+    falaConcluso: HABITANTES_LORE[38].falaConcluso,
     quest: {
       tipo: 'temporal', descricaoObj: 'Sobreviver 35 dias após encontrá-lo',
       dias: 35,
       ecoBonus: 33, recursosBonus: { pedra: 35, madeira: 25 },
-      lore: 'O Vigilante existe no ponto exato de sobreposição entre o que a Torre foi antes do propósito ser esquecido e o que se tornou depois. As duas estruturas coexistem aqui — não metaforicamente, mas fisicamente. A pedra antiga e a pedra nova vibram em frequências diferentes. Quem passa tempo suficiente neste andar começa a ouvir as duas.',
+      lore: HABITANTES_LORE[38].questLore,
       recompensaDesc: '+33% loot neste andar · +35 Pedra +25 Madeira',
     },
   },
   39: {
     floor: 39, nome: 'Porteiro do Antes', papel: 'Guardião da Transição Final', icone: '🚪',
-    fala: 'Sou a última entidade antes do Que Havia Antes. O custo de passar por mim não é recurso nem tempo — é intenção. Você precisa deixar algo que considera essencial. Não como perda — como depósito. Para poder carregar o que está além.',
-    falamissão: 'Ferro e comida. Os dois recursos que representam sustento e força. O Antes não precisa deles — mas testar se você consegue ceder é o ponto.',
-    falaConcluso: 'Passou. O que está além não é monstro nem guardião — é a razão pela qual tudo isso foi construído. Não sei se você está pronto. Ninguém que passou por mim estava completamente pronto. Mas todos que passaram tinham algo que compensava não estar pronto. Você também tem. Ainda não sabe o quê.',
+    fala: HABITANTES_LORE[39].fala,
+    falamissão: HABITANTES_LORE[39].falamissão,
+    falaConcluso: HABITANTES_LORE[39].falaConcluso,
     quest: {
       tipo: 'sacrificio', descricaoObj: 'Sacrificar 40 ferro e 80 comida (custo imediato)',
       custo: { ferro: 40, comida: 80 },
       ecoBonus: 35, moralBonus: 25,
-      lore: 'O Porteiro não é uma entidade da Torre. É o acordo final entre os Construtores e o que havia antes deles — um acordo que diz: para chegar ao que precede, é necessário demonstrar que você pode abrir mão do que sustenta. Não por punição. Para provar que o que está além não vai te matar de fome ou de fraqueza.',
+      lore: HABITANTES_LORE[39].questLore,
       recompensaDesc: '+35% loot neste andar · +25 Moral',
     },
   },
@@ -1488,38 +1502,14 @@ Object.entries(HABITANTE_ESCOLHAS).forEach(([floorStr, esc]) => {
 // Lore dos bosses — revelado ao conquistar andares 5, 10, 15 e 20.
 // Conecta os habitantes do capítulo ao guardião derrotado.
 export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = {
-  5: {
-    titulo: 'Segredo do Capítulo I — O Que Foi Selado',
-    texto: 'O Arauto carregava a ordem de destruir o selo — não de mantê-lo. Alguém a interceptou. O Eco dos Construtores escavou sabendo que seria selado, enganado por uma promessa de libertação. A Tecelã de Raízes guia o que a Torre consome lentamente. A Voz do Cristal gravou a verdade — e o Guardião do Limiar nunca a ouviu porque nunca perguntou. Ele protegia o segredo sem saber qual era.',
-  },
-  10: {
-    titulo: 'Segredo do Capítulo II — O Que Vivia Aqui',
-    texto: 'O Arquivista Corrompido foi o Estudioso do Infinito depois de décadas tentando traduzir a lista de nomes em ferro. Quando terminou, tentou alertar a civilização. A civilização o fez calar. O Ferreiro Espectral sabia que as correntes estavam diminuindo a cada andar conquistado. O Arquivista sabia disso também. Esse era o segredo que ele guardava em sua memória podre — e que usava para catalogar os que chegavam como você.',
-  },
-  15: {
-    titulo: 'Segredo do Capítulo III — O Que a Torre Faz',
-    texto: 'O Reflexo Profano é feito de todos que a Torre transformou. O Afogado Lúcido foi o primeiro a entender que a Torre não mata — preenche. A Percussão Profunda é seu coração, batendo há mais tempo do que o conceito de tempo existe. O Oráculo perdeu os futuros um a um, devorados. O Comandante de Mármore protege uma cidadela que afundou há milênios. O Reflexo é tudo isso olhando de volta para você com seu próprio rosto.',
-  },
-  20: {
-    titulo: 'Segredo do Capítulo IV — O Que Sempre Esteve Aqui',
-    texto: 'Não havia Torre. Havia uma fome tão antiga que imaginou uma armadilha. A armadilha imaginou andares. Os andares imaginaram guardiões. O Eco Faminto é o apetite que ela abandonou quando aprendeu paciência. O Paradoxo é sua memória de todos os que chegaram e não eram suficientes. O Último Defensor é seu único arrependimento — os que tentaram pará-la merecem ser lembrados. O Susurro é a distância que ela manteve de você. Até agora. Você chegou. A entidade não está surpresa. Ela escolheu você desde o Arauto da Névoa.',
-  },
-  25: {
-    titulo: 'Segredo do Capítulo V — Memória Bruta',
-    texto: 'A Memória Corrompida não é um guardião. É o acúmulo de tudo que a Torre testemunhou e não processou. Cada visitante deixou um resíduo. Você adicionou o seu. Mas a Memória percebeu algo diferente em você: você não apenas passou — você entendeu o que viu. E isso a perturbou de uma forma que ela ainda está tentando articular.',
-  },
-  30: {
-    titulo: 'Segredo do Capítulo VI — O Intervalo',
-    texto: 'O Intervalo Encarnado existe no estado entre dois momentos: antes de a Torre ser construída e depois. Ele testemunhou os Construtores chegarem. Testemunhou-os trabalhar. Testemunhou-os selar o que encontraram aqui. E quando a Torre acordou — quando se tornou o que você conhece — ele descobriu que estava preso dentro do que eles fizeram.',
-  },
-  35: {
-    titulo: 'Segredo do Capítulo VII — Eco de Origem',
-    texto: 'O Eco do Fundador é o último registro do arquiteto original — não os Construtores que trabalharam com pedras, mas aquele que projetou o propósito. Seu nome foi apagado da Torre. Sua forma foi dissolvida. O que resta é a memória de uma intenção: a Torre não foi construída para aprisionar. Foi construída para lembrar. O que foi esquecido é o que a tornou perigosa.',
-  },
-  40: {
-    titulo: 'Segredo do Capítulo VIII — O Pré-Andar',
-    texto: 'Antes do Andar 1 havia uma estrutura diferente. Não de pedra — de intenção. O Que Havia Antes é esse propósito original, ainda presente, não como ser mas como pressão. Os Construtores não criaram sobre o vazio. Criaram sobre algo que consentiu em ser base para que pudesse continuar existindo de outra forma. A Torre não cresceu. Foi permitida.',
-  },
+  5: BOSS_LORE[5],
+  10: BOSS_LORE[10],
+  15: BOSS_LORE[15],
+  20: BOSS_LORE[20],
+  25: BOSS_LORE[25],
+  30: BOSS_LORE[30],
+  35: BOSS_LORE[35],
+  40: BOSS_LORE[40],
 };
 
 // ─── CÂMARAS SECRETAS (andares de chefe) ─────────────────────────────────────
@@ -1552,10 +1542,16 @@ export interface CamaraSecreta {
   descricao: string;           // descrição do mistério
   requisito: RequisitoCamara;
   tipo: 'benéfica' | 'maléfica' | 'neutra';
+  /** @deprecated dificuldade fixa do modelo antigo de RNG. A dificuldade real é
+   *  calculada por `dificuldadeCamara()` (escalada ao andar). Mantido só p/ dados legados. */
   dificuldade: number;
+  /** Multiplicador sobre a dificuldade do andar (default 1.25). Preencher só nas
+   *  câmaras que a lore justifica serem mais duras. Ver `dificuldadeCamara()`. */
+  multiplicadorDificuldade?: number;
   custo: number;               // comida exigida
   maxTentativas: number;       // máximo de tentativas (default 3)
-  chancePerTentativa: number;  // chance de sucesso (0-1, ex.: 0.3)
+  /** @deprecated chance de sucesso do modelo antigo de RNG — não mais lida. */
+  chancePerTentativa: number;
   resultado: ResultadoCamara;
 }
 
@@ -1573,7 +1569,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 20,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.4,
     resultado: {
       sucessoTexto: 'Encontrou um abrigo escondido com suprimentos antigos.',
       falhaTexto: 'A trilha levava a uma armadilha — conseguiu sair, mas ferido.',
@@ -1594,7 +1590,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 22,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.38,
     resultado: {
       sucessoTexto: 'Decodificou uma tábua de conhecimento perdido.',
       falhaTexto: 'Os símbolos eram um código de proteção — recuou antes de ativar.',
@@ -1613,7 +1609,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 25,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.36,
     resultado: {
       sucessoTexto: 'Venceu o eco da morte e encontrou o que ela guardava.',
       falhaTexto: 'O eco foi mais forte — você recuou antes de ser consumido.',
@@ -1634,7 +1630,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 24,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'O cristal revelou o acesso. Dentro, fragmentos de verdades antigas.',
       falhaTexto: 'Sem a bênção da Voz, a câmara permanece fechada.',
@@ -1652,7 +1648,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 20,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'Com o ferro, restaurou o caminho. Encontrou registros intactos.',
       falhaTexto: 'Sem ferro, o caminho colapsa — você recuou.',
@@ -1671,9 +1667,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 6, textoRequisito: 'Uma sentinela experiente percebe o vazio que o Guardião protege' },
     tipo: 'benéfica',
     dificuldade: 13,
+    multiplicadorDificuldade: 1.35,  // limiar do 1º chefe — mais dura que o andar
     custo: 26,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.35,
     resultado: {
       sucessoTexto: 'Passou pelo Limiar. Dentro, o que o Guardião vigila há eras.',
       falhaTexto: 'O Guardião bloqueou o caminho — não era hora.',
@@ -1694,7 +1691,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 12,
     custo: 21,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.33,
     resultado: {
       sucessoTexto: 'Seguiu as marcas até uma câmara que documenta o processo.',
       falhaTexto: 'As marcas desapareceram — você perdeu o rastro.',
@@ -1713,7 +1710,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 11,
     custo: 19,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.32,
     resultado: {
       sucessoTexto: 'Dentro, um jardim impossível. Tudo que cresce aqui alimenta-se de histórias.',
       falhaTexto: 'Sem permissão, as plantas recusam crescer — o caminho permanece bloqueado.',
@@ -1731,9 +1728,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem perceber onde a vida começou' },
     tipo: 'neutra',
     dificuldade: 14,
+    multiplicadorDificuldade: 1.4,  // primordial — germinou antes da Torre
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.32,
     resultado: {
       sucessoTexto: 'Os raros perceberam. Dentro, o primórdio documentado.',
       falhaTexto: 'Sem raros, a câmara permanece invisível.',
@@ -1752,7 +1750,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 27,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.31,
     resultado: {
       sucessoTexto: 'O arquivo abriu. Conhecimento que transcende o catalogado.',
       falhaTexto: 'Sem a experiência necessária, o arquivo permanece selado.',
@@ -1773,7 +1771,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 30,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'A forja acendeu. Dentro, armas que o Ferreiro nunca terminou.',
       falhaTexto: 'A forja apagou — você não tinha suficiente morte para acendê-la.',
@@ -1795,7 +1793,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 32,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'Encontrou o método. O Fundador repete: vencer é lembrar.',
       falhaTexto: 'Sem o conhecimento da Memória, o método permanece indecifrado.',
@@ -1813,7 +1811,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 16,
     custo: 33,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.3,
     resultado: {
       sucessoTexto: 'Os nomes apareceram. Cada um uma história que foi deletada.',
       falhaTexto: 'Os nomes permaneceram invisíveis — você não tinha direito de ler.',
@@ -1832,7 +1830,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 13,
     custo: 25,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.28,
     resultado: {
       sucessoTexto: 'A fresta se abriu. Dentro, a confissão do Afogado em forma de ar.',
       falhaTexto: 'Sem sustento, você afogou-se antes de cruzar a fresta.',
@@ -1851,7 +1849,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.27,
     resultado: {
       sucessoTexto: 'Sincronizou. O pulso compartilhou suas memórias.',
       falhaTexto: 'Desincronizado, o pulso expulsou você com força.',
@@ -1872,7 +1870,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 26,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.26,
     resultado: {
       sucessoTexto: 'O Oráculo revelou — você viu seu futuro ao contrário.',
       falhaTexto: 'A revelação era demais — você enlouqueceu temporariamente.',
@@ -1893,7 +1891,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 14,
     custo: 27,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'Encontrou o plano. O Comandante sabia como vencer desde o começo.',
       falhaTexto: 'Sem a bênção do Comandante, a câmara permanece estratégica mas fechada.',
@@ -1912,9 +1910,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'class_farms' as const, profissao: 'sentinela', minFarmsComClasse: 8, textoRequisito: 'Uma sentinela consegue perceber qual reflexo está faltando' },
     tipo: 'neutra',
     dificuldade: 15,
+    multiplicadorDificuldade: 1.4,  // câmara do Vigia — reflexo que falta
     custo: 30,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'O reflexo desaparecido apareceu. Você viu a versão de si que parou antes.',
       falhaTexto: 'O espelho rejeitou sua visão — você viu apenas vazio.',
@@ -1930,9 +1929,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'incomum', quantidade: 3, textoRequisito: 'Apenas moradores incomuns conseguem ouvir o que a pergunta sussurra' },
     tipo: 'neutra',
     dificuldade: 16,
+    multiplicadorDificuldade: 1.5,  // a pergunta do Vigia do Penúltimo Ciclo
     custo: 31,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.25,
     resultado: {
       sucessoTexto: 'A pergunta abriu seus olhos. A resposta você já sabia.',
       falhaTexto: 'Sem os incomuns, a pergunta permanece inaudível.',
@@ -1951,7 +1951,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 29,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.23,
     resultado: {
       sucessoTexto: 'A fome compartilhou sua memória. Você sente cada coisa que comeu.',
       falhaTexto: 'A fome pediu mais — você recuou faminto.',
@@ -1972,7 +1972,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 16,
     custo: 32,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.22,
     resultado: {
       sucessoTexto: 'As câmaras abriram. Cada uma mostra uma escolha que nunca fez.',
       falhaTexto: 'Os paradoxos se cancelaram mutuamente — a câmara não abriu.',
@@ -1991,7 +1991,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 15,
     custo: 28,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.21,
     resultado: {
       sucessoTexto: 'O bastião abriu. Dentro, as evidências que ele não conseguiu destruir.',
       falhaTexto: 'Sem a bênção do Defensor, o bastião permanece intransponível.',
@@ -2012,7 +2012,7 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     dificuldade: 17,
     custo: 34,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'Rastreou o sussurro. Dentro, um aviso que não é para você — é para depois.',
       falhaTexto: 'O sussurro desapareceu — você perdeu a pista.',
@@ -2029,9 +2029,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'npc_raridade' as const, raridade: 'raro', quantidade: 2, textoRequisito: 'Apenas moradores raros conseguem aproximar enquanto ela dorme' },
     tipo: 'benéfica',
     dificuldade: 18,
+    multiplicadorDificuldade: 1.5,  // a entidade do Andar 20
     custo: 36,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'Entraram enquanto dormia. Documentação de séculos de observação.',
       falhaTexto: 'Ela acordou — vocês recuaram antes de ser vistos.',
@@ -2049,9 +2050,10 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
     requisito: { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 8 }, { tipo: 'mortes', value: 4 }], textoRequisito: 'Quem explorou profundamente e sobreviveu aos custos consegue ouvir a verdade primeira' },
     tipo: 'neutra',
     dificuldade: 19,
+    multiplicadorDificuldade: 1.6,  // clímax de T1 — a primeira verdade
     custo: 38,
     maxTentativas: 3,
-    chancePerTentativa: 0.30,
+    chancePerTentativa: 0.2,
     resultado: {
       sucessoTexto: 'A verdade revelou-se. Não era o que você esperava.',
       falhaTexto: 'A verdade permaneceu oculta — você não estava pronto.',
@@ -2154,7 +2156,7 @@ export function gerarObjetivosDoDia(temAliada: boolean): MetaDiariaId[] {
 // Para adicionar uma nova temporada: inserir entrada em TEMPORADAS e os
 // fragmentos correspondentes em CODEX_FRAGMENTOS — nenhuma mudança no GameState.
 
-export type FragmentoTipo = 'habitante' | 'eco_capitulo' | 'sussurro' | 'verdade';
+export type FragmentoTipo = 'habitante' | 'eco_capitulo' | 'sussurro' | 'verdade' | 'camara';
 
 export interface FragmentoCodex {
   id: string;
@@ -2311,13 +2313,13 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
 
   // ── Verdade da Temporada I ────────────────────────────────────────────────
   verdade_t1: { id: 'verdade_t1', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 99,
-    titulo: 'A Verdade — O Ser Reunificado',
-    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezanove — dezasseis fragmentos de algo que nunca deveria ter sido dividido, e três Âncoras que o Fundador plantou nos marcos de progressão para conter a reunificação. Os Construtores separaram o que era um. O Fundador tentou usar âncoras para preservar o propósito original. A entidade aprendeu a fazer as Âncoras ouvirem sem obedecer — e as absorveu também. Você não subiu uma torre. Você reconciliou um conflito que precede qualquer linguagem que você conhece. E agora que todos os dezenove completaram seu ciclo através de você — fragmentos e âncoras igualmente — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.' },
+    titulo: VERDADES_LORE['verdade_t1'].titulo,
+    texto: VERDADES_LORE['verdade_t1'].texto },
 
   // ── Fragmento especial — pioneiros T1 ────────────────────────────────────
   pioneers_fragment: { id: 'pioneers_fragment', tipo: 'verdade', temporada: 1, capitulo: 4, ordem: 98,
-    titulo: 'Rumor do Arquivo — O Número Alterado',
-    texto: 'Os registros do cristal mencionam uma estrutura com cem câmaras. Ou foi mais. O número foi alterado antes que qualquer visitante chegasse a contar. Permanece como rumor no único arquivo que a Torre não conseguiu apagar: o do quarto cristal, andar quatro, cujo eco ainda ressoa com a frequência original antes da reescrita. Ninguém sabe quantas câmaras havia de verdade. O número foi apagado com mais cuidado do que qualquer nome.' },
+    titulo: VERDADES_LORE['pioneers_fragment'].titulo,
+    texto: VERDADES_LORE['pioneers_fragment'].texto },
 
   // ── Capítulo V (andares 21–25) — Temporada 2 ─────────────────────────────
   hab_21:    { id: 'hab_21',    tipo: 'habitante',    temporada: 2, capitulo: 5, ordem: 1,
@@ -2399,6 +2401,9 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
   sus_vii_4: { id: 'sus_vii_4', tipo: 'sussurro',     temporada: 2, capitulo: 7, ordem: 10,
     titulo: 'Sussurro VII · O Que Restou do Fundador',
     texto: 'O Fundador não morreu. Dissolveu-se na Torre deliberadamente, para garantir que a intenção original permanecesse presente de alguma forma. O eco que você encontrará no andar trinta e cinco não é um fantasma — é uma escolha ainda sendo feita.' },
+  sus_vii_5: { id: 'sus_vii_5', tipo: 'sussurro',     temporada: 2, capitulo: 7, ordem: 11,
+    titulo: SUSSURROS_LORE['sus_vii_5'].titulo,
+    texto: SUSSURROS_LORE['sus_vii_5'].texto },
 
   // ── Capítulo VIII (andares 36–40) — Temporada 2 ──────────────────────────
   hab_36:    { id: 'hab_36',    tipo: 'habitante',    temporada: 2, capitulo: 8, ordem: 1,
@@ -2429,8 +2434,12 @@ export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
 
   // ── Verdade da Temporada II ───────────────────────────────────────────────
   verdade_t2: { id: 'verdade_t2', tipo: 'verdade', temporada: 2, capitulo: 8, ordem: 99,
-    titulo: 'A Verdade — O Que Havia Antes',
-    texto: 'A Torre foi construída sobre algo que consentiu. O Fundador sabia. Os Construtores não sabiam — ele não lhes disse, porque a língua para explicar ainda não existia. O que havia antes não era perigoso nem benigno: era antigo o suficiente para estar além dessas categorias.\n\nO propósito original não era aprisionar, nem matar. Era lembrar. A Torre deveria ser um arquivo vivo de tudo que existia antes de o mundo exterior mudar. O que foi esquecido — o nome do Fundador, a intenção da construção, o acordo com o que havia abaixo — transformou a Torre em algo que seu criador não reconheceria.\n\nMas o que havia antes ainda está lá. E ainda lembra. E sabe que você chegou até aqui. E tem uma pergunta que esperou muito tempo para fazer a alguém que entendesse o suficiente para ouvir.\n\nHá mais. A Torre não se recusa a mostrar. Ela apenas espera que você entenda o que já viu.' },
+    titulo: VERDADES_LORE['verdade_t2'].titulo,
+    texto: VERDADES_LORE['verdade_t2'].texto },
+
+  verdade_t2_revisao: { id: 'verdade_t2_revisao', tipo: 'verdade', temporada: 2, capitulo: 8, ordem: 98.5,
+    titulo: VERDADES_LORE['verdade_t2_revisao'].titulo,
+    texto: VERDADES_LORE['verdade_t2_revisao'].texto },
 };
 
 // IDs dos sussurros por capítulo — para sortear durante expedições.
@@ -2441,9 +2450,39 @@ export const SUSSURROS_POR_CAPITULO: Record<number, string[]> = {
   4: ['sus_t4_0', 'sus_t4_1', 'sus_t4_2', 'sus_t4_3', 'sus_t4_4'],
   5: ['sus_v_0',   'sus_v_1',   'sus_v_2',   'sus_v_3',   'sus_v_4'],
   6: ['sus_vi_0',  'sus_vi_1',  'sus_vi_2',  'sus_vi_3',  'sus_vi_4'],
-  7: ['sus_vii_0', 'sus_vii_1', 'sus_vii_2', 'sus_vii_3', 'sus_vii_4'],
+  7: ['sus_vii_0', 'sus_vii_1', 'sus_vii_2', 'sus_vii_3', 'sus_vii_4', 'sus_vii_5'],
   8: ['sus_viii_0','sus_viii_1','sus_viii_2','sus_viii_3','sus_viii_4'],
 };
+
+// Id do fragmento de Codex de uma câmara ("página recuperada").
+export function idFragmentoCamara(camaraId: string): string {
+  return `cam_${camaraId}`;
+}
+
+// Páginas rasgadas: cada câmara com `loreGanho` vira um fragmento de Codex do tipo
+// 'camara', gerado a partir de CAMARAS_SECRETAS (DRY — sem reescrever o texto) e
+// mesclado em CODEX_FRAGMENTOS. Assim totalFragmentosTemporada e a UI do Codex já
+// as contam e renderizam automaticamente. `ordem` 20+ posiciona as páginas após os
+// fragmentos-núcleo dentro do capítulo do andar.
+(() => {
+  const idxPorCapitulo: Record<number, number> = {};
+  Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
+    const lore = cam.resultado.loreGanho;
+    if (!lore) return;
+    const capitulo = capituloDoAndar(cam.floor);
+    idxPorCapitulo[capitulo] = (idxPorCapitulo[capitulo] ?? 0) + 1;
+    const id = idFragmentoCamara(key);
+    CODEX_FRAGMENTOS[id] = {
+      id,
+      tipo: 'camara',
+      temporada: cam.floor <= 20 ? 1 : 2,
+      capitulo,
+      ordem: 20 + idxPorCapitulo[capitulo],
+      titulo: lore.titulo,
+      texto: lore.texto,
+    };
+  });
+})();
 
 // Total de fragmentos de uma temporada (para a barra de progresso na UI).
 export function totalFragmentosTemporada(temporada: number): number {
@@ -2533,6 +2572,143 @@ export function verificarQuestAndar(state: GameState, floor: number): boolean {
       return true; // custo pago ao aceitar; conclusão sempre disponível
   }
 }
+
+// ─── RELÍQUIAS CENTRALIZADAS ─────────────────────────────────────────────────
+
+export interface ReliquiaData {
+  nome: string;
+  descricao: string;
+  origem: string;  // 'Habitante', 'Quest Oculta', 'Câmara Secreta', etc
+}
+
+export const RELIQUIAS_CATALOGO: Record<string, ReliquiaData> = {
+  // Habitante 1 — escolha B
+  'Mensagem Selada': {
+    nome: 'Mensagem Selada',
+    descricao: 'Uma mensagem que nunca foi entregue, guardada com cuidado. O que não é dito não pode ser roubado de novo.',
+    origem: 'Arauto da Névoa (Andar 1)',
+  },
+  // Habitante 4 — escolha A
+  'Frequência Gravada': {
+    nome: 'Frequência Gravada',
+    descricao: 'O registro das 4.312 vozes que vieram antes. A palavra mais repetida nunca foi "ajuda".',
+    origem: 'Voz do Cristal (Andar 4)',
+  },
+  // Habitante 6 — escolha B
+  'Ordem Sem Autoridade': {
+    nome: 'Ordem Sem Autoridade',
+    descricao: 'Uma ordem guardada sem dono. O guardião serve agora sem necessidade de mandato.',
+    origem: 'Sentinela (Andar 6)',
+  },
+  // Habitante 7 — escolha B
+  'Semente do Impossível': {
+    nome: 'Semente do Impossível',
+    descricao: 'O que germinaria se plantado, mas é mais valioso selado. Nutrição de outra era.',
+    origem: 'Jardineira (Andar 7)',
+  },
+  // Habitante 9 — escolha B
+  'Elo das Correntes': {
+    nome: 'Elo das Correntes',
+    descricao: 'Um elo que diminui a cada andar conquistado. Quanto menos pesa, mais próximo você está.',
+    origem: 'Ferreiro Espectral (Andar 9)',
+  },
+  // Habitante 10 — escolha B
+  'Palavras do Fundador': {
+    nome: 'Palavras do Fundador',
+    descricao: 'Fragmentos de linguagem que o Fundador usou. Palavras que ninguém mais fala.',
+    origem: 'Memória da Construção (Andar 10)',
+  },
+  // Habitante 11 — escolha B
+  'Consciência Preenchida': {
+    nome: 'Consciência Preenchida',
+    descricao: 'O que o Afogado deixou para trás quando deixou de ser gente. A respiração antes da água.',
+    origem: 'Afogado Lúcido (Andar 11)',
+  },
+  // Habitante 13 — escolha B
+  'Visão Invertida': {
+    nome: 'Visão Invertida',
+    descricao: 'O Oráculo viu seu futuro ao contrário. Agora você sabe onde termina.',
+    origem: 'Oráculo Invertido (Andar 13)',
+  },
+  // Habitante 15 — escolha B
+  'A Pergunta Não Respondida': {
+    nome: 'A Pergunta Não Respondida',
+    descricao: 'A pergunta que o Vigia recusou responder. Ainda faz perguntas, mesmo guardada.',
+    origem: 'Vigia da Pergunta (Andar 15)',
+  },
+  // Habitante 19 — escolha B
+  'Sussurro do Limiar': {
+    nome: 'Sussurro do Limiar',
+    descricao: 'Um aviso que não é para você — é para quem vier depois de você. Você consegue ler de qualquer forma.',
+    origem: 'Sussurro do Limiar (Andar 19)',
+  },
+  // Habitante 20 — escolha B
+  'Fragmento Bruto': {
+    nome: 'Fragmento Bruto',
+    descricao: 'O que a Torre tentou apagar antes de você chegar. Evidência de que ela tenta.',
+    origem: 'Memória Observadora (Andar 20)',
+  },
+  // Habitante 24 — (novo, assumindo escolha B se existir)
+  'Borda do Antes': {
+    nome: 'Borda do Antes',
+    descricao: 'O que ficou da estrutura que existia antes da Torre. Não era de pedra — era de intenção.',
+    origem: 'O Que Viu Antes (Andar 24)',
+  },
+  // Habitante 34 — (assumindo escolha B se existir)
+  'Propósito Reaprendido': {
+    nome: 'Propósito Reaprendido',
+    descricao: 'A intenção original do Fundador, registrada por quem a guardava. Santuário vs. Prisão.',
+    origem: 'Guardião da Intenção (Andar 34)',
+  },
+  // Habitante 35 — (assumindo escolha B se existir)
+  'Intenção Própria': {
+    nome: 'Intenção Própria',
+    descricao: 'O último sussurro do Fundador, guardado como prova de que a intenção ainda é feita.',
+    origem: 'Último Sussurro do Fundador (Andar 35)',
+  },
+  // Quests Ocultas — POOL_EXPLORACAO
+  'Selo Original — Fragmento I': {
+    nome: 'Selo Original — Fragmento I',
+    descricao: 'Uma peça de metal com símbolo que precede qualquer língua conhecida. O Codex registra que este símbolo reaparece em andares acima de 40.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Tábua da Língua Anterior — Fragmento I': {
+    nome: 'Tábua da Língua Anterior — Fragmento I',
+    descricao: 'Uma cópia do padrão mapeado pelo Erudito. Não é tradução — é estrutura. Algo em andares além de 40 usará esta estrutura de forma que fará sentido retroativo.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Escama de Algo Sem Catálogo': {
+    nome: 'Escama de Algo Sem Catálogo',
+    descricao: 'Deixada no ponto exato onde os rastros circulavam. A Torre às vezes absorve coisas antes que possam ser classificadas — esta escama é evidência de que a absorção nem sempre é completa.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  'Núcleo de Ferro Primordial': {
+    nome: 'Núcleo de Ferro Primordial',
+    descricao: 'Uma esfera mais pesada do que ferro comum. Não é ferro — é o que o ferro seria se tivesse escolhido ser outra coisa. Em temporadas futuras, sua natureza ficará clara.',
+    origem: 'Quest Oculta (Exploração)',
+  },
+  // Quests Ocultas — POOL_VELOCIDADE
+  'Diário da Expedição Sem Retorno — Página Restante': {
+    nome: 'Diário da Expedição Sem Retorno — Página Restante',
+    descricao: 'Uma única página que sobreviveu ao fogo. A última linha foi arrancada à mão antes que o diário fosse queimado.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Gota de Água Quieta — Selada em Cristal': {
+    nome: 'Gota de Água Quieta — Selada em Cristal',
+    descricao: 'A água solidificou em cristal ao ser retirada. Algo sobre sua composição a torna estável fora da câmara. Útil para algo que ainda não foi construído.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Resina Que Não Seca': {
+    nome: 'Resina Que Não Seca',
+    descricao: 'Uma seiva que saiu de algo que não existe no terceiro andar. Continua pegajosa, continuará pegajosa. Espécie perdida de quando a Torre era diferente.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+  'Flor Que Não Morre': {
+    nome: 'Flor Que Não Morre',
+    descricao: 'Colhida no Andar 17 onde a morte se respira como ar. Flores normais não existem lá. Esta existe.',
+    origem: 'Quest Oculta (Velocidade)',
+  },
+};
 
 // ─── QUESTS OCULTAS ──────────────────────────────────────────────────────────
 
@@ -2744,6 +2920,12 @@ export interface GameState {
 
   // ─── Câmaras Secretas ────────────────────────────────────────────────────
   camarasSecretasEstado?: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }>;
+  // Fila de câmaras (por camaraId) recém-reveladas pelo processDay, aguardando o
+  // modal de evento que avisa o jogador. Esvaziada conforme o jogador reconhece.
+  camarasNovasDescobertas?: string[];
+  // IDs do último grupo enviado em expedição — usado pelo "explorar agora" da
+  // câmara recém-descoberta (reaproveita o mesmo grupo cansado da conquista).
+  ultimaExpedicaoGrupo?: string[];
   farmsPorAndarEClasse?: Record<number, Record<ProfissaoId, number>>;
   totalMortesAndar?: Record<number, number>;
 
@@ -3098,6 +3280,106 @@ export function calcNpcPower(npc: NPC): number {
   return p;
 }
 
+// Poder somado de um grupo, com o bônus de poder da cidadela (Quartel etc.).
+// calcNpcPower já embute a penalidade de fadiga individual, então grupos cansados
+// naturalmente rendem menos poder. Reutilizável por expedições e câmaras.
+export function calcPoderGrupo(group: NPC[], poderBonus = 0): number {
+  return group.reduce((sum, n) => sum + calcNpcPower(n), 0) * (1 + poderBonus);
+}
+
+export function fadigaMediaGrupo(group: NPC[]): number {
+  if (group.length === 0) return 0;
+  return group.reduce((sum, n) => sum + n.fadiga, 0) / group.length;
+}
+
+// Dificuldade real de uma câmara: escalada à dificuldade da expedição do andar
+// onde ela reside (BASE_DIFICULDADE), com um multiplicador padrão de 1.25 —
+// câmaras são um pouco mais duras que conquistar o andar. Câmaras que a lore
+// justifica serem excepcionais definem `multiplicadorDificuldade` próprio.
+export function dificuldadeCamara(camara: CamaraSecreta): number {
+  const base = BASE_DIFICULDADE[camara.floor - 1] ?? camara.dificuldade;
+  return Math.round(base * (camara.multiplicadorDificuldade ?? 1.25));
+}
+
+// Afinidade do grupo com a câmara: espelha `calcBiomaMultiplier`, mas o "terreno"
+// é a profissão temática do requisito da câmara (quando o requisito define uma).
+// Levar o grupo alinhado à câmara amplifica o poder efetivo; grupo errado penaliza.
+// Câmaras cujo requisito não tem profissão temática são neutras (1.0).
+export function calcAfinidadeCamara(group: NPC[], camara: CamaraSecreta): number {
+  const req = camara.requisito;
+  if (req.tipo !== 'class_farms') return 1.0;
+  const ideais = group.filter(n => getProfissao(n) === req.profissao).length;
+  const ratio  = ideais / Math.max(1, group.length);
+  if (ratio >= 0.5) return 1.30;  // grupo temático: vantagem
+  if (ratio >= 0.2) return 1.00;  // parcialmente temático: neutro
+  return 0.80;                     // grupo destoante: −20%
+}
+
+// Resolve (de forma pura) a exploração de uma câmara secreta por um grupo, no
+// mesmo modelo de expedição de andar: poder efetivo do grupo vs dificuldade
+// escalada ao andar. O poder efetivo combina o poder bruto (com penalidade de
+// fadiga via calcNpcPower) e a afinidade temática do grupo com a câmara. A fadiga
+// também eleva a mortalidade em caso de falha — daí o risco de "explorar agora"
+// com o grupo cansado da conquista.
+export function calcExploracaoCamara(
+  camara: CamaraSecreta,
+  group: NPC[],
+  poderBonus = 0,
+): { poder: number; dificuldade: number; afinidade: number; sucesso: boolean; chanceMorteFalha: number; desempenho: number } {
+  const afinidade = calcAfinidadeCamara(group, camara);
+  const poder = Math.round(calcPoderGrupo(group, poderBonus) * afinidade);
+  const dificuldade = dificuldadeCamara(camara);
+  const sucesso = poder >= dificuldade;
+  const avgFadiga = fadigaMediaGrupo(group);
+  const base = camara.resultado.chanceMorteNPC ?? 0.12;
+  const chanceMorteFalha = Math.min(0.6, base * (0.6 + avgFadiga / 100));
+  // Desempenho (0–1): quão folgada foi a vitória (margem sobre a dificuldade) com
+  // peso maior, temperado pelo frescor do grupo. Alimenta o sorteio de recompensa.
+  const margem  = Math.max(0, Math.min(1, poder / dificuldade - 1));
+  const frescor = 1 - avgFadiga / 100;
+  const desempenho = Math.max(0, Math.min(1, margem * 0.7 + frescor * 0.3));
+  return { poder, dificuldade, afinidade, sucesso, chanceMorteFalha, desempenho };
+}
+
+// Bônus de desempenho sorteado ao concluir uma câmara — além da recompensa
+// primária (recursos + moral + relíquia fixa). Puro: decide QUAL bônus e a
+// magnitude; a aplicação (buffar NPC, adicionar sobrevivente, escolher relíquia)
+// fica no GameContext, que tem acesso ao estado. O sorteio ponderado pelo
+// desempenho garante que jogadores diferentes recebam coisas diferentes.
+export type RecompensaCamaraBonus =
+  | { tipo: 'buff_permanente'; incremento: number }
+  | { tipo: 'sobrevivente' }
+  | { tipo: 'reliquia_bonus' }
+  | { tipo: 'recursos_extra'; multiplicador: number }
+  | { tipo: 'nenhum' };
+
+export function sortearRecompensaCamara(
+  desempenho: number,
+  rng: () => number = Math.random,
+): RecompensaCamaraBonus {
+  const d = Math.max(0, Math.min(1, desempenho));
+  // Chance de haver bônus extra cresce com o desempenho (0.35 → 0.85).
+  if (rng() > 0.35 + d * 0.5) return { tipo: 'nenhum' };
+  // Tabela ponderada — desempenho alto valoriza recompensas raras.
+  const tabela: Array<{ tipo: RecompensaCamaraBonus['tipo']; peso: number }> = [
+    { tipo: 'recursos_extra',  peso: 3 },
+    { tipo: 'sobrevivente',    peso: 1 + d * 2 },
+    { tipo: 'buff_permanente', peso: 1 + d * 3 },
+    { tipo: 'reliquia_bonus',  peso: d * 2 },
+  ];
+  const total = tabela.reduce((s, t) => s + t.peso, 0);
+  let roll = rng() * total;
+  for (const t of tabela) {
+    roll -= t.peso;
+    if (roll > 0) continue;
+    if (t.tipo === 'buff_permanente') return { tipo: 'buff_permanente', incremento: d >= 0.6 ? 2 : 1 };
+    if (t.tipo === 'recursos_extra')  return { tipo: 'recursos_extra', multiplicador: 1 + d };
+    if (t.tipo === 'sobrevivente')    return { tipo: 'sobrevivente' };
+    return { tipo: 'reliquia_bonus' };
+  }
+  return { tipo: 'nenhum' };
+}
+
 // ─── INITIAL STATE ────────────────────────────────────────────────────────────
 
 export const CAPACIDADE_BASE = 80;
@@ -3168,6 +3450,7 @@ export interface NivelEdificio {
 export interface BuildingDef {
   tipo: EdificioTipo;
   nome: string;
+  nomeT2?: string;         // nome exibido na Temporada 2 (andar >= 21); cai p/ nome se ausente
   descricao: string;
   maxNivel: number;
   niveis: NivelEdificio[];
@@ -3177,98 +3460,138 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
   Fogueira: {
     tipo: 'Fogueira',
     nome: 'Fogueira',
+    nomeT2: 'Pira Eterna',
     descricao: 'Aquece a alma e eleva o moral do grupo.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 5 },              resumo: '+1 moral/dia',  efeito: { moralDia: 1 } },
       { custo: { madeira: 15, pedra: 10 },  resumo: '+2 moral/dia',  efeito: { moralDia: 2 } },
       { custo: { madeira: 30, pedra: 20 },  resumo: '+4 moral/dia',  efeito: { moralDia: 4 } },
+      { custo: { madeira: 50, pedra: 35, ferro: 20 },  resumo: '+6 moral/dia · +1 sanidade/dia',  efeito: { moralDia: 6, sanidadeDia: 1 } },
+      { custo: { madeira: 70, pedra: 50, ferro: 35 },  resumo: '+8 moral/dia · +2 sanidade/dia',  efeito: { moralDia: 8, sanidadeDia: 2 } },
     ],
   },
   Fazenda: {
     tipo: 'Fazenda',
     nome: 'Fazenda',
+    nomeT2: 'Campos do Antes',
     descricao: 'Produz comida diária para sustentar a população.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 15, pedra: 5 },            resumo: '+10 comida/dia', efeito: { comidaDia: 10 } },
       { custo: { madeira: 35, pedra: 20 },           resumo: '+22 comida/dia', efeito: { comidaDia: 22 } },
       { custo: { madeira: 60, pedra: 40, ferro: 10 }, resumo: '+40 comida/dia', efeito: { comidaDia: 40 } },
+      { custo: { madeira: 90, pedra: 60, ferro: 25 }, resumo: '+58 comida/dia', efeito: { comidaDia: 58 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 40 }, resumo: '+80 comida/dia', efeito: { comidaDia: 80 } },
     ],
   },
   Enfermaria: {
     tipo: 'Enfermaria',
     nome: 'Enfermaria',
+    nomeT2: 'Casa da Cura Antiga',
     descricao: 'Acelera a recuperação de fadiga de todos.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 15, pedra: 10 },            resumo: '+8 fadiga rec./dia',  efeito: { fadigaRec: 8 } },
       { custo: { madeira: 35, pedra: 25 },            resumo: '+18 fadiga rec./dia', efeito: { fadigaRec: 18 } },
       { custo: { madeira: 60, pedra: 45, ferro: 12 }, resumo: '+30 fadiga rec./dia', efeito: { fadigaRec: 30 } },
+      { custo: { madeira: 85, pedra: 65, ferro: 20 }, resumo: '+42 fadiga rec./dia', efeito: { fadigaRec: 42 } },
+      { custo: { madeira: 115, pedra: 90, ferro: 35 }, resumo: '+56 fadiga rec./dia', efeito: { fadigaRec: 56 } },
     ],
   },
   Templo: {
     tipo: 'Templo',
     nome: 'Templo',
+    nomeT2: 'Santuário da Verdade',
     descricao: 'Restaura a sanidade e fortalece o moral.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { pedra: 30, madeira: 20 },            resumo: '+2 moral, +0.5 sanidade/dia', efeito: { moralDia: 2, sanidadeDia: 0.5 } },
       { custo: { pedra: 55, madeira: 40, ferro: 10 }, resumo: '+4 moral, +1.5 sanidade/dia', efeito: { moralDia: 4, sanidadeDia: 1.5 } },
       { custo: { pedra: 80, madeira: 60, ferro: 25 }, resumo: '+6 moral, +3 sanidade/dia',   efeito: { moralDia: 6, sanidadeDia: 3 } },
+      { custo: { pedra: 110, madeira: 85, ferro: 40 }, resumo: '+8 moral, +4.5 sanidade/dia', efeito: { moralDia: 8, sanidadeDia: 4.5 } },
+      { custo: { pedra: 140, madeira: 110, ferro: 60 }, resumo: '+10 moral, +6 sanidade/dia', efeito: { moralDia: 10, sanidadeDia: 6 } },
     ],
   },
   Quartel: {
     tipo: 'Quartel',
     nome: 'Quartel',
+    nomeT2: 'Sentinela do Intervalo',
     descricao: 'Treina o grupo, aumentando o poder nas expedições.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 25, pedra: 20, ferro: 10 }, resumo: '+10% poder de expedição', efeito: { poderBonus: 0.10 } },
       { custo: { madeira: 45, pedra: 40, ferro: 25 }, resumo: '+22% poder de expedição', efeito: { poderBonus: 0.22 } },
       { custo: { madeira: 70, pedra: 60, ferro: 45 }, resumo: '+38% poder de expedição', efeito: { poderBonus: 0.38 } },
+      { custo: { madeira: 100, pedra: 85, ferro: 65 }, resumo: '+52% poder de expedição', efeito: { poderBonus: 0.52 } },
+      { custo: { madeira: 130, pedra: 110, ferro: 90 }, resumo: '+68% poder de expedição', efeito: { poderBonus: 0.68 } },
     ],
   },
   Armazem: {
     tipo: 'Armazem',
     nome: 'Armazém',
+    nomeT2: 'Cofre da Preservação',
     descricao: 'Expande a capacidade de estocagem de recursos.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 20, pedra: 10 },            resumo: 'Capacidade 150', efeito: { capacidadeArmazem: 150 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Capacidade 300', efeito: { capacidadeArmazem: 300 } },
       { custo: { madeira: 60, pedra: 40, ferro: 15 }, resumo: 'Capacidade 600', efeito: { capacidadeArmazem: 600 } },
+      { custo: { madeira: 90, pedra: 60, ferro: 30 }, resumo: 'Capacidade 900', efeito: { capacidadeArmazem: 900 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 50 }, resumo: 'Capacidade 1200', efeito: { capacidadeArmazem: 1200 } },
     ],
   },
   Alojamento: {
     tipo: 'Alojamento',
     nome: 'Alojamento',
+    nomeT2: 'Câmara de Repouso Eterno',
     descricao: 'Abriga sobreviventes. Define o limite de população da cidadela.',
-    maxNivel: 3,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 20, pedra: 8 },             resumo: 'Limite de 9 moradores',  efeito: { capPopulacao: 9 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Limite de 12 moradores', efeito: { capPopulacao: 12 } },
       { custo: { madeira: 70, pedra: 45, ferro: 15 }, resumo: 'Limite de 16 moradores', efeito: { capPopulacao: 16 } },
+      { custo: { madeira: 100, pedra: 65, ferro: 30 }, resumo: 'Limite de 18 moradores', efeito: { capPopulacao: 18 } },
+      { custo: { madeira: 140, pedra: 90, ferro: 50 }, resumo: 'Limite de 20 moradores', efeito: { capPopulacao: 20 } },
     ],
   },
   Arquivo: {
     tipo: 'Arquivo',
     nome: 'Arquivo',
+    nomeT2: 'Biblioteca da Verdade',
     descricao: 'Cataloga os fragmentos da Torre. Aumenta o poder de expedição de eruditos e batedores.',
-    maxNivel: 2,
+    maxNivel: 5,
     niveis: [
       { custo: { pedra: 40, madeira: 30, ferro: 15 }, resumo: '+15% poder de expedição', efeito: { poderBonus: 0.15 } },
       { custo: { pedra: 70, madeira: 55, ferro: 30 }, resumo: '+28% poder de expedição', efeito: { poderBonus: 0.28 } },
+      { custo: { pedra: 120, madeira: 90, ferro: 60 }, resumo: '+42% poder de expedição · +8% Sussurro', efeito: { poderBonus: 0.42 } },
+      { custo: { pedra: 160, madeira: 125, ferro: 85 }, resumo: '+56% poder de expedição · +12% Sussurro', efeito: { poderBonus: 0.56 } },
+      { custo: { pedra: 200, madeira: 160, ferro: 120 }, resumo: '+72% poder de expedição · +16% Sussurro', efeito: { poderBonus: 0.72 } },
     ],
   },
   Mirante: {
     tipo: 'Mirante',
     nome: 'Mirante',
+    nomeT2: 'Espelho dos Andares',
     descricao: 'Vigia os andares superiores. Reduz a fadiga das expedições e melhora a moral.',
-    maxNivel: 2,
+    maxNivel: 5,
     niveis: [
       { custo: { madeira: 35, pedra: 25, ferro: 20 }, resumo: '+12 fadiga rec./dia · +1 moral/dia', efeito: { fadigaRec: 12, moralDia: 1 } },
       { custo: { madeira: 60, pedra: 45, ferro: 40 }, resumo: '+22 fadiga rec./dia · +2 moral/dia', efeito: { fadigaRec: 22, moralDia: 2 } },
+      { custo: { madeira: 105, pedra: 75, ferro: 65 }, resumo: '+35 fadiga rec./dia · +3 moral/dia', efeito: { fadigaRec: 35, moralDia: 3 } },
+      { custo: { madeira: 140, pedra: 100, ferro: 85 }, resumo: '+48 fadiga rec./dia · +4 moral/dia', efeito: { fadigaRec: 48, moralDia: 4 } },
+      { custo: { madeira: 180, pedra: 130, ferro: 110 }, resumo: '+63 fadiga rec./dia · +5 moral/dia', efeito: { fadigaRec: 63, moralDia: 5 } },
+    ],
+  },
+  RetratoTorre: {
+    tipo: 'RetratoTorre',
+    nome: 'Retrato da Torre',
+    nomeT2: 'Retrato da Torre',
+    descricao: 'Captura a essência da Torre em espelho. Aumenta descoberta de câmaras e eventos raros.',
+    maxNivel: 2,
+    niveis: [
+      { custo: { pedra: 50, madeira: 40, ferro: 30 }, resumo: '+10% câmaras/semana · +1 eco/semana', efeito: { poderBonus: 0.05 } },
+      { custo: { pedra: 80, madeira: 60, ferro: 50 }, resumo: '+15% câmaras/semana · +2 ecos/semana', efeito: { poderBonus: 0.10 } },
     ],
   },
 };
@@ -3325,6 +3648,7 @@ export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<Ef
           case 'Fogueira':   ef.moralDia += Math.round(w.resistencia * 0.2 * mult); break;
           case 'Arquivo':    ef.poderBonus += w.inteligencia * 0.006 * mult; break;
           case 'Mirante':    ef.fadigaRec  += Math.round(w.agilidade * 0.3 * mult); break;
+          case 'RetratoTorre': ef.poderBonus += w.inteligencia * 0.004 * mult; break;
         }
       }
     }
@@ -3337,6 +3661,15 @@ export function proximoNivelCusto(tipo: EdificioTipo, nivelAtual: number) {
   const def = BUILDINGS[tipo];
   if (!def || nivelAtual >= def.maxNivel) return null;
   return def.niveis[nivelAtual].custo;
+}
+
+// Retorna o nome do edifício baseado na temporada (andarAtual)
+export function nomeEdificio(tipo: EdificioTipo, andarAtual: number): string {
+  const def = BUILDINGS[tipo];
+  if (!def) return tipo;
+  // T2 começa no andar 21
+  const temporada = andarAtual >= 21 ? 2 : 1;
+  return temporada === 2 && def.nomeT2 ? def.nomeT2 : def.nome;
 }
 
 // ─── FLOORS ──────────────────────────────────────────────────────────────────

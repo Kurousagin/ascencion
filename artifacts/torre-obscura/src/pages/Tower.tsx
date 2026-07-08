@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS } from '../lib/game-data';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, Search } from 'lucide-react';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS, RELIQUIAS_CATALOGO, calcPoderGrupo, dificuldadeCamara, calcAfinidadeCamara } from '../lib/game-data';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
+import { SelecaoMoradores } from '../components/SelecaoMoradores';
 
 interface TowerProps {
   t2Desbloqueado: boolean;
@@ -12,18 +13,23 @@ interface TowerProps {
 }
 
 export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerProps) {
-  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, resolverEscolhaHabitante, abrirCodex, concluirQuestOculta } = useGame();
+  const { state, sendExpedition, lastExpeditionResult, clearExpeditionResult, interagirHabitante, resolverEscolhaHabitante, abrirCodex, concluirQuestOculta, explorarCamaraSecreta } = useGame();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNpcs, setSelectedNpcs] = useState<string[]>([]);
   // null = modo avançar (andar atual); número = modo exploração (farm de andar passado)
   const [farmAndar, setFarmAndar] = useState<number | null>(null);
   // Modal do habitante — qual andar está aberto
   const [habitanteModalFloor, setHabitanteModalFloor] = useState<number | null>(null);
-  const [camaraSecretaModalFloor, setCamaraSecretaModalFloor] = useState<number | null>(null);
+  // Câmara secreta aberta no modal — por camaraId (ex.: "5_1"); um andar pode ter mais de uma.
+  const [camaraSecretaModalId, setCamaraSecretaModalId] = useState<string | null>(null);
+  // Grupo selecionado para explorar a câmara aberta (mesmo padrão da expedição).
+  const [camaraGrupo, setCamaraGrupo] = useState<string[]>([]);
   // Modal do Codex Obscuro
   const [codexOpen, setCodexOpen] = useState(false);
   // Capítulo expandido no Codex (1-4); null = todos colapsados
   const [codexCapExpanded, setCodexCapExpanded] = useState<number | null>(1);
+  // Aba ativa no Codex: 'fragmentos' ou 'reliquias'
+  const [codexAbaAtiva, setCodexAbaAtiva] = useState<'fragmentos' | 'reliquias'>('fragmentos');
 
   // Quando o andar avança, sai do modo farm automaticamente.
   useEffect(() => { setFarmAndar(null); }, [state.andarAtual]);
@@ -377,27 +383,33 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     {habEstIcon}
                   </button>
                 )}
-                {/* Botão de Câmara Secreta (andares de chefe já conquistados) */}
-                {isBossFloor && CAMARAS_SECRETAS[f.floor] && (() => {
-                  const cam = CAMARAS_SECRETAS[f.floor];
-                  const cEst = state.camarasSecretasEstado?.[f.floor] ?? { tentativas: 0, encontrada: false };
-                  const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
-                  const restantes = cam.maxTentativas - cEst.tentativas;
-                  return (
-                    <button
-                      onClick={() => setCamaraSecretaModalFloor(f.floor)}
-                      title={cEst.encontrada ? `${cam.titulo} — encontrada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} tentativa(s)`}
-                      className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
-                        cEst.encontrada
-                          ? 'bg-primary/10 border-primary/40 text-primary'
-                          : esgotada
-                            ? 'bg-card-border/20 border-card-border text-white/30'
-                            : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
-                      }`}
-                    >
-                      {cEst.encontrada ? cam.icone : <Search size={15} />}
-                    </button>
-                  );
+                {/* Botão de Câmara Secreta — só aparece quando DESCOBERTA (requisito
+                    atingido no processDay). Chave sempre por camaraId. */}
+                {(() => {
+                  const camarasDoAndar = Object.entries(CAMARAS_SECRETAS).filter(([id]) => id.startsWith(`${f.floor}_`));
+                  if (camarasDoAndar.length === 0) return null;
+                  return camarasDoAndar.map(([camId, cam]) => {
+                    const cEst = state.camarasSecretasEstado?.[camId];
+                    if (!cEst?.descoberta) return null; // câmara ainda secreta
+                    const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
+                    const restantes = cam.maxTentativas - cEst.tentativas;
+                    return (
+                      <button
+                        key={camId}
+                        onClick={() => { setCamaraGrupo([]); setCamaraSecretaModalId(camId); }}
+                        title={cEst.encontrada ? `${cam.titulo} — explorada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} incursão(ões)`}
+                        className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
+                          cEst.encontrada
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : esgotada
+                              ? 'bg-card-border/20 border-card-border text-white/30'
+                              : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
+                        }`}
+                      >
+                        {cEst.encontrada ? cam.icone : <DoorClosed size={15} />}
+                      </button>
+                    );
+                  });
                 })()}
               </div>
             );
@@ -444,17 +456,47 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               </Dialog.Close>
             </div>
 
+            {/* Abas */}
+            <div className="flex border-b border-primary/10 shrink-0">
+              <button
+                onClick={() => setCodexAbaAtiva('fragmentos')}
+                className={`flex-1 px-4 py-3 text-[11px] font-cinzel tracking-widest transition-colors ${
+                  codexAbaAtiva === 'fragmentos'
+                    ? 'bg-primary/20 text-primary border-b-2 border-primary'
+                    : 'text-secondary/60 hover:text-secondary'
+                }`}
+              >
+                FRAGMENTOS
+              </button>
+              <button
+                onClick={() => setCodexAbaAtiva('reliquias')}
+                className={`flex-1 px-4 py-3 text-[11px] font-cinzel tracking-widest transition-colors ${
+                  codexAbaAtiva === 'reliquias'
+                    ? 'bg-primary/20 text-primary border-b-2 border-primary'
+                    : 'text-secondary/60 hover:text-secondary'
+                }`}
+              >
+                RELÍQUIAS ({state.reliquias?.length ?? 0})
+              </button>
+            </div>
+
             {/* Conteúdo rolável */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+              {codexAbaAtiva === 'fragmentos' ? (
+              <>
               {Object.values(TEMPORADAS).map(temporada => {
                 const totalTemp = totalFragmentosTemporada(temporada.numero);
                 const desbTemp = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === temporada.numero).length;
-                // capítulos 1-4
-                const capitulos = [1, 2, 3, 4];
-                const nomesCap: Record<number, string> = {
-                  1: CAPITULO_NOMES[1], 2: CAPITULO_NOMES[2],
-                  3: CAPITULO_NOMES[3], 4: CAPITULO_NOMES[4],
-                };
+                // Determinar capítulos dinamicamente baseado na temporada
+                const capitulos = Object.values(CODEX_FRAGMENTOS)
+                  .filter(f => f.temporada === temporada.numero)
+                  .map(f => f.capitulo)
+                  .filter((v, i, a) => a.indexOf(v) === i)
+                  .sort((a, b) => a - b);
+                const nomesCap: Record<number, string> = capitulos.reduce((acc, cap) => {
+                  acc[cap] = CAPITULO_NOMES[cap] ?? `Capítulo ${cap}`;
+                  return acc;
+                }, {} as Record<number, string>);
                 return (
                   <div key={temporada.numero}>
                     {/* Barra de progresso da temporada */}
@@ -477,7 +519,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                       const desbCap = fragsCapitulo.filter(f => state.codexFragmentos.includes(f.id)).length;
                       const isExpanded = codexCapExpanded === cap;
                       const tipoIcon: Record<string, string> = {
-                        habitante: '👁', eco_capitulo: '✦', sussurro: '🌀', verdade: '📜'
+                        habitante: '👁', eco_capitulo: '✦', sussurro: '🌀', verdade: '📜', camara: '📖'
                       };
                       return (
                         <div key={cap} className="mb-3">
@@ -516,8 +558,17 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                                       <span className={`text-[9px] tracking-wider font-cinzel ${desbloqueado ? 'text-primary/70' : 'text-white/30'}`}>
                                         {frag.titulo}
                                       </span>
-                                      {!desbloqueado && (
-                                        <span className="ml-auto text-[8px] text-white/20 tracking-widest">BLOQUEADO</span>
+                                      {frag.tipo === 'sussurro' && desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-secondary/70 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-secondary/30 bg-secondary/5">✦ RARO</span>
+                                      )}
+                                      {frag.tipo === 'sussurro' && !desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-white/15 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-white/5">RARO</span>
+                                      )}
+                                      {frag.tipo === 'camara' && desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-amber-300/70 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-amber-300/30 bg-amber-300/5">📖 PÁGINA</span>
+                                      )}
+                                      {!desbloqueado && frag.tipo !== 'sussurro' && (
+                                        <span className="ml-auto text-[8px] text-white/20 tracking-widest">{frag.tipo === 'camara' ? 'PÁGINA RASGADA' : 'BLOQUEADO'}</span>
                                       )}
                                     </div>
                                     <p className={`text-[10px] leading-relaxed ${desbloqueado ? (isVerdade ? 'text-primary/80 italic' : 'text-white/55 italic') : 'text-white/15 select-none'}`}>
@@ -536,12 +587,40 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   </div>
                 );
               })}
+              </>
+              ) : (
+              <div className="space-y-3">
+                {!state.reliquias || state.reliquias.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="text-4xl mb-3 opacity-30">◆</div>
+                    <p className="text-[10px] text-secondary/60 tracking-widest">NENHUMA RELÍQUIA COLETADA AINDA</p>
+                    <p className="text-[9px] text-white/30 mt-2 max-w-xs">Ganhe relíquias fazendo escolhas em habitante (escolha B), descobrindo quests ocultas, ou explorando câmaras secretas.</p>
+                  </div>
+                ) : (
+                  state.reliquias.map((reliquia, idx) => {
+                    const dados = RELIQUIAS_CATALOGO[reliquia];
+                    if (!dados) return null;
+                    return (
+                      <div key={idx} className="rounded-sm border border-white/10 bg-black/30 p-3 hover:bg-black/40 hover:border-primary/30 transition-colors">
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="text-[10px] text-primary/80 font-cinzel tracking-widest">{dados.nome}</div>
+                          <div className="text-[8px] text-secondary/50 whitespace-nowrap">◆ {dados.origem}</div>
+                        </div>
+                        <p className="text-[9px] text-white/60 leading-relaxed">{dados.descricao}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-primary/10 shrink-0">
               <p className="text-[9px] text-white/25 text-center tracking-wider italic">
-                Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.
+                {codexAbaAtiva === 'fragmentos'
+                  ? 'Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.'
+                  : 'Relíquias coletadas através de escolhas, quests ocultas e câmaras secretas. Úteis em Temporada III e além.'}
               </p>
             </div>
           </Dialog.Content>
@@ -787,17 +866,18 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
       {/* ── Modal de Câmara Secreta ─────────────────────────────────────────── */}
       <Dialog.Root
-        open={camaraSecretaModalFloor !== null}
-        onOpenChange={open => { if (!open) setCamaraSecretaModalFloor(null); }}
+        open={camaraSecretaModalId !== null}
+        onOpenChange={open => { if (!open) setCamaraSecretaModalId(null); }}
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 transition-opacity" />
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 p-5 flex flex-col gap-4 z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-y-auto custom-scrollbar">
-            {camaraSecretaModalFloor !== null && (() => {
-              const cf = camaraSecretaModalFloor;
-              const cam = CAMARAS_SECRETAS[cf];
+            {camaraSecretaModalId !== null && (() => {
+              const camId = camaraSecretaModalId;
+              const cam = CAMARAS_SECRETAS[camId];
               if (!cam) return null;
-              const cEst = state.camarasSecretasEstado?.[cf] ?? { descoberta: false, tentativas: 0, encontrada: false };
+              const cf = cam.floor;
+              const cEst = state.camarasSecretasEstado?.[camId] ?? { descoberta: false, tentativas: 0, encontrada: false };
               const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
               const restantes = cam.maxTentativas - cEst.tentativas;
               const r = cam.resultado;
@@ -809,14 +889,23 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 r.moralBonus ? `+${r.moralBonus} moral` : '',
                 r.reliquia ? `Relíquia: ${r.reliquia}` : '',
               ].filter(Boolean).join(' · ');
+              // Moradores aptos a formar o grupo de incursão à câmara.
+              const disponiveis = state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90);
+              const grupoSel = state.npcs.filter(n => camaraGrupo.includes(n.id));
+              const ef = getEfeitos(state.edificios, state.npcs);
+              const afinidadeCam = calcAfinidadeCamara(grupoSel, cam);
+              const poderGrupo = calcPoderGrupo(grupoSel, ef.poderBonus) * afinidadeCam;
+              const dificuldadeCam = dificuldadeCamara(cam);
+              const semComida = state.recursos.comida < cam.custo;
+              const podeExplorar = !esgotada && !semComida && camaraGrupo.length > 0;
               return (
                 <>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="text-3xl leading-none">{cEst.encontrada ? cam.icone : '🔍'}</div>
+                      <div className="text-3xl leading-none">{cEst.encontrada ? cam.icone : <DoorClosed size={26} className="text-secondary" />}</div>
                       <div>
                         <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
-                          {cEst.encontrada ? cam.titulo : 'DESTROÇOS DO CHEFE'}
+                          {cam.titulo}
                         </Dialog.Title>
                         <div className="text-[9px] text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · CÂMARA SECRETA</div>
                       </div>
@@ -828,11 +917,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     </Dialog.Close>
                   </div>
 
+                  {/* Descrição real da câmara (lore) — sempre visível */}
+                  <div className="bg-black/30 rounded-sm p-4 border-l-2 border-secondary/40">
+                    <p className="text-[12px] text-white/70 italic leading-relaxed">"{cam.descricao}"</p>
+                  </div>
+
                   {cEst.encontrada ? (
                     <>
-                      <div className="bg-black/30 rounded-sm p-4 border-l-2 border-primary/40">
-                        <p className="text-[12px] text-white/70 italic leading-relaxed">"{cam.descricao}"</p>
-                      </div>
                       <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
                         <div className="text-[9px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
                           <BookOpen size={9} /> FRAGMENTO REVELADO
@@ -850,36 +941,72 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         )}
                       </div>
                       <button
-                        onClick={() => setCamaraSecretaModalFloor(null)}
+                        onClick={() => setCamaraSecretaModalId(null)}
                         className="w-full h-12 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm"
+                      >
+                        FECHAR
+                      </button>
+                    </>
+                  ) : esgotada ? (
+                    <>
+                      <div className="text-[11px] text-white/50 text-center py-2">
+                        As incursões a esta câmara se esgotaram. Ela guarda seus segredos.
+                      </div>
+                      <button
+                        onClick={() => setCamaraSecretaModalId(null)}
+                        className="w-full h-12 bg-card-border/30 border border-card-border text-white/50 font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm"
                       >
                         FECHAR
                       </button>
                     </>
                   ) : (
                     <>
-                      <div className="bg-black/30 rounded-sm p-4 border-l-2 border-secondary/40">
-                        <p className="text-[12px] text-white/60 italic leading-relaxed">
-                          Os destroços do chefe do Andar {cf} ainda guardam algo. Vasculhe com cuidado — nem toda busca encontra.
-                        </p>
-                      </div>
                       <div className="text-[10px] text-secondary/70 text-center">
-                        Tentativas restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
-                        {' · '}chance {Math.round(cam.chancePerTentativa * 100)}% por busca
+                        Monte uma incursão. Incursões restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
+                        {' · '}dificuldade <span className="text-foreground font-bold">{dificuldadeCam}</span>
                       </div>
-                      {/* TODO: Implement camera search button
+
+                      <SelecaoMoradores
+                        npcs={disponiveis}
+                        selectedIds={camaraGrupo}
+                        onToggle={id => setCamaraGrupo(g => g.includes(id) ? g.filter(x => x !== id) : [...g, id])}
+                        emptyLabel="Nenhum morador apto para a incursão."
+                      />
+
+                      <div className="space-y-2 bg-black/40 p-3 rounded-sm border border-primary/10">
+                        <div className="flex justify-between items-center">
+                          <span className="text-secondary font-cinzel tracking-widest text-[10px]">PODER DO GRUPO</span>
+                          <span className={`font-bold font-cinzel text-base flex items-center gap-2 ${poderGrupo >= dificuldadeCam ? 'text-success' : 'text-destructive'}`}>
+                            <Swords size={14} /> {poderGrupo.toFixed(1)} <span className="text-xs text-muted-foreground">/ {dificuldadeCam}</span>
+                          </span>
+                        </div>
+                        {afinidadeCam !== 1 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-secondary font-cinzel tracking-widest text-[10px]">AFINIDADE</span>
+                            <span className={`font-bold text-xs ${afinidadeCam > 1 ? 'text-success' : 'text-destructive'}`}>
+                              {afinidadeCam > 1 ? '+' : ''}{Math.round((afinidadeCam - 1) * 100)}% · grupo {afinidadeCam > 1 ? 'temático' : 'destoante'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-secondary font-cinzel tracking-widest text-[10px]">CUSTO</span>
+                          <span className={`font-bold flex items-center gap-2 ${semComida ? 'text-destructive' : 'text-foreground'}`}>
+                            <Wheat size={14} className={semComida ? 'text-destructive' : 'text-warning'} /> {cam.custo} comida
+                          </span>
+                        </div>
+                      </div>
+
                       <button
-                        onClick={() => vasculharCamaraSecreta(cf)}
-                        disabled={esgotada}
+                        onClick={() => { explorarCamaraSecreta(camId, camaraGrupo); setCamaraSecretaModalId(null); }}
+                        disabled={!podeExplorar}
                         className={`w-full h-12 flex items-center justify-center gap-2 font-cinzel font-bold tracking-[0.2em] rounded-sm touch-manipulation text-sm transition-colors ${
-                          esgotada
-                            ? 'bg-card-border/30 text-white/30 border border-card-border cursor-not-allowed'
-                            : 'bg-secondary/20 border border-secondary/50 text-secondary hover:bg-secondary/30'
+                          podeExplorar
+                            ? 'bg-secondary/20 border border-secondary/50 text-secondary hover:bg-secondary/30'
+                            : 'bg-card-border/30 text-white/30 border border-card-border cursor-not-allowed'
                         }`}
                       >
-                        <Search size={16} /> {esgotada ? 'NADA MAIS RESTA' : 'VASCULHAR OS DESTROÇOS'}
+                        <DoorOpen size={16} /> {semComida ? 'COMIDA INSUFICIENTE' : camaraGrupo.length === 0 ? 'SELECIONE O GRUPO' : 'EXPLORAR CÂMARA'}
                       </button>
-                      */}
                     </>
                   )}
                 </>

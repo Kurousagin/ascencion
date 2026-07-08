@@ -13,13 +13,15 @@ import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
+import { CamaraDescobertaModal } from './components/CamaraDescobertaModal';
+import { ResultadoCamaraModal } from './components/ResultadoCamaraModal';
 import { GachaLancamento } from './components/GachaLancamento';
 import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
 import { useNotificationsHeartbeat } from './hooks/useNotificationsHeartbeat';
 import { useTier2EventUpdate } from './hooks/useTier2EventUpdate';
-import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT } from './lib/onboarding-keys';
-import { LANCAMENTO_ATIVO } from './lib/lancamento';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_PENDING, GACHA_T2_DONE, GACHA_T2_RESULT } from './lib/onboarding-keys';
+import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
 
 function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
@@ -51,6 +53,7 @@ function MainGameInner() {
   const [tab, setTab] = useState('obs');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
+  const [gachaT2Open, setGachaT2Open] = useState(false);
 
   const andarAtual = state?.andarAtual ?? 0;
   const pioneer = usePioneer(andarAtual);
@@ -58,6 +61,20 @@ function MainGameInner() {
   // Push notifications hooks
   useNotificationsHeartbeat();
   useTier2EventUpdate();
+
+  // Rede de segurança: ao ENTRAR no jogo (state null→não-nulo), garante que
+  // nenhum lock de modal do Radix ficou preso no <body>. Se um Dialog for
+  // desmontado abruptamente (ex.: carregar cidadela de teste desmonta a
+  // TitleScreen com o Dialog ainda aberto), o Radix pode deixar o <body> com
+  // `pointer-events: none` + `data-scroll-locked` — a UI renderiza mas nenhum
+  // clique funciona. Como nenhum Dialog está aberto ao entrar no jogo, limpar
+  // aqui é sempre seguro.
+  const emJogo = state !== null;
+  useEffect(() => {
+    if (!emJogo) return;
+    document.body.style.pointerEvents = '';
+    document.body.removeAttribute('data-scroll-locked');
+  }, [emJogo]);
 
   // Quando o jogo inicia (state null→não-nulo), verifica sinais de pending/recovery.
   useEffect(() => {
@@ -77,12 +94,41 @@ function MainGameInner() {
       setGachaOpen(true);
       return;
     }
-    // 3. Onboarding
+    // 3. T2 Gacha: quando 10 pioneers completam andar 20, libera andar 21+
+    if (sessionStorage.getItem(GACHA_T2_PENDING)) {
+      sessionStorage.removeItem(GACHA_T2_PENDING);
+      setGachaOpen(true);
+      return;
+    }
+    // 4. Recovery T2: resultado persiste mas DONE ausente
+    if (
+      LANCAMENTO_T2 &&
+      !localStorage.getItem(GACHA_T2_DONE) &&
+      localStorage.getItem(GACHA_T2_RESULT)
+    ) {
+      setGachaOpen(true);
+      return;
+    }
+    // 5. Onboarding
     if (sessionStorage.getItem(ONBOARDING_PENDING)) {
       sessionStorage.removeItem(ONBOARDING_PENDING);
       setOnboardingOpen(true);
     }
   }, [state]);
+
+  // Monitor T2 unlock: quando milestone é atingido globalmente, dispara gacha
+  useEffect(() => {
+    const t2Desbloqueado = pioneer.status?.desbloqueado ?? false;
+    if (!t2Desbloqueado) return;
+    if (!LANCAMENTO_T2) return;
+    if (localStorage.getItem(GACHA_T2_DONE)) return; // já fez gacha de T2
+
+    // Dispara gacha T2
+    localStorage.removeItem(GACHA_T2_DONE);
+    localStorage.removeItem(GACHA_T2_RESULT);
+    sessionStorage.setItem(GACHA_T2_PENDING, '1');
+    setGachaT2Open(true);
+  }, [pioneer.status?.desbloqueado]);
 
   if (!state) return <TitleScreen />;
   if (state.gameOver || state.vitoria) return <GameOverScreen />;
@@ -129,17 +175,34 @@ function MainGameInner() {
       </div>
     </WarProvider>
 
-    {/* Gacha de lançamento — abre ao iniciar novo jogo na temporada ativa */}
+    {/* Câmaras secretas: evento de descoberta + resultado da exploração (globais) */}
+    <CamaraDescobertaModal />
+    <ResultadoCamaraModal />
+
+    {/* Gacha de lançamento T1 — abre ao iniciar novo jogo na temporada ativa */}
     {LANCAMENTO_ATIVO && (
       <GachaLancamento
         open={gachaOpen}
         lancamento={LANCAMENTO_ATIVO}
+        tipo="T1"
         onClose={() => {
           setGachaOpen(false);
           if (sessionStorage.getItem(ONBOARDING_PENDING)) {
             sessionStorage.removeItem(ONBOARDING_PENDING);
             setOnboardingOpen(true);
           }
+        }}
+      />
+    )}
+
+    {/* Gacha de lançamento T2 — abre quando 10 pioneers completam andar 20 */}
+    {LANCAMENTO_T2 && (
+      <GachaLancamento
+        open={gachaT2Open}
+        lancamento={LANCAMENTO_T2}
+        tipo="T2"
+        onClose={() => {
+          setGachaT2Open(false);
         }}
       />
     )}
