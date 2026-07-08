@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { flushSync } from 'react-dom';
 import {
   GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
+  getMsPerDay,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcBiomaMultiplier, autoExplorar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase, ProfissaoId, HabilidadeId,
@@ -134,8 +135,6 @@ const resumoRecursos = (r: Recursos, sinal: '+' | '-') =>
 
 // Time: at 1x, one real-world day equals five in-game days.
 // (24h / 5 game days = 4.8h of real time per game day at 1x; 2x and 5x accelerate.)
-const MS_PER_GAME_DAY_BASE =  2 * 60 * 60 * 1000;
-const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
 
 const GameContext = createContext<GameContextType | null>(null);
 

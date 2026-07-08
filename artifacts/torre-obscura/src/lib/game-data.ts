@@ -3436,6 +3436,12 @@ export function sortearRecompensaCamara(
   return { tipo: 'nenhum' };
 }
 
+// ─── TEMPO DE JOGO ─────────────────────────────────────────────────────────────
+// Duração real de um dia de jogo. Fonte única de verdade — usada pelo catch-up
+// offline (GameContext) e pela previsão de próximo evento das notificações push.
+export const MS_PER_GAME_DAY_BASE = 2 * 60 * 60 * 1000; // 2h na velocidade 1x
+export const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
+
 // ─── INITIAL STATE ────────────────────────────────────────────────────────────
 
 export const CAPACIDADE_BASE = 80;
