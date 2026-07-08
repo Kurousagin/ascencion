@@ -2085,26 +2085,23 @@ export function verificarRequisitoCamara(state: GameState, requisito: RequisitoC
     if (requisito.recurso === 'ferro') return recursos.ferro >= requisito.quantidade;
   }
   if (requisito.tipo === 'npc_raridade') {
-    const countByRaridade: Record<string, number> = {};
-    state.npcs.forEach(n => {
-      if (n.vivo) {
-        const mapped = n.raridade === 'Divino' ? 'divino'
-          : n.raridade === 'Lendário' ? 'lendario'
-          : n.raridade === 'Épico' ? 'raro'
-          : n.raridade === 'Incomum' ? 'incomum'
-          : n.raridade === 'Comum' ? 'comum'
-          : null;
-        if (mapped) countByRaridade[mapped] = (countByRaridade[mapped] ?? 0) + 1;
-      }
-    });
-    return (countByRaridade[requisito.raridade] ?? 0) >= requisito.quantidade;
+    // Conta por tier: uma raridade maior satisfaz um requisito de raridade menor
+    // (ex.: um Épico conta para um requisito de "raro"). O código antigo omitia o
+    // caso 'Raro' e mapeava 'Épico' como 'raro', tornando o requisito quase impossível.
+    const tierAlvo: Record<string, number> = { comum: 0, incomum: 1, raro: 2, lendario: 4 };
+    const tierNpc = (r: Raridade): number =>
+      r === 'Divino' ? 5 : r === 'Lendário' ? 4 : r === 'Épico' ? 3 : r === 'Raro' ? 2 : r === 'Incomum' ? 1 : 0;
+    const alvo = tierAlvo[requisito.raridade] ?? 0;
+    const count = state.npcs.filter(n => n.vivo && tierNpc(n.raridade) >= alvo).length;
+    return count >= requisito.quantidade;
   }
   if (requisito.tipo === 'combinado') {
     return requisito.conditions.every(cond => {
       if (cond.tipo === 'class_farms') {
+        // A condição combinada não especifica profissão → soma farms de todas as
+        // classes (antes somava sempre 0, deixando a câmara indescobrível).
         const farms = Object.values(state.farmsPorAndarEClasse ?? {}).reduce((sum, af) => {
-          const prof = (cond as unknown as { profissao?: ProfissaoId }).profissao as ProfissaoId | undefined;
-          return sum + (prof ? (af[prof] ?? 0) : 0);
+          return sum + Object.values(af).reduce((a, b) => a + b, 0);
         }, 0);
         return farms >= (cond.value ?? 0);
       }
@@ -3276,6 +3273,10 @@ export function calcNpcPower(npc: NPC): number {
 
   if (npc.fadiga >= 50 && npc.fadiga <= 69) p *= 0.85;
   else if (npc.fadiga >= 70 && npc.fadiga <= 89) p *= 0.65;
+
+  // Sanidade também pesa: mente abalada rende menos em expedição/combate.
+  if (npc.sanidade < 30) p *= 0.75;
+  else if (npc.sanidade < 50) p *= 0.90;
 
   return p;
 }

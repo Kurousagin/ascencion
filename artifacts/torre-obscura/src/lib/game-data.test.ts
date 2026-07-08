@@ -3,7 +3,8 @@ import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
-  type CamaraSecreta, type NPC, type ProfissaoId,
+  verificarRequisitoCamara, calcNpcPower,
+  type CamaraSecreta, type NPC, type ProfissaoId, type GameState,
 } from './game-data';
 
 const armazem = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over });
@@ -131,6 +132,52 @@ describe('sortearRecompensaCamara (bônus por desempenho)', () => {
 
   it('desempenho alto libera buff permanente de +2', () => {
     expect(sortearRecompensaCamara(1, seq([0, 0.6]))).toEqual({ tipo: 'buff_permanente', incremento: 2 });
+  });
+});
+
+// NPC completo p/ testes de requisito/poder (o mkNpc acima só tem stats).
+const npcFull = (over: Partial<NPC>): NPC => ({
+  id: Math.random().toString(36), nome: 'T',
+  forca: 5, agilidade: 5, inteligencia: 5, resistencia: 5,
+  sanidade: 80, lealdade: 80, fadiga: 0,
+  vivo: true, obscuro: false, emExpedicao: false,
+  raridade: 'Comum', habilidade: 'guardiao', posto: null, ...over,
+});
+const stateReq = (over: Partial<GameState>): GameState => ({
+  npcs: [], farmsPorAndarEClasse: {}, totalMortesAndar: {}, habitantesEstado: {},
+  recursos: { comida: 0, madeira: 0, pedra: 0, ferro: 0, capacidadeArmazem: 300 },
+  ...over,
+} as unknown as GameState);
+
+describe('verificarRequisitoCamara — npc_raridade por tier', () => {
+  it('Épico satisfaz requisito de "raro" (bug antigo omitia Raro)', () => {
+    const s = stateReq({ npcs: [npcFull({ raridade: 'Épico' }), npcFull({ raridade: 'Épico' })] });
+    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 2, textoRequisito: '' })).toBe(true);
+  });
+  it('conta Raro exato', () => {
+    const s = stateReq({ npcs: [npcFull({ raridade: 'Raro' })] });
+    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 2, textoRequisito: '' })).toBe(false);
+  });
+  it('Comum não satisfaz "raro"', () => {
+    const s = stateReq({ npcs: [npcFull({ raridade: 'Comum' }), npcFull({ raridade: 'Comum' })] });
+    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 1, textoRequisito: '' })).toBe(false);
+  });
+});
+
+describe('verificarRequisitoCamara — combinado class_farms soma todas as classes', () => {
+  it('soma farms de qualquer profissão (antes somava 0)', () => {
+    const s = stateReq({ farmsPorAndarEClasse: { 5: { combatente: 5, batedor: 4 } } as GameState['farmsPorAndarEClasse'] });
+    const req = { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 8 }, { tipo: 'mortes', value: 0 }], textoRequisito: '' };
+    expect(verificarRequisitoCamara(s, req)).toBe(true);
+  });
+});
+
+describe('calcNpcPower — sanidade influencia o poder', () => {
+  it('sanidade baixa reduz o poder efetivo', () => {
+    const forte = npcFull({ sanidade: 80 });
+    const abalado = npcFull({ sanidade: 20 });
+    expect(calcNpcPower(abalado)).toBeLessThan(calcNpcPower(forte));
+    expect(calcNpcPower(abalado)).toBeCloseTo(calcNpcPower(forte) * 0.75, 5);
   });
 });
 
