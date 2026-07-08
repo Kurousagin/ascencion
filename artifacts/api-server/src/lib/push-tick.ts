@@ -1,6 +1,6 @@
 import webpush from "web-push";
-import { and, eq, isNotNull, lt } from "drizzle-orm";
-import { db, pushSubscriptionsTable } from "@workspace/db";
+import { and, eq, isNotNull, lt, or } from "drizzle-orm";
+import { db, pushSubscriptionsTable, type PushSubscription } from "@workspace/db";
 import { logger } from "./logger";
 
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -12,6 +12,18 @@ const INACTIVITY_THRESHOLD_HOURS = 8;
 const MIN_INACTIVITY_MINUTES = 30;
 const EVENT_LOOKAHEAD_HOURS = 4;
 const PER_SEND_TIMEOUT_MS = 5000;
+const SEND_CONCURRENCY = 20;
+
+// Um evento já foi notificado quando lastNotifiedEventAt e nextEventAt apontam
+// para o MESMO instante. Comparação por getTime — comparar Date com !== usa
+// referência e é sempre verdadeiro (bug anterior que causava reenvio a cada tick).
+function jaNotificouEvento(sub: PushSubscription): boolean {
+  return (
+    !!sub.lastNotifiedEventAt &&
+    !!sub.nextEventAt &&
+    sub.lastNotifiedEventAt.getTime() === sub.nextEventAt.getTime()
+  );
+}
 
 const GENERIC_MESSAGES = [
   "Sua cidadela precisa de você.",
@@ -65,15 +77,19 @@ export async function runNotificationTick(): Promise<PushTickResult> {
     now.getTime() + EVENT_LOOKAHEAD_HOURS * 60 * 60 * 1000
   );
 
-  // Fetch subscriptions eligible for notification
+  // Fetch subscriptions eligible for notification. Filtra no SQL o que dá:
+  // habilitadas E (tem evento pendente OU está inativa o bastante p/ o lembrete
+  // genérico). Os cooldowns finos ficam no JS abaixo. Evita carregar toda a base.
   const subscriptions = await db
     .select()
     .from(pushSubscriptionsTable)
     .where(
       and(
         eq(pushSubscriptionsTable.enabled, true),
-        // Either never notified or outside cooldown window
-        // (lastNotifiedAt IS NULL OR lastNotifiedAt < cooldownThreshold)
+        or(
+          isNotNull(pushSubscriptionsTable.nextEventAt),
+          lt(pushSubscriptionsTable.lastActiveAt, inactivityThreshold)
+        )
       )
     );
 
@@ -81,7 +97,7 @@ export async function runNotificationTick(): Promise<PushTickResult> {
   let removidos = 0;
   let erros = 0;
 
-  const sendPromises = subscriptions.map(async (sub) => {
+  const processarSub = async (sub: PushSubscription): Promise<void> => {
     try {
       const isInactive = sub.lastActiveAt < inactivityThreshold;
 
@@ -89,7 +105,7 @@ export async function runNotificationTick(): Promise<PushTickResult> {
       const isAllianceNotification =
         sub.nextEventAt &&
         sub.nextEventAt <= now &&
-        (!sub.lastNotifiedEventAt || sub.lastNotifiedEventAt !== sub.nextEventAt);
+        !jaNotificouEvento(sub);
 
       // Para eventos de aliança, dispara imediatamente (sem MIN_INACTIVITY_MINUTES)
       // Para outros eventos, requer 30min de inatividade
@@ -98,9 +114,9 @@ export async function runNotificationTick(): Promise<PushTickResult> {
       }
 
       const shouldNotifyEvent =
-        sub.nextEventAt &&
+        !!sub.nextEventAt &&
         (isAllianceNotification || (sub.nextEventAt > now && sub.nextEventAt <= eventLookaheadThreshold)) &&
-        (!sub.lastNotifiedEventAt || sub.lastNotifiedEventAt !== sub.nextEventAt);
+        !jaNotificouEvento(sub);
 
       const shouldNotifyGeneric =
         isInactive &&
@@ -136,7 +152,7 @@ export async function runNotificationTick(): Promise<PushTickResult> {
       );
 
       // Update timestamps
-      const updateData: Record<string, any> = { lastNotifiedAt: new Date() };
+      const updateData: Partial<typeof pushSubscriptionsTable.$inferInsert> = { lastNotifiedAt: new Date() };
       if (shouldNotifyEvent && sub.nextEventAt) {
         updateData.lastNotifiedEventAt = sub.nextEventAt;
       }
@@ -168,9 +184,14 @@ export async function runNotificationTick(): Promise<PushTickResult> {
         );
       }
     }
-  });
+  };
 
-  await Promise.allSettled(sendPromises);
+  // Envia em lotes com concorrência limitada — evita disparar centenas de
+  // requisições ao provedor de push de uma vez.
+  for (let i = 0; i < subscriptions.length; i += SEND_CONCURRENCY) {
+    const lote = subscriptions.slice(i, i + SEND_CONCURRENCY);
+    await Promise.allSettled(lote.map(processarSub));
+  }
 
   logger.info(
     { enviados, removidos, erros },

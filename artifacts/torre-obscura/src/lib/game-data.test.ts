@@ -3,11 +3,21 @@ import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
+  getMsPerDay, MS_PER_GAME_DAY_BASE,
   type CamaraSecreta, type NPC, type ProfissaoId,
 } from './game-data';
 
 const armazem = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over });
 const base = () => ({ comida: 100, madeira: 50, pedra: 30, ferro: 10, capacidadeArmazem: 300 });
+
+describe('getMsPerDay (duração real do dia de jogo)', () => {
+  it('base é 2h e escala com a velocidade', () => {
+    expect(MS_PER_GAME_DAY_BASE).toBe(2 * 60 * 60 * 1000);
+    expect(getMsPerDay(1)).toBe(2 * 60 * 60 * 1000);
+    expect(getMsPerDay(2)).toBe(60 * 60 * 1000);
+    expect(getMsPerDay(5)).toBe(24 * 60 * 1000);
+  });
+});
 
 describe('debitarArmazem (reserva de envio à aliada)', () => {
   it('debita o valor exato quando há saldo', () => {

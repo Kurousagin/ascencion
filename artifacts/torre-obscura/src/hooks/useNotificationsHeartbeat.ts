@@ -33,8 +33,16 @@ export function useNotificationsHeartbeat(): void {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    // Batimento periódico enquanto o app fica aberto e visível — sem ele, o
+    // lastActiveAt não é renovado e o servidor passa a considerar o jogador
+    // "inativo" após 8h mesmo com o app à frente. O throttle interno evita spam.
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") sendHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.clearInterval(intervalId);
     };
   }, []);
 }

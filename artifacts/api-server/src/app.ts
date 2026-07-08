@@ -2,10 +2,22 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { runNotificationTick } from "./lib/push-tick";
+
+// Comparação em tempo constante do segredo do cron (evita timing attack) e
+// normaliza header duplicado (array).
+function cronSecretValido(fornecido: unknown, esperado: string): boolean {
+  const valor = Array.isArray(fornecido) ? fornecido[0] : fornecido;
+  if (typeof valor !== "string") return false;
+  const a = Buffer.from(valor);
+  const b = Buffer.from(esperado);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 const app: Express = express();
 
@@ -40,9 +52,8 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Internal cron endpoint (protected) ────────────────────────────────────────
 app.post("/internal/notificacoes/executar-ciclo", async (req, res): Promise<void> => {
   const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers["x-cron-secret"];
 
-  if (!cronSecret || cronSecret !== authHeader) {
+  if (!cronSecret || !cronSecretValido(req.headers["x-cron-secret"], cronSecret)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
