@@ -44,30 +44,30 @@ pareçam **pessoas vivas** — gerando tensão ao descartá-los ou forçá-los a
   (`{ logs, mortos, vitoriaIds? }`); o `GameContext` aplica `aplicarLuto` nos mortos do dia
   e registra `guerra_vencida` nos sobreviventes da vitória. Feito `andar_conquistado`
   registrado na vitória de expedição em modo avançar. Testes em `game-data.test.ts`.
+- **Vínculos tipados** (`systems/vinculos-tipados.ts`): amizade (af ≥ 50) e rivalidade
+  (af ≤ −40) derivadas da afinidade; **romance** e **mentoria** são arcos persistidos em
+  `GameState.vinculosEspeciais` (chave `parKey`), criados pelo sistema com rolagem rara
+  (máx. 1 arco/dia — protege o catch-up) e dissolvidos se a afinidade cair abaixo de 20.
+  Efeitos: luto de romance dói o dobro (`grief.ts`); `bonusMentor` dá +1 no ganho de
+  treino/estudo quando um mentor vivo supera o aprendiz no stat treinado. UI mostra o
+  tipo no card (`People.tsx`). Consulta via `tipoVinculo(state, a, b)`.
 
 ## ⏳ TODO / Fases futuras
 
-### 1. Vínculos tipados (engatilhado)
-Classificar a afinidade + histórico em **amizade / rivalidade / mentoria / romance**,
-com arcos próprios. Implementar como **novo sistema** `systems/vinculos-tipados.ts`
-(`SistemaVida`) e registrá-lo em `SISTEMAS_VIDA` (`tick.ts`) — sem tocar os demais.
-Sugestão: derivar o tipo de um par a partir de `getAfinidade` + diferença de idade/mentor
-(stat/treinos) + flags; guardar em `GameState` um `Record<parKey, TipoVinculo>` se preciso.
-
-### 2. Migrar os corpos do domínio para o módulo
+### 1. Migrar os corpos do domínio para o módulo
 Hoje `generateNPC`, `calcNpcPower`, `getProfissao`, treino etc. ainda **residem** em
 `game-data.ts` e são re-exportados pela façade. Passo futuro: mover os corpos para
 `npc-engine/domain.ts` e fazer `game-data` re-exportar do módulo (cuidando para não
 reintroduzir ciclos — mover junto os tipos base se necessário).
 
-### 3. Aprofundar o convívio e o impacto no jogo
+### 2. Aprofundar o convívio e o impacto no jogo
 - Humor afetar produção/expedição (ex.: "Abalado" reduz eficiência; vínculo forte no
   mesmo grupo reduz mortalidade).
 - Eventos sociais raros (brigas, reconciliações, juras de lealdade) como um sistema.
 - Promoção via buff de câmara (`GameContext` ~linha do `recalcRaridade` no bônus
   `buff_permanente`) também poderia chamar `promoverEnobrecer` — hoje só treino/estudo.
 
-### 4. Balanceamento
+### 3. Balanceamento
 Revisar constantes: deltas de convívio (`CONVIVIO_*`, `ATRITO`), `LIMIAR_ADOCAO`,
 `FAMA_CASA`/`CHANCE_FUNDAR_CASA`, penalidades de luto (`grief.ts`). Idealmente com
 telemetria/observação de partidas.

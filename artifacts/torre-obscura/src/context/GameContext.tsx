@@ -23,7 +23,7 @@ import {
   CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
   sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
-import { tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, type PromocaoResultado } from '../npc-engine';
+import { tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor, type PromocaoResultado } from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
 import { getDeviceId } from '../lib/alliance-identity';
@@ -660,6 +660,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
+    if (!parsed.vinculosEspeciais) parsed.vinculosEspeciais = {};
     parsed.npcs.forEach(n => {
       if (n.fama === undefined) n.fama = 0;
       // Nobres legados guardam o sobrenome embutido no `nome`; recupera a casa
@@ -1387,7 +1388,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const statKey = statTreinamento(npc);
     const instrutor = calcInstrutor(npcId, s.npcs, statKey);
     const instrutorStat = instrutor ? instrutor[statKey] : 0;
-    const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
+    const extraMentor = bonusMentor(s, npc, statKey);
+    const ganho = ((instrutor && instrutorStat > npc[statKey]) ? 2 : 1) + extraMentor;
 
     if (isErudito) {
       const custo = calcCustoEstudo(treinamentos);
@@ -1411,8 +1413,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const instrutorStr = instrutor
       ? ` orientado por ${instrutor.nome} (${statLabel}:${instrutor[statKey]})`
       : '';
+    const mentorStr = extraMentor > 0 ? ' [mentor +1]' : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     promoverEnobrecer(s, npc);
     saveState(s);
@@ -1439,7 +1442,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const treinamentos = npc.treinamentos ?? 0;
     const instrutor = calcInstrutor(npcId, s.npcs, 'inteligencia');
     const instrutorStat = instrutor ? instrutor.inteligencia : 0;
-    const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
+    const extraMentor = bonusMentor(s, npc, 'inteligencia');
+    const ganho = ((instrutor && instrutorStat > npc.inteligencia) ? 2 : 1) + extraMentor;
 
     let local: string;
     if (podeT2) {
@@ -1464,8 +1468,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const instrutorStr = instrutor
       ? ` orientado por ${instrutor.nome} (INT:${instrutor.inteligencia})`
       : '';
+    const mentorStr = extraMentor > 0 ? ' [mentor +1]' : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     promoverEnobrecer(s, npc);
     saveState(s);

@@ -2966,6 +2966,10 @@ export interface GameState {
   // Afinidade entre NPCs, por par. Chave canônica `parKey(idA,idB)` (ids ordenados);
   // valor −100..100. Ausência = 0 (desconhecidos). Ver src/npc-engine/relationships.
   relacionamentos?: Record<string, number>;
+  // Arcos persistidos por par (mesma chave canônica). Amizade/rivalidade são
+  // derivadas da afinidade; romance/mentoria são eventos e ficam gravados aqui.
+  // Ver src/npc-engine/systems/vinculos-tipados.
+  vinculosEspeciais?: Record<string, 'romance' | 'mentoria'>;
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
