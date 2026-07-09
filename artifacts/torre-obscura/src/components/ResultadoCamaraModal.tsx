@@ -7,7 +7,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { Sparkles, Skull, BookOpen } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { CAMARAS_SECRETAS } from '../lib/game-data';
+import { CAMARAS_SECRETAS } from '../camara-engine';
 
 export function ResultadoCamaraModal() {
   const { ultimoResultadoCamara, limparResultadoCamara } = useGame();

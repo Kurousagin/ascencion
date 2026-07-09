@@ -20,9 +20,12 @@ import {
   QuestOculta, gerarQuestOculta, verificarQuestOculta,
   atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
   MetaDiariaId, hojeStrLocal, gerarObjetivosDoDia, METAS_DIARIAS_META,
-  CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
-  sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
+  RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
+import {
+  CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara,
+  sortearRecompensaCamara, idFragmentoCamara, type CamaraSecreta,
+} from '../camara-engine';
 import {
   tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
   fatorHumor, getAfinidade, AF_AMIZADE,

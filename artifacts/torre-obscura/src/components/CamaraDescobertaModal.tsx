@@ -10,7 +10,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { DoorOpen, Clock, Sparkles, KeyRound } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { CAMARAS_SECRETAS } from '../lib/game-data';
+import { CAMARAS_SECRETAS } from '../camara-engine';
 
 export function CamaraDescobertaModal() {
   const { state, explorarCamaraSecreta, reconhecerCamaraDescoberta, lastExpeditionResult, ultimoResultadoCamara } = useGame();
