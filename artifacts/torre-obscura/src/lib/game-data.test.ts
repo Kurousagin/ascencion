@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
   getMsPerDay, MS_PER_GAME_DAY_BASE, verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
-  type CamaraSecreta, type NPC, type ProfissaoId, type GameState,
+  avancarGuerra,
+  type CamaraSecreta, type NPC, type ProfissaoId, type GameState, type GuerraAtiva,
 } from './game-data';
 
 const armazem = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over });
@@ -204,6 +205,58 @@ describe('gerarNomeNpc (nobreza no nome)', () => {
       expect(sobrenome).toBeTruthy();
       expect(nome).toContain(sobrenome!);
     }
+  });
+});
+
+// ─── Guerra ───────────────────────────────────────────────────────────────────
+
+const mkGuerra = (over: Partial<GuerraAtiva>): GuerraAtiva => ({
+  rival: {
+    slug: 'rival', nome: 'Rival', dia: 1, andar: 5, populacao: 10,
+    profissoes: { combatente: 3, batedor: 3, erudito: 2, sentinela: 2 },
+    poderBase: 50, suprimento: 100,
+    recursos: { comida: 100, madeira: 100, pedra: 100, ferro: 100 },
+    postura: 'equilibrada',
+  },
+  rivalIntegridade: 1, rivalSuprimento: 100, tropaIds: [],
+  duracao: 10, diasDecorridos: 0, diaInicio: 1, momento: 0,
+  suprido: true, baixasJogador: 0, feridosJogador: 0, baixasRival: 0,
+  ultimoRelato: '', ...over,
+});
+
+const stateGuerra = (npcs: NPC[], guerra: GuerraAtiva): GameState => ({
+  npcs, guerra, edificios: [], moral: 70, dia: 5, guerrasHistorico: [],
+  recursos: { comida: 100, madeira: 50, pedra: 30, ferro: 10, capacidadeArmazem: 300 },
+} as unknown as GameState);
+
+describe('avancarGuerra (mortos do dia + feitos de vitória)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('reporta os ids/nomes de quem tombou no front', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0); // força ferimento e morte
+    const soldado = npcFull({ nome: 'Bren', emGuerra: true });
+    const s = stateGuerra([soldado], mkGuerra({ tropaIds: [soldado.id] }));
+    const r = avancarGuerra(s);
+    expect(soldado.vivo).toBe(false);
+    expect(r.mortos).toEqual([{ id: soldado.id, nome: 'Bren' }]);
+    expect(r.vitoriaIds).toBeUndefined(); // tropa colapsou → derrota
+    expect(s.guerra).toBeNull();
+  });
+
+  it('vitória devolve os ids da tropa sobrevivente', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // sem ferida/morte/desertor
+    const soldado = npcFull({ nome: 'Bren', emGuerra: true });
+    // Integridade rival quase zerada: o dano do dia encerra em vitória.
+    const s = stateGuerra([soldado], mkGuerra({ tropaIds: [soldado.id], rivalIntegridade: 0.005 }));
+    const r = avancarGuerra(s);
+    expect(r.mortos).toEqual([]);
+    expect(r.vitoriaIds).toEqual([soldado.id]);
+    expect(s.guerrasHistorico[0].resultado).toBe('vitoria');
+  });
+
+  it('sem guerra em curso devolve resultado vazio', () => {
+    const s = stateReq({ guerra: null } as Partial<GameState>);
+    expect(avancarGuerra(s)).toEqual({ logs: [], mortos: [] });
   });
 });
 

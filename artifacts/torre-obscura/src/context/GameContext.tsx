@@ -376,7 +376,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // 9.5 Guerra em curso: resolve o dia de campanha (suprimento, escaramuça,
     //     baixas, término). Muta o draft e devolve as entradas de log.
-    avancarGuerra(draft).forEach(l => addLog(draft, l.tipo, l.mensagem));
+    const diaGuerra = avancarGuerra(draft);
+    diaGuerra.logs.forEach(l => addLog(draft, l.tipo, l.mensagem));
+    // Luto pelos que tombaram no front (game-data não pode importar o motor).
+    diaGuerra.mortos.forEach(m =>
+      aplicarLuto(draft, m.id, m.nome).forEach(l => addLog(draft, l.tipo, l.mensagem)));
+    diaGuerra.vitoriaIds?.forEach(id => {
+      const n = draft.npcs.find(x => x.id === id);
+      if (n) registrarFeito(n, 'guerra_vencida');
+    });
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
     //     Se expirar sem resposta → auto-defesa (todos os aptos marcham) ou
@@ -945,6 +953,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
           registrarFeito(n, 'expedicao_sobrevivida');
+          if (!isFarming) registrarFeito(n, 'andar_conquistado');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
