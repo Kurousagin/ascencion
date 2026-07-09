@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, CAMARAS_SECRETAS, RELIQUIAS_CATALOGO, calcPoderGrupo, dificuldadeCamara, calcAfinidadeCamara } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO, calcPoderGrupo } from '../lib/game-data';
+import { CAMARAS_SECRETAS, dificuldadeCamara, calcAfinidadeCamara } from '../camara-engine';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
