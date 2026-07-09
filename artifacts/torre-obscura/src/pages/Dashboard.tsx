@@ -1,7 +1,8 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
 import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
-import { getEfeitos, POP_BASE, METAS_DIARIAS_META, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
+import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
+import { METAS_DIARIAS_META } from '../quest-engine';
 import {
   isPushSupported,
   getPermissionState,
