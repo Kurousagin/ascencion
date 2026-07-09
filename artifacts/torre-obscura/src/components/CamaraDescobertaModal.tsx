@@ -59,11 +59,11 @@ export function CamaraDescobertaModal() {
                 >
                   <KeyRound size={30} className="text-primary mx-auto mb-2 drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]" />
                 </motion.div>
-                <div className="text-[9px] text-primary/70 tracking-[0.35em] mb-1">CÂMARA SECRETA DESCOBERTA</div>
+                <div className="text-[11px] text-primary/70 tracking-[0.35em] mb-1">CÂMARA SECRETA DESCOBERTA</div>
                 <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.15em] text-base leading-tight drop-shadow-[0_0_6px_rgba(212,175,55,0.4)]">
                   {cam.titulo}
                 </Dialog.Title>
-                <div className="text-[9px] text-primary/50 tracking-[0.25em] mt-1">
+                <div className="text-[11px] text-primary/50 tracking-[0.25em] mt-1">
                   {cam.icone} ANDAR {cam.floor}
                 </div>
               </div>
@@ -78,14 +78,14 @@ export function CamaraDescobertaModal() {
                 <div className="flex items-start gap-2 bg-primary/5 border border-primary/20 rounded-sm px-3 py-2">
                   <Sparkles size={12} className="text-primary/80 mt-0.5 shrink-0" />
                   <div>
-                    <div className="text-[8px] text-primary/60 tracking-[0.25em] mb-0.5">COMO FOI ENCONTRADA</div>
-                    <div className="text-[10px] text-white/60 leading-relaxed">{cam.requisito.textoRequisito}</div>
+                    <div className="text-[10px] text-primary/60 tracking-[0.25em] mb-0.5">COMO FOI ENCONTRADA</div>
+                    <div className="text-[12px] text-white/60 leading-relaxed">{cam.requisito.textoRequisito}</div>
                   </div>
                 </div>
 
                 {grupoAgora.length > 0 ? (
                   <>
-                    <p className="text-[10px] text-primary/60 text-center leading-relaxed">
+                    <p className="text-[12px] text-primary/60 text-center leading-relaxed">
                       Explorar agora leva o mesmo grupo da volta — cansado, com mais risco.
                       Ou prepare uma incursão dedicada depois, pela Torre.
                     </p>
@@ -106,7 +106,7 @@ export function CamaraDescobertaModal() {
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] text-primary/60 text-center leading-relaxed">
+                    <p className="text-[12px] text-primary/60 text-center leading-relaxed">
                       A câmara agora aparece na Torre — prepare uma incursão dedicada para explorá-la.
                     </p>
                     <button

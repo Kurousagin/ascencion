@@ -62,12 +62,12 @@ export function BottomNav({ currentTab, onTabChange, badges }: BottomNavProps) {
                 className={`mb-[3px] transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
               />
               {!!badges?.[t.id] && (
-                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-destructive text-destructive-foreground text-[8px] font-bold flex items-center justify-center border border-background animate-pulse leading-none">
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border border-background animate-pulse leading-none">
                   {badges[t.id]! > 9 ? '9+' : badges[t.id]}
                 </span>
               )}
             </span>
-            <span className={`text-[9px] font-bold tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+            <span className={`text-[11px] font-bold tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
               {t.label}
             </span>
           </button>

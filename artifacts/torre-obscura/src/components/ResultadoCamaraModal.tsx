@@ -37,7 +37,7 @@ export function ResultadoCamaraModal() {
                   <Dialog.Title className={`font-cinzel font-bold tracking-[0.2em] text-sm text-${cor}`}>
                     {res.sucesso ? cam.titulo.toUpperCase() : 'A CÂMARA RESISTIU'}
                   </Dialog.Title>
-                  <div className="text-[9px] text-secondary/60 tracking-[0.25em] mt-1">
+                  <div className="text-[11px] text-secondary/60 tracking-[0.25em] mt-1">
                     ANDAR {cam.floor} · PODER {res.poder.toFixed(1)} / {res.dificuldade}
                   </div>
                 </div>
@@ -48,27 +48,27 @@ export function ResultadoCamaraModal() {
 
                   {res.sucesso && r.loreGanho && (
                     <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
-                      <div className="text-[9px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
+                      <div className="text-[11px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
                         <BookOpen size={9} /> PÁGINA RECUPERADA
                       </div>
-                      <div className="text-[10px] text-primary/50 mb-1 font-cinzel">{r.loreGanho.titulo}</div>
-                      <p className="text-[11px] text-white/60 italic leading-relaxed">{r.loreGanho.texto}</p>
+                      <div className="text-[12px] text-primary/50 mb-1 font-cinzel">{r.loreGanho.titulo}</div>
+                      <p className="text-[12px] text-white/60 italic leading-relaxed">{r.loreGanho.texto}</p>
                     </div>
                   )}
 
                   {res.sucesso && recompStr && (
                     <div className="rounded-sm p-3 border border-success/30 bg-success/5">
-                      <div className="text-[9px] text-success/70 tracking-widest mb-1 flex items-center gap-1">
+                      <div className="text-[11px] text-success/70 tracking-widest mb-1 flex items-center gap-1">
                         <Sparkles size={9} /> RECOMPENSAS
                       </div>
-                      <p className="text-[11px] text-success/80 leading-relaxed">{recompStr}</p>
+                      <p className="text-[12px] text-success/80 leading-relaxed">{recompStr}</p>
                     </div>
                   )}
 
                   {!res.sucesso && res.mortos.length > 0 && (
                     <div className="rounded-sm p-3 border border-destructive/30 bg-destructive/5 flex items-start gap-2">
                       <Skull size={12} className="text-destructive mt-0.5 shrink-0" />
-                      <p className="text-[10px] text-destructive/80 leading-relaxed">
+                      <p className="text-[12px] text-destructive/80 leading-relaxed">
                         Perdidos: {res.mortos.join(', ')}.
                       </p>
                     </div>

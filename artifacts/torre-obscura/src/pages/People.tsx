@@ -51,10 +51,11 @@ export function People() {
 
     return (
       <div className="flex-1">
-        <div className="text-[9px] text-secondary mb-1 flex justify-between tracking-widest font-inter">
+        <div className="text-[12px] text-secondary mb-1 flex justify-between items-baseline tracking-widest font-inter">
           <span>{label}</span>
+          <span className="text-foreground/70 font-bold">{Math.round(value)}</span>
         </div>
-        <div className="h-1.5 bg-black/50 w-full rounded-sm overflow-hidden border border-white/5">
+        <div className="h-2 bg-black/50 w-full rounded-sm overflow-hidden border border-white/5">
           <div className={`h-full ${colorClass}`} style={{ width: `${value}%` }} />
         </div>
       </div>
@@ -108,7 +109,7 @@ export function People() {
             <div className="w-8 h-8 rounded-full border border-destructive/50 flex items-center justify-center bg-background text-destructive text-xs font-cinzel">X</div>
             <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive">{npc.nome}</span>
           </div>
-          <span className="text-[10px] text-destructive tracking-widest border border-destructive/50 px-2 py-1 bg-destructive/10 rounded-sm">FALECIDO</span>
+          <span className="text-[12px] text-destructive tracking-widest border border-destructive/50 px-2 py-1 bg-destructive/10 rounded-sm">FALECIDO</span>
         </div>
       );
     }
@@ -148,44 +149,44 @@ export function People() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-foreground text-lg font-inter">{npc.nome}</span>
-                  <span className="text-[10px]" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
+                  <span className="text-[12px]" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
                   <span
-                    className="text-[10px] font-cinzel font-bold px-1.5 py-0.5 rounded-sm border flex items-center gap-1 tracking-wider"
+                    className="text-[12px] font-cinzel font-bold px-1.5 py-0.5 rounded-sm border flex items-center gap-1 tracking-wider"
                     style={{ color: rarityColor, borderColor: `${rarityColor}55`, backgroundColor: `${rarityColor}14` }}
                     title="Poder de combate (stats + habilidade, penalizado por fadiga)"
                   >
                     <Swords size={10} /> {poder.toFixed(1)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span className="text-[12px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
                     {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                  <span className="text-[12px] px-2 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                     {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                   </span>
                   {npc.posto && (
-                    <span className="text-[9px] px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <Hammer size={9} /> {npc.posto}
                     </span>
                   )}
                   {npc.obscuro && (
-                    <span className="text-[9px] bg-orange/10 border border-orange text-orange px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                    <span className="text-[11px] bg-orange/10 border border-orange text-orange px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
                       <ShieldAlert size={10}/> OBSCURO
                     </span>
                   )}
                   {npc.emprestado && (
-                    <span className="text-[9px] bg-primary/15 border border-primary text-primary px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] bg-primary/15 border border-primary text-primary px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <UserPlus size={10}/> EMPRESTADO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.emprestadoAte != null ? ` · volta dia ${npc.emprestadoAte}` : ''}
                     </span>
                   )}
                   {npc.reforco && (
-                    <span className="text-[9px] bg-blue-500/15 border border-blue-400 text-blue-300 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] bg-blue-500/15 border border-blue-400 text-blue-300 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <UserPlus size={10}/> REFORÇO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.reforcoConcluido ? ' · aguardando retorno' : ' · em campo'}
                     </span>
                   )}
                   {npc.emGuerra && (
-                    <span className="text-[9px] bg-destructive/15 border border-destructive text-destructive px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                    <span className="text-[11px] bg-destructive/15 border border-destructive text-destructive px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
                       <Swords size={10}/> NO FRONT
                     </span>
                   )}
@@ -196,21 +197,21 @@ export function People() {
                     const proximoNivel = PRIMORDIAL_RECUPERACAO_T1[nivelAtual];
                     const completo = nivelAtual >= nivelMax;
                     return (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border ${completo ? 'bg-primary/20 border-primary text-primary' : 'bg-primary/8 border-primary/40 text-primary/80'}`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border ${completo ? 'bg-primary/20 border-primary text-primary' : 'bg-primary/8 border-primary/40 text-primary/80'}`}>
                         ✦ PRIMORDIAL · {nivelAtual}/{nivelMax}
                         {!completo && proximoNivel && ` · ${totalFrags}/${proximoNivel.minFragmentos} frags`}
                       </span>
                     );
                   })()}
                   {npc.vestigio && npc.passivaId && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border bg-[#7A3D00]/20 border-[#CC6B00]/50 text-[#FF8C00]/90">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border bg-[#7A3D00]/20 border-[#CC6B00]/50 text-[#FF8C00]/90">
                       ◈ VESTÍGIO
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <span className={`text-[9px] font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
+            <span className={`text-[11px] font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
           </div>
 
           <div className="flex gap-4 mb-2">
@@ -220,7 +221,7 @@ export function People() {
           </div>
 
           {npc.lealdade < 30 && (
-            <div className="mt-3 text-[10px] text-destructive bg-destructive/10 border border-destructive/30 px-2 py-1.5 rounded-sm flex items-center justify-center font-bold tracking-widest animate-pulse">
+            <div className="mt-3 text-[12px] text-destructive bg-destructive/10 border border-destructive/30 px-2 py-1.5 rounded-sm flex items-center justify-center font-bold tracking-widest animate-pulse">
               ⚠ RISCO DE TRAIÇÃO IMINENTE
             </div>
           )}
@@ -240,7 +241,7 @@ export function People() {
                       key={stat.key}
                       className={`py-2 border rounded-sm relative ${isDom ? 'bg-primary/10 border-primary/50' : 'bg-black/30 border-white/5'}`}
                     >
-                      <div className={`text-[9px] mb-1 tracking-widest ${isDom ? 'text-primary/80' : 'text-secondary'}`}>{stat.label}</div>
+                      <div className={`text-[11px] mb-1 tracking-widest ${isDom ? 'text-primary/80' : 'text-secondary'}`}>{stat.label}</div>
                       <div className={`font-bold font-cinzel text-sm ${isDom ? 'text-primary' : 'text-foreground'}`}>{stat.value}</div>
                       {isDom && <div className="absolute top-0.5 right-1 text-[7px] text-primary/70">▲</div>}
                     </div>
@@ -251,29 +252,29 @@ export function People() {
               {/* Identidade: profissão + habilidade e seus efeitos */}
               <div className="grid grid-cols-2 gap-2 mb-1">
                 <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
-                  <div className="text-[9px] text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                  <div className="text-[11px] text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
                     {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
                   </div>
-                  <div className="text-[10px] text-white/55 leading-snug">{PROFISSOES[getProfissao(npc)].descricao}</div>
+                  <div className="text-[12px] text-white/55 leading-snug">{PROFISSOES[getProfissao(npc)].descricao}</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
-                  <div className="text-[9px] text-secondary tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                  <div className="text-[11px] text-secondary tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
                     {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                   </div>
-                  <div className="text-[10px] text-white/55 leading-snug">{HABILIDADES[npc.habilidade].descricao}</div>
+                  <div className="text-[12px] text-white/55 leading-snug">{HABILIDADES[npc.habilidade].descricao}</div>
                 </div>
               </div>
 
               {/* Motor de vida: humor, casa e vínculos */}
               <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-secondary tracking-widest">HUMOR</span>
-                  <span className={`text-[10px] font-bold ${humorCor}`}>{humor.rotulo}</span>
+                  <span className="text-[11px] text-secondary tracking-widest">HUMOR</span>
+                  <span className={`text-[12px] font-bold ${humorCor}`}>{humor.rotulo}</span>
                 </div>
                 {npc.sobrenome && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-secondary tracking-widest">CASA</span>
-                    <span className="text-[10px] text-primary/80 flex items-center gap-1">
+                    <span className="text-[11px] text-secondary tracking-widest">CASA</span>
+                    <span className="text-[12px] text-primary/80 flex items-center gap-1">
                       {npc.casaFundador && <span title="Fundador da casa">♜</span>}
                       {npc.casaFundador ? `Fundador · Casa ${npc.sobrenome}` : `Casa ${npc.sobrenome}`}
                     </span>
@@ -281,7 +282,7 @@ export function People() {
                 )}
                 {vinculosMostrar.length > 0 && (
                   <div>
-                    <div className="text-[9px] text-secondary tracking-widest mb-1">VÍNCULOS</div>
+                    <div className="text-[11px] text-secondary tracking-widest mb-1">VÍNCULOS</div>
                     <div className="flex flex-wrap gap-1">
                       {vinculosMostrar.map(v => {
                         const icone = v.tipo === 'romance' ? '❤' : v.tipo === 'mentoria' ? '★' : v.afinidade >= 0 ? '♥' : '⚔';
@@ -290,7 +291,7 @@ export function People() {
                           <span
                             key={v.id}
                             title={rotulo}
-                            className={`text-[9px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                            className={`text-[11px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
                           >
                             {icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>{rotulo && <span className="opacity-70">· {rotulo}</span>}
                           </span>
@@ -300,7 +301,7 @@ export function People() {
                   </div>
                 )}
               </div>
-              <div className="flex justify-around text-[10px] text-muted-foreground font-inter bg-[#0D1117] py-2 rounded-sm border border-card-border">
+              <div className="flex justify-around text-[12px] text-muted-foreground font-inter bg-[#0D1117] py-2 rounded-sm border border-card-border">
                 <div>SAN: <span className="text-foreground">{Math.floor(npc.sanidade)}</span>/100</div>
                 <div>LEA: <span className="text-foreground">{Math.floor(npc.lealdade)}</span>/100</div>
                 <div>FAD: <span className="text-foreground">{Math.floor(npc.fadiga)}</span>/100</div>
@@ -319,7 +320,7 @@ export function People() {
                     : 1;
                 return (
                   <div className="mt-3 pt-3 border-t border-primary/20 bg-primary/5 rounded-sm p-3">
-                    <div className="text-[9px] text-primary/70 tracking-widest mb-2 flex items-center gap-1 font-bold">
+                    <div className="text-[11px] text-primary/70 tracking-widest mb-2 flex items-center gap-1 font-bold">
                       ✦ RECUPERAÇÃO PRIMORDIAL — {nivelAtual}/{nivelMax}
                     </div>
                     {/* Barra de progresso */}
@@ -330,15 +331,15 @@ export function People() {
                       />
                     </div>
                     {completo ? (
-                      <div className="text-[10px] text-primary italic">Recuperação máxima atingida. Ainda o mais fraco dos primordiais — o que, por si só, já diz muito.</div>
+                      <div className="text-[12px] text-primary italic">Recuperação máxima atingida. Ainda o mais fraco dos primordiais — o que, por si só, já diz muito.</div>
                     ) : proximoNivel ? (
-                      <div className="text-[10px] text-white/60">
+                      <div className="text-[12px] text-white/60">
                         <span className="text-primary/90 font-bold">{totalFrags}/{proximoNivel.minFragmentos}</span> fragmentos para Nível {nivelAtual + 1}
                         {' '} · +{proximoNivel.bonus.forca} FOR · +{proximoNivel.bonus.agilidade} AGI · +{proximoNivel.bonus.inteligencia} INT · +{proximoNivel.bonus.resistencia} RES
                       </div>
                     ) : null}
                     {nivelAtual > 0 && (
-                      <div className="text-[9px] text-primary/40 mt-1">
+                      <div className="text-[11px] text-primary/40 mt-1">
                         Níveis aplicados: {PRIMORDIAL_RECUPERACAO_T1.slice(0, nivelAtual).map((r, i) =>
                           `${i + 1} (${r.minFragmentos}+)`
                         ).join(' · ')}
@@ -353,23 +354,23 @@ export function People() {
                 const p = PASSIVAS[npc.passivaId as PassivaId];
                 return (
                   <div className="mt-3 pt-3 border-t border-[#7A3D00]/30 bg-[#7A3D00]/5 rounded-sm p-3">
-                    <div className="text-[9px] text-[#FF8C00]/70 tracking-widest mb-1 flex items-center gap-1 font-bold">
+                    <div className="text-[11px] text-[#FF8C00]/70 tracking-widest mb-1 flex items-center gap-1 font-bold">
                       ◈ PASSIVA — {p.nome.toUpperCase()}
                     </div>
-                    <div className="text-[10px] text-white/60 leading-relaxed">{p.descricao}</div>
+                    <div className="text-[12px] text-white/60 leading-relaxed">{p.descricao}</div>
                   </div>
                 );
               })()}
 
               {/* Alocação de trabalho */}
               <div className="mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
-                <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-1">
+                <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
                   <Hammer size={10} className="text-primary" /> POSTO DE TRABALHO
                 </div>
                 {npc.emGuerra ? (
-                  <div className="text-[10px] text-destructive/80 italic">Mobilizado na guerra — indisponível até a campanha terminar.</div>
+                  <div className="text-[12px] text-destructive/80 italic">Mobilizado na guerra — indisponível até a campanha terminar.</div>
                 ) : npc.emExpedicao ? (
-                  <div className="text-[10px] text-warning/80 italic">Em expedição — não pode trabalhar agora.</div>
+                  <div className="text-[12px] text-warning/80 italic">Em expedição — não pode trabalhar agora.</div>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-1.5">
@@ -377,7 +378,7 @@ export function People() {
                         const disponiveis = postosDisponiveis(npc);
                         const opcoes = Array.from(new Set([...(npc.posto ? [npc.posto] : []), ...disponiveis]));
                         if (opcoes.length === 0) {
-                          return <span className="text-[10px] text-muted-foreground italic">Nenhum edifício de trabalho com vaga. Construa/melhore na Cidadela.</span>;
+                          return <span className="text-[12px] text-muted-foreground italic">Nenhum edifício de trabalho com vaga. Construa/melhore na Cidadela.</span>;
                         }
                         return opcoes.map(tipo => {
                           const ativo = npc.posto === tipo;
@@ -387,7 +388,7 @@ export function People() {
                             <button
                               key={tipo}
                               onClick={() => assignPosto(npc.id, ativo ? null : tipo)}
-                              className={`text-[10px] px-2 py-1 rounded-sm border transition-all touch-manipulation flex items-center gap-1 ${
+                              className={`text-[12px] px-2 py-1 rounded-sm border transition-all touch-manipulation flex items-center gap-1 ${
                                 ativo
                                   ? 'bg-success/15 border-success text-success font-bold'
                                   : compat
@@ -397,13 +398,13 @@ export function People() {
                             >
                               {ativo && <X size={10} />}
                               {BUILDINGS[tipo].nome}
-                              {compat && !ativo && <span className="text-[8px] text-primary">★</span>}
+                              {compat && !ativo && <span className="text-[10px] text-primary">★</span>}
                             </button>
                           );
                         });
                       })()}
                     </div>
-                    <div className="text-[9px] text-muted-foreground mt-1.5">★ = profissão compatível (bônus maior). Toque no posto ativo para dispensar.</div>
+                    <div className="text-[11px] text-muted-foreground mt-1.5">★ = profissão compatível (bônus maior). Toque no posto ativo para dispensar.</div>
                   </>
                 )}
               </div>
@@ -435,44 +436,44 @@ export function People() {
                 if (state.andarAtual < 6 && quartelNivel < 1) return null;
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
-                    <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
+                    <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Dumbbell size={10} className="text-primary" /> TREINAMENTO — QUARTEL
-                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
+                      <span className="ml-auto text-[11px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
-                      <div className="text-[10px] text-muted-foreground italic">{bloqueio}</div>
+                      <div className="text-[12px] text-muted-foreground italic">{bloqueio}</div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-2">
-                          <div className="text-[10px] text-secondary flex items-center gap-3">
+                          <div className="text-[12px] text-secondary flex items-center gap-3">
                             <span className="flex items-center gap-1"><span className="text-success">🪵</span> {custo.madeira} madeira</span>
                             <span className="flex items-center gap-1"><span className="text-primary">⚡</span> {custo.ferro} ferro</span>
                           </div>
-                          <span className="text-[9px] text-primary/80 font-bold">+{ganho} {statLabel}</span>
+                          <span className="text-[11px] text-primary/80 font-bold">+{ganho} {statLabel}</span>
                         </div>
                         {instrutor ? (
-                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
+                          <div className={`text-[11px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
                             <Swords size={9} />
                             Instrutor: <span className="font-bold ml-1">{instrutor.nome}</span>
                             <span className="ml-1 opacity-70">({statLabel}:{instrutorStat})</span>
                             {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 {statLabel} ↑</span> : <span className="ml-auto opacity-60">+1 {statLabel}</span>}
                           </div>
                         ) : (
-                          <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                          <div className="text-[11px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
                             Sem instrutor — treinamento solo (+1 {statLabel})
                           </div>
                         )}
                         <button
                           onClick={() => treinarNpc(npc.id)}
                           disabled={!podeT || state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro}
-                          className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
+                          className="w-full text-[12px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
                         >
                           <Dumbbell size={12} /> TREINAR
                           {(state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro) && (
-                            <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                            <span className="text-[11px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
-                        <div className="text-[9px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                        <div className="text-[11px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
                       </>
                     )}
                   </div>
@@ -533,17 +534,17 @@ export function People() {
 
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
-                    <div className="text-[9px] text-secondary tracking-widest mb-2 flex items-center gap-2">
+                    <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Brain size={10} className="text-primary" /> ESTUDO — {path.local}
-                      {path.mult && <span className="text-[8px] text-warning/70 normal-case tracking-normal font-inter">(custo {path.mult})</span>}
-                      <span className="ml-auto text-[9px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
+                      {path.mult && <span className="text-[10px] text-warning/70 normal-case tracking-normal font-inter">(custo {path.mult})</span>}
+                      <span className="ml-auto text-[11px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
-                      <div className="text-[10px] text-muted-foreground italic">{bloqueio}</div>
+                      <div className="text-[12px] text-muted-foreground italic">{bloqueio}</div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-2">
-                          <div className="text-[10px] text-secondary flex items-center gap-3">
+                          <div className="text-[12px] text-secondary flex items-center gap-3">
                             {path.local === 'ARQUIVO' ? (
                               <>
                                 <span className="flex items-center gap-1"><span>🪨</span> {path.custo.pedra} pedra</span>
@@ -556,31 +557,31 @@ export function People() {
                               </>
                             )}
                           </div>
-                          <span className="text-[9px] text-primary/80 font-bold">+{ganho} INT</span>
+                          <span className="text-[11px] text-primary/80 font-bold">+{ganho} INT</span>
                         </div>
                         {instrutor ? (
-                          <div className={`text-[9px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
+                          <div className={`text-[11px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
                             <BookOpen size={9} />
                             Tutor: <span className="font-bold ml-1">{instrutor.nome}</span>
                             <span className="ml-1 opacity-70">(INT:{instrutorStat})</span>
                             {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 INT ↑</span> : <span className="ml-auto opacity-60">+1 INT</span>}
                           </div>
                         ) : (
-                          <div className="text-[9px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                          <div className="text-[11px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
                             Sem tutor disponível — estudo solo (+1 INT)
                           </div>
                         )}
                         <button
                           onClick={() => estudarNpc(npc.id)}
                           disabled={!path.podeE || path.semRecursos}
-                          className="w-full text-[11px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
+                          className="w-full text-[12px] py-2 bg-primary/10 border border-primary/40 text-primary font-bold font-cinzel tracking-widest rounded-sm flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/20 transition-colors touch-manipulation"
                         >
                           <Brain size={12} /> ESTUDAR
                           {path.semRecursos && (
-                            <span className="text-[9px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                            <span className="text-[11px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
-                        <div className="text-[9px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                        <div className="text-[11px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
                       </>
                     )}
                   </div>
@@ -597,7 +598,7 @@ export function People() {
     <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
       <header className="pb-3 border-b border-primary/30 relative flex justify-between items-end">
         <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">HABITANTES</h2>
-        <span className="text-[10px] text-primary bg-primary/10 px-2 py-1 border border-primary/20 rounded-sm font-bold tracking-widest">
+        <span className="text-[12px] text-primary bg-primary/10 px-2 py-1 border border-primary/20 rounded-sm font-bold tracking-widest">
           {vivos} VIVOS
         </span>
         <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
@@ -613,30 +614,30 @@ export function People() {
         <div>
           <button
             onClick={() => setMostrarMortos(m => !m)}
-            className="w-full flex items-center justify-between px-3 py-2 border border-destructive/20 bg-destructive/5 text-destructive text-[10px] font-bold tracking-widest font-cinzel rounded-sm touch-manipulation"
+            className="w-full flex items-center justify-between px-3 py-2 border border-destructive/20 bg-destructive/5 text-destructive text-[12px] font-bold tracking-widest font-cinzel rounded-sm touch-manipulation"
           >
             <span>{state.npcs.filter(n => !n.vivo).length} FALECIDO{state.npcs.filter(n => !n.vivo).length !== 1 ? 'S' : ''}</span>
-            <span className="text-[9px] opacity-60">{mostrarMortos ? '▴ OCULTAR' : '▾ MOSTRAR'}</span>
+            <span className="text-[11px] opacity-60">{mostrarMortos ? '▴ OCULTAR' : '▾ MOSTRAR'}</span>
           </button>
           {mostrarMortos && (
             <div className="space-y-2 mt-2">
 {state.npcs.filter(n => !n.vivo).map(npc => (
                 <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-55 grayscale flex justify-between items-center rounded-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[10px] font-cinzel">✕</div>
+                    <div className="w-7 h-7 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[12px] font-cinzel">✕</div>
                     <div>
                       <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm">{npc.nome}</span>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
                           {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
                         </span>
-                        <span className="text-[8px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                           {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <span className="text-[9px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm shrink-0 self-start">FALECIDO</span>
+                  <span className="text-[11px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm shrink-0 self-start">FALECIDO</span>
                 </div>
               ))}
             </div>

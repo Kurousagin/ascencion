@@ -56,7 +56,7 @@ function GachaCard({ npc, revealed }: { npc: NPC; revealed: boolean }) {
       >
         {/* Rarity banner */}
         <div
-          className="text-[9px] font-bold tracking-[0.25em] text-center py-1 font-cinzel"
+          className="text-[11px] font-bold tracking-[0.25em] text-center py-1 font-cinzel"
           style={{ background: color, color: '#0D1117' }}
         >
           {npc.raridade.toUpperCase()}
@@ -75,25 +75,25 @@ function GachaCard({ npc, revealed }: { npc: NPC; revealed: boolean }) {
         {/* Name + stars */}
         <div className="text-center px-2 pb-1">
           <div className="font-bold text-foreground text-sm truncate font-inter">{npc.nome}</div>
-          <div className="text-[11px]" style={{ color }}>{RARITY_STARS[npc.raridade]}</div>
+          <div className="text-[12px]" style={{ color }}>{RARITY_STARS[npc.raridade]}</div>
         </div>
 
         {/* Profession + habilidade */}
         <div className="flex flex-col items-center gap-1 px-2 pb-2">
-          <span className="text-[9px] px-1.5 py-0.5 rounded-sm border font-bold tracking-wider uppercase"
+          <span className="text-[11px] px-1.5 py-0.5 rounded-sm border font-bold tracking-wider uppercase"
             style={{ color, borderColor: color, background: `${color}18` }}>
             {PROFISSOES[getProfissao(npc)].nome}
           </span>
-          <span className="text-[9px] text-secondary border border-white/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider bg-black/30">
+          <span className="text-[11px] text-secondary border border-white/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider bg-black/30">
             {npc.habilidade}
           </span>
         </div>
 
         {/* Stats mini-grid */}
-        <div className="grid grid-cols-2 gap-px mx-2 mb-3 text-center text-[10px] bg-black/30 rounded-sm overflow-hidden border border-white/5">
+        <div className="grid grid-cols-2 gap-px mx-2 mb-3 text-center text-[12px] bg-black/30 rounded-sm overflow-hidden border border-white/5">
           {([['FOR', npc.forca], ['AGI', npc.agilidade], ['INT', npc.inteligencia], ['RES', npc.resistencia]] as [string,number][]).map(([label, val]) => (
             <div key={label} className="bg-black/20 py-1">
-              <div className="text-[8px] text-secondary tracking-widest">{label}</div>
+              <div className="text-[10px] text-secondary tracking-widest">{label}</div>
               <div className="font-bold font-cinzel text-foreground">{val}</div>
             </div>
           ))}
@@ -165,13 +165,13 @@ export function Citadel() {
     <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 p-3 rounded-sm relative overflow-hidden flex flex-col justify-between h-[90px] shadow-md">
       <Icon className="absolute -right-2 -bottom-2 w-12 h-12 text-primary/10" />
       <div className="flex justify-between items-start z-10">
-        <span className="text-[10px] text-secondary tracking-widest uppercase">{label}</span>
+        <span className="text-[12px] text-secondary tracking-widest uppercase">{label}</span>
         <Icon size={14} className="text-primary/70" />
       </div>
       <div className="z-10">
         <div className="flex items-baseline gap-1 mb-1.5">
           <span className="text-xl font-bold font-cinzel text-foreground">{Math.floor(current)}</span>
-          <span className="text-[10px] text-muted-foreground font-cinzel">/{max}</span>
+          <span className="text-[12px] text-muted-foreground font-cinzel">/{max}</span>
         </div>
         <div className="w-full bg-background h-1.5 rounded-sm overflow-hidden border border-white/5">
           <div className={`h-full transition-all ${getProgressColor(current, max)}`}
@@ -182,7 +182,7 @@ export function Citadel() {
   );
 
   const CostChip = ({ have, need, icon: Icon }: { have: number; need: number; icon: any }) => (
-    <span className={`px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-[10px] font-bold ${
+    <span className={`px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-[12px] font-bold ${
       have < need
         ? 'bg-destructive/10 text-destructive border border-destructive/30'
         : 'bg-background text-secondary border border-card-border'
@@ -213,20 +213,20 @@ export function Citadel() {
         } p-3 flex flex-col justify-between rounded-sm h-full relative overflow-hidden`}
       >
         {built && (
-          <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[8px] text-primary font-bold tracking-widest px-1.5 py-0.5 rounded-bl-sm">
+          <div className="absolute top-0 right-0 bg-primary/20 border-l border-b border-primary/30 text-[10px] text-primary font-bold tracking-widest px-1.5 py-0.5 rounded-bl-sm">
             NÍVEL {nivelAtual}
           </div>
         )}
         <div className="mb-2">
           <div className="font-bold text-foreground font-cinzel text-sm">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
-          <div className="text-[9px] text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
+          <div className="text-[11px] text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
           {efeitoAtual && (
-            <div className="text-[8px] text-success mt-1 font-bold">{efeitoAtual}</div>
+            <div className="text-[10px] text-success mt-1 font-bold">{efeitoAtual}</div>
           )}
           {built && POSTO_AFIM[tipo] && (() => {
             const workers = trabalhadoresDe(tipo, nivelAtual, state.npcs);
             return workers.length > 0 ? (
-              <div className="text-[8px] text-secondary mt-1">👥 {workers.length}/{nivelAtual}</div>
+              <div className="text-[10px] text-secondary mt-1">👥 {workers.length}/{nivelAtual}</div>
             ) : null;
           })()}
         </div>
@@ -234,7 +234,7 @@ export function Citadel() {
         {/* Custo e ganho do próximo nível */}
         {!isMax && proximo && (
           <div className="mb-2 space-y-1">
-            <div className="text-[8px] text-primary/70 leading-snug">
+            <div className="text-[10px] text-primary/70 leading-snug">
               Nível {nivelAtual + 1}: <span className="text-success">{proximo.resumo}</span>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -246,14 +246,14 @@ export function Citadel() {
         )}
 
         {isMax ? (
-          <div className="w-full h-8 border border-primary/30 text-primary/60 text-[8px] tracking-widest font-cinzel font-bold rounded-sm flex items-center justify-center">
+          <div className="w-full h-8 border border-primary/30 text-primary/60 text-[10px] tracking-widest font-cinzel font-bold rounded-sm flex items-center justify-center">
             ✓ NÍVEL MÁX
           </div>
         ) : (
           <button
             disabled={!canAfford}
             onClick={() => buildEdificio(tipo)}
-            className={`w-full h-8 border text-[9px] tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
+            className={`w-full h-8 border text-[11px] tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
               canAfford
                 ? 'border-primary text-primary hover:bg-primary/20'
                 : 'border-card-border text-muted-foreground opacity-40 cursor-not-allowed'
@@ -316,12 +316,12 @@ export function Citadel() {
             </span>
           </div>
           {saldoComida < 0 && (
-            <div className="text-[10px] text-destructive/90 italic pt-1">
+            <div className="text-[12px] text-destructive/90 italic pt-1">
               Saldo negativo: construa ou melhore a Fazenda, ou traga comida da Torre.
             </div>
           )}
           {(ef.moralDia > 0 || ef.poderBonus > 0) && (
-            <div className="flex gap-4 flex-wrap border-t border-primary/10 pt-3 text-[11px]">
+            <div className="flex gap-4 flex-wrap border-t border-primary/10 pt-3 text-[12px]">
               {ef.moralDia   > 0 && <span className="text-secondary">Moral passivo: <span className="text-success font-bold">+{ef.moralDia}/dia</span></span>}
               {ef.poderBonus > 0 && <span className="text-secondary">Poder de expedição: <span className="text-primary font-bold">+{Math.round(ef.poderBonus * 100)}%</span></span>}
             </div>
@@ -352,10 +352,10 @@ export function Citadel() {
           <div className="flex gap-2 mb-3 relative z-10">
             {GACHA_ODDS.map(o => (
               <div key={o.raridade} className="flex-1 text-center">
-                <div className="text-[9px] font-bold tracking-widest" style={{ color: RARITY_COLOR[o.raridade] }}>
+                <div className="text-[11px] font-bold tracking-widest" style={{ color: RARITY_COLOR[o.raridade] }}>
                   {o.raridade.slice(0,3).toUpperCase()}
                 </div>
-                <div className="text-[9px] text-secondary">{o.peso}%</div>
+                <div className="text-[11px] text-secondary">{o.peso}%</div>
               </div>
             ))}
           </div>
@@ -365,12 +365,12 @@ export function Citadel() {
             <CostChip have={state.recursos.comida}  need={custoGacha.comida}  icon={Wheat} />
             <CostChip have={state.recursos.madeira} need={custoGacha.madeira} icon={Trees} />
             <CostChip have={state.recursos.ferro}   need={custoGacha.ferro}   icon={Zap} />
-            <span className="text-[10px] text-primary/60 flex items-center ml-auto">
+            <span className="text-[12px] text-primary/60 flex items-center ml-auto">
               → {batchSize}× sobreviventes
             </span>
           </div>
 
-          <p className="text-[10px] text-secondary/70 leading-relaxed mb-3 relative z-10">
+          <p className="text-[12px] text-secondary/70 leading-relaxed mb-3 relative z-10">
             Invoca {batchSize} sobrevivente{batchSize !== 1 ? 's' : ''} de uma vez — raridade por sorteio.
             Aumente o limite construindo o <span className="text-primary font-bold">Alojamento</span>.
           </p>
@@ -415,7 +415,7 @@ export function Citadel() {
               <h2 className="font-cinzel font-bold text-primary tracking-[0.2em] text-sm leading-tight">
                 RITUAL EM TRINDADE — CONCLUÍDO
               </h2>
-              <p className="text-[10px] text-secondary/70 tracking-widest mt-0.5">
+              <p className="text-[12px] text-secondary/70 tracking-widest mt-0.5">
                 {revealed.every(Boolean)
                   ? 'Toque em cada nome para ver os detalhes'
                   : `${revealed.filter(Boolean).length}/${gachaNpcs.length} sobreviventes revelados`}
@@ -446,7 +446,7 @@ export function Citadel() {
                     >
                       <div className="w-5 h-5 rotate-45 border border-primary/50" />
                       <span className="font-cinzel font-bold text-primary/50 text-3xl tracking-widest">?</span>
-                      <span className="text-[9px] text-primary/30 tracking-[0.3em] uppercase">REVELAR</span>
+                      <span className="text-[11px] text-primary/30 tracking-[0.3em] uppercase">REVELAR</span>
                     </div>
                   )
               ))}
@@ -459,7 +459,7 @@ export function Citadel() {
               {gachaNpcs.map(npc => (
                 <span
                   key={npc.id}
-                  className="text-[10px] px-2.5 py-1 rounded-sm font-bold tracking-wider border flex items-center gap-1"
+                  className="text-[12px] px-2.5 py-1 rounded-sm font-bold tracking-wider border flex items-center gap-1"
                   style={{ color: RARITY_COLOR[npc.raridade], borderColor: RARITY_COLOR[npc.raridade] + '60', background: RARITY_COLOR[npc.raridade] + '15' }}
                 >
                   <Star size={8} fill="currentColor" /> {npc.nome} — {npc.raridade}
@@ -481,7 +481,7 @@ export function Citadel() {
             ) : (
               <button
                 onClick={() => setRevealed([true, true, true])}
-                className="w-full border border-primary/30 text-primary/60 font-cinzel text-[10px] tracking-widest py-3 rounded-sm hover:border-primary/60 hover:text-primary transition-all touch-manipulation"
+                className="w-full border border-primary/30 text-primary/60 font-cinzel text-[12px] tracking-widest py-3 rounded-sm hover:border-primary/60 hover:text-primary transition-all touch-manipulation"
               >
                 REVELAR TODOS DE UMA VEZ
               </button>

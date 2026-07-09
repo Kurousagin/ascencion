@@ -136,7 +136,7 @@ export function TitleScreen() {
             {LANCAMENTO_ATIVO && (
               <div className="flex items-center gap-2 px-3 py-1 border border-primary/40 bg-primary/5 rounded-sm mb-3">
                 <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                <span className="text-[9px] text-primary tracking-[0.25em] font-cinzel">
+                <span className="text-[11px] text-primary tracking-[0.25em] font-cinzel">
                   {LANCAMENTO_ATIVO.titulo}
                 </span>
               </div>
@@ -165,7 +165,7 @@ export function TitleScreen() {
 
             <div className="relative w-full flex flex-col items-center">
               {hasSave && (
-                <div className="absolute -top-7 px-3 py-1 bg-card border border-primary/30 rounded-full text-[10px] text-primary tracking-wider z-10 shadow-lg">
+                <div className="absolute -top-7 px-3 py-1 bg-card border border-primary/30 rounded-full text-[12px] text-primary tracking-wider z-10 shadow-lg">
                   DIA {saveDay} • {saveVivos} SOBREVIVENTES
                 </div>
               )}
@@ -185,7 +185,7 @@ export function TitleScreen() {
             <div className={`flex gap-2 ${import.meta.env.DEV ? '' : 'flex-col'}`}>
               <button
                 onClick={() => setOnboardingOpen(true)}
-                className={`flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation ${
+                className={`flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[12px] tracking-[0.2em] transition-all touch-manipulation ${
                   import.meta.env.DEV ? 'flex-1' : 'w-full'
                 }`}
               >
@@ -194,7 +194,7 @@ export function TitleScreen() {
               {import.meta.env.DEV && (
                 <button
                   onClick={() => setTestCodeOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[11px] tracking-[0.2em] transition-all touch-manipulation"
+                  className="flex-1 flex items-center justify-center gap-2 h-10 border border-white/10 text-white/35 hover:text-white/60 hover:border-white/20 font-cinzel text-[12px] tracking-[0.2em] transition-all touch-manipulation"
                   title="🧪 Modo de teste (apenas em desenvolvimento)"
                 >
                   <Code size={13} /> TESTE
@@ -222,7 +222,7 @@ export function TitleScreen() {
                 <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.2em] text-sm leading-tight mb-4">
                   APAGAR CIDADELA ATUAL?
                 </Dialog.Title>
-                <p className="text-[11px] text-secondary/80 leading-relaxed">
+                <p className="text-[12px] text-secondary/80 leading-relaxed">
                   Dia {saveDay} • {saveVivos} sobreviventes serão perdidos para sempre. O Observador não sustenta duas realidades ao mesmo tempo.
                 </p>
               </div>
@@ -280,13 +280,13 @@ export function TitleScreen() {
               <Dialog.Title className="text-sm font-cinzel tracking-[0.2em] text-primary flex items-center gap-2">
                 <Code size={16} /> MODO DE TESTE
               </Dialog.Title>
-              <p className="text-[11px] text-secondary/80 leading-relaxed">
+              <p className="text-[12px] text-secondary/80 leading-relaxed">
                 Insira um código para carregar uma cidadela pré-populada com recursos e features ativas para teste.
               </p>
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-secondary/70 font-cinzel tracking-wider">CÓDIGO</label>
+                  <label className="text-[12px] text-secondary/70 font-cinzel tracking-wider">CÓDIGO</label>
                   <input
                     type="text"
                     placeholder="Ex: TEST123, FULL, T2"
@@ -303,14 +303,14 @@ export function TitleScreen() {
                   />
                 </div>
 
-                <div className="space-y-1.5 text-[9px] text-secondary/60 bg-background/50 border border-primary/20 rounded-sm p-3">
+                <div className="space-y-1.5 text-[11px] text-secondary/60 bg-background/50 border border-primary/20 rounded-sm p-3">
                   <p><strong>TEST123</strong> — Cidadela básica (Andar 5, recursos moderados)</p>
                   <p><strong>FULL</strong> — Cidadela completa (Andar 20, todos edifícios L3, muito recursos)</p>
                   <p><strong>T2</strong> — Cidadela T2 (Andar 30, fragmentos T1+T2, relíquias T2)</p>
                 </div>
 
                 {testError && (
-                  <p className="text-[10px] text-destructive font-medium">{testError}</p>
+                  <p className="text-[12px] text-destructive font-medium">{testError}</p>
                 )}
               </div>
 
