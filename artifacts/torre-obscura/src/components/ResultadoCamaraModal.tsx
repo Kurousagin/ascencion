@@ -7,12 +7,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { Sparkles, Skull, BookOpen } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { CAMARAS_SECRETAS } from '../camara-engine';
+import { camarasDaTorre } from '../floor-engine';
 
 export function ResultadoCamaraModal() {
-  const { ultimoResultadoCamara, limparResultadoCamara } = useGame();
+  const { state, ultimoResultadoCamara, limparResultadoCamara } = useGame();
   const res = ultimoResultadoCamara;
-  const cam = res ? CAMARAS_SECRETAS[res.camaraId] : undefined;
+  const cam = res && state ? camarasDaTorre(state)[res.camaraId] : undefined;
   const open = !!(res && cam);
 
   return (

@@ -240,6 +240,23 @@ export interface LogEntry {
   dia: number;
 }
 
+// ─── Acontecimentos (feed de vida + toasts) ───────────────────────────────────
+// Entrega orgânica dos eventos de autonomia dos NPCs/mundo — sem exigir que o
+// jogador abra o log. Importância deriva do tipo do evento.
+export type ImportanciaAcontecimento = 'baixa' | 'media' | 'alta';
+export interface Acontecimento {
+  id: string;
+  tipo: LogTipo;
+  mensagem: string;
+  dia: number;
+  importancia: ImportanciaAcontecimento;
+}
+export function importanciaDe(tipo: LogTipo): ImportanciaAcontecimento {
+  if (tipo === 'morte' || tipo === 'traicao' || tipo === 'vitoria') return 'alta';
+  if (tipo === 'descoberta' || tipo === 'evento' || tipo === 'alerta') return 'media';
+  return 'baixa';
+}
+
 // ─── HABITANTES DA TORRE ─────────────────────────────────────────────────────
 // Cada andar não-boss tem um Habitante — entidade descoberta ao conquistar o andar.
 // O habitante oferece uma mini-quest e recompensa com um Eco (bônus permanente de loot).
@@ -1523,12 +1540,18 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
 // Após vencer um chefe, o jogador pode "vasculhar os destroços" até maxTentativas
 // vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
 export type RequisitoCamara =
+  // ─── Arquétipos ativos (stat gating estrito, gerados por floor-engine) ───────
+  | { tipo: 'npc_atributo_alto'; stat: 'forca' | 'agilidade' | 'inteligencia' | 'resistencia'; minValor: number; quantidade: number; textoRequisito: string }
+  | { tipo: 'classe_desenvolvida'; profissao: ProfissaoId; minStat: number; quantidade: number; textoRequisito: string }
+  | { tipo: 'sussurros_capitulo'; capitulo: number; quantidade: number; textoRequisito: string }
+  | { tipo: 'npc_raridade'; raridade: 'comum' | 'incomum' | 'raro' | 'lendario'; quantidade: number; textoRequisito: string }
+  | { tipo: 'farms_andar'; floor: number; minFarms: number; textoRequisito: string }
+  // ─── Legado (câmaras curadas antigas / saves) — ainda verificados ────────────
   | { tipo: 'class_farms'; profissao: ProfissaoId; minFarmsComClasse: number; textoRequisito: string }
   | { tipo: 'mortes_andar'; minMortes: number; textoRequisito: string }
   | { tipo: 'quest_habitante'; floor: number; textoRequisito: string }
   | { tipo: 'recurso_minimo'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; quantidade: number; textoRequisito: string }
-  | { tipo: 'combinado'; conditions: Array<{ tipo: string; value: number }>; textoRequisito: string }
-  | { tipo: 'npc_raridade'; raridade: 'comum' | 'incomum' | 'raro' | 'lendario'; quantidade: number; textoRequisito: string };
+  | { tipo: 'combinado'; conditions: Array<{ tipo: string; value: number }>; textoRequisito: string };
 
 export interface ResultadoCamara {
   sucessoTexto: string;
@@ -2069,58 +2092,9 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
   },
 };
 
-// Helper: verificar se um requisito de câmara foi cumprido
-export function verificarRequisitoCamara(state: GameState, requisito: RequisitoCamara): boolean {
-  if (requisito.tipo === 'class_farms') {
-    const totalFarms = Object.values(state.farmsPorAndarEClasse ?? {}).reduce((sum, andarFarms) => {
-      return sum + (andarFarms[requisito.profissao] ?? 0);
-    }, 0);
-    return totalFarms >= requisito.minFarmsComClasse;
-  }
-  if (requisito.tipo === 'mortes_andar') {
-    const totalMortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
-    return totalMortes >= requisito.minMortes;
-  }
-  if (requisito.tipo === 'quest_habitante') {
-    return state.habitantesEstado?.[requisito.floor] === 'concluido';
-  }
-  if (requisito.tipo === 'recurso_minimo') {
-    const recursos = state.recursos;
-    if (requisito.recurso === 'comida') return recursos.comida >= requisito.quantidade;
-    if (requisito.recurso === 'madeira') return recursos.madeira >= requisito.quantidade;
-    if (requisito.recurso === 'pedra') return recursos.pedra >= requisito.quantidade;
-    if (requisito.recurso === 'ferro') return recursos.ferro >= requisito.quantidade;
-  }
-  if (requisito.tipo === 'npc_raridade') {
-    // Conta por tier: uma raridade maior satisfaz um requisito de raridade menor
-    // (ex.: um Épico conta para um requisito de "raro"). O código antigo omitia o
-    // caso 'Raro' e mapeava 'Épico' como 'raro', tornando o requisito quase impossível.
-    const tierAlvo: Record<string, number> = { comum: 0, incomum: 1, raro: 2, lendario: 4 };
-    const tierNpc = (r: Raridade): number =>
-      r === 'Divino' ? 5 : r === 'Lendário' ? 4 : r === 'Épico' ? 3 : r === 'Raro' ? 2 : r === 'Incomum' ? 1 : 0;
-    const alvo = tierAlvo[requisito.raridade] ?? 0;
-    const count = state.npcs.filter(n => n.vivo && tierNpc(n.raridade) >= alvo).length;
-    return count >= requisito.quantidade;
-  }
-  if (requisito.tipo === 'combinado') {
-    return requisito.conditions.every(cond => {
-      if (cond.tipo === 'class_farms') {
-        // A condição combinada não especifica profissão → soma farms de todas as
-        // classes (antes somava sempre 0, deixando a câmara indescobrível).
-        const farms = Object.values(state.farmsPorAndarEClasse ?? {}).reduce((sum, af) => {
-          return sum + Object.values(af).reduce((a, b) => a + b, 0);
-        }, 0);
-        return farms >= (cond.value ?? 0);
-      }
-      if (cond.tipo === 'mortes') {
-        const mortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
-        return mortes >= (cond.value ?? 0);
-      }
-      return false;
-    });
-  }
-  return false;
-}
+// `verificarRequisitoCamara`, `dificuldadeCamara`, `calcAfinidadeCamara` e a rolagem
+// `chanceAbrirCamara` vivem agora em `floor-engine/rules.ts` (importam estes tipos +
+// helpers numa direção só, sem ciclo). Consumidores usam a façade `../floor-engine`.
 
 // ─── METAS DIÁRIAS + PRESENTE DA TORRE ───────────────────────────────────────
 // 3 metas por dia calendário (independem da velocidade do jogo). Completar as 3
@@ -2199,6 +2173,19 @@ export const TEMPORADAS: Record<number, TemporadaData> = {
 
 // Capítulo (tier 1-4) de um andar — Temporada I usa ceil(floor/5).
 export const capituloDoAndar = (floor: number): number => Math.ceil(floor / 5);
+
+// ─── Temporada (fonte única para telas/lore/gatilhos) ─────────────────────────
+// Temporada de um andar (T1=1–20, T2=21–40, …). Fonte única para modularidade —
+// T3–T5 plugam só estendendo TEMPORADAS.
+export const temporadaDeAndar = (floor: number): number => Math.min(5, Math.max(1, Math.ceil(floor / 20)));
+
+// Temporada "ativa" do save: até onde o conteúdo está liberado. Por ora, T2 quando
+// desbloqueado globalmente (10 pioneiros no Andar 20); senão T1.
+export const temporadaAtiva = (t2Desbloqueado: boolean): number => (t2Desbloqueado ? 2 : 1);
+
+// Último andar visível/jogável na temporada ativa.
+export const andarMaxTemporada = (t2Desbloqueado: boolean): number =>
+  TEMPORADAS[temporadaAtiva(t2Desbloqueado)].andares[1];
 
 export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
   // ── Capítulo I (andares 1–5) ──────────────────────────────────────────────
@@ -2463,30 +2450,11 @@ export function idFragmentoCamara(camaraId: string): string {
   return `cam_${camaraId}`;
 }
 
-// Páginas rasgadas: cada câmara com `loreGanho` vira um fragmento de Codex do tipo
-// 'camara', gerado a partir de CAMARAS_SECRETAS (DRY — sem reescrever o texto) e
-// mesclado em CODEX_FRAGMENTOS. Assim totalFragmentosTemporada e a UI do Codex já
-// as contam e renderizam automaticamente. `ordem` 20+ posiciona as páginas após os
-// fragmentos-núcleo dentro do capítulo do andar.
-(() => {
-  const idxPorCapitulo: Record<number, number> = {};
-  Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
-    const lore = cam.resultado.loreGanho;
-    if (!lore) return;
-    const capitulo = capituloDoAndar(cam.floor);
-    idxPorCapitulo[capitulo] = (idxPorCapitulo[capitulo] ?? 0) + 1;
-    const id = idFragmentoCamara(key);
-    CODEX_FRAGMENTOS[id] = {
-      id,
-      tipo: 'camara',
-      temporada: cam.floor <= 20 ? 1 : 2,
-      capitulo,
-      ordem: 20 + idxPorCapitulo[capitulo],
-      titulo: lore.titulo,
-      texto: lore.texto,
-    };
-  });
-})();
+// NOTA: as câmaras agora são PROCEDURAIS por-save (ver src/floor-engine), então
+// suas "páginas recuperadas" não podem ser fragmentos estáticos em CODEX_FRAGMENTOS.
+// A lore de câmara descoberta é guardada em `state.camaraLoresDescobertas` e a
+// apresentação no Codex fica para o PR de livros. `idFragmentoCamara` é mantido
+// para compatibilidade de id.
 
 // Total de fragmentos de uma temporada (para a barra de progresso na UI).
 export function totalFragmentosTemporada(temporada: number): number {
@@ -2895,6 +2863,10 @@ export interface GameState {
   npcs: NPC[];
   edificios: Edificio[];
   log: LogEntry[];
+  // Feed de acontecimentos (mural) — ring-buffer dos eventos notáveis recentes.
+  feed?: Acontecimento[];
+  // Fila de acontecimentos de alta importância a exibir como toast (drenada pela UI).
+  toastsPendentes?: Acontecimento[];
 
   // ─── Guerra entre cidadelas ──────────────────────────────────────────────
   guerra: GuerraAtiva | null;           // guerra em curso (uma por vez), ou null
@@ -2923,6 +2895,13 @@ export interface GameState {
   habitantesEscolhaFeita?: Record<number, 'a' | 'b'>; // floor → opção escolhida
 
   // ─── Câmaras Secretas ────────────────────────────────────────────────────
+  // Seed procedural do save: define QUAIS câmaras (tema/requisito/dureza) existem
+  // em cada andar desta torre. Duas torres com seeds diferentes têm câmaras
+  // diferentes → guias "faça X,Y,Z" não funcionam. Ver src/floor-engine.
+  camaraSeed?: number;
+  // Lore recuperada de câmaras exploradas (as câmaras são per-save, então a página
+  // não vem do CODEX_FRAGMENTOS estático). Apresentação no Codex fica p/ o PR de livros.
+  camaraLoresDescobertas?: Array<{ id: string; floor: number; titulo: string; texto: string }>;
   camarasSecretasEstado?: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }>;
   // Fila de câmaras (por camaraId) recém-reveladas pelo processDay, aguardando o
   // modal de evento que avisa o jogador. Esvaziada conforme o jogador reconhece.
@@ -3352,54 +3331,8 @@ export function fadigaMediaGrupo(group: NPC[]): number {
   return group.reduce((sum, n) => sum + n.fadiga, 0) / group.length;
 }
 
-// Dificuldade real de uma câmara: escalada à dificuldade da expedição do andar
-// onde ela reside (BASE_DIFICULDADE), com um multiplicador padrão de 1.25 —
-// câmaras são um pouco mais duras que conquistar o andar. Câmaras que a lore
-// justifica serem excepcionais definem `multiplicadorDificuldade` próprio.
-export function dificuldadeCamara(camara: CamaraSecreta): number {
-  const base = BASE_DIFICULDADE[camara.floor - 1] ?? camara.dificuldade;
-  return Math.round(base * (camara.multiplicadorDificuldade ?? 1.25));
-}
-
-// Afinidade do grupo com a câmara: espelha `calcBiomaMultiplier`, mas o "terreno"
-// é a profissão temática do requisito da câmara (quando o requisito define uma).
-// Levar o grupo alinhado à câmara amplifica o poder efetivo; grupo errado penaliza.
-// Câmaras cujo requisito não tem profissão temática são neutras (1.0).
-export function calcAfinidadeCamara(group: NPC[], camara: CamaraSecreta): number {
-  const req = camara.requisito;
-  if (req.tipo !== 'class_farms') return 1.0;
-  const ideais = group.filter(n => getProfissao(n) === req.profissao).length;
-  const ratio  = ideais / Math.max(1, group.length);
-  if (ratio >= 0.5) return 1.30;  // grupo temático: vantagem
-  if (ratio >= 0.2) return 1.00;  // parcialmente temático: neutro
-  return 0.80;                     // grupo destoante: −20%
-}
-
-// Resolve (de forma pura) a exploração de uma câmara secreta por um grupo, no
-// mesmo modelo de expedição de andar: poder efetivo do grupo vs dificuldade
-// escalada ao andar. O poder efetivo combina o poder bruto (com penalidade de
-// fadiga via calcNpcPower) e a afinidade temática do grupo com a câmara. A fadiga
-// também eleva a mortalidade em caso de falha — daí o risco de "explorar agora"
-// com o grupo cansado da conquista.
-export function calcExploracaoCamara(
-  camara: CamaraSecreta,
-  group: NPC[],
-  poderBonus = 0,
-): { poder: number; dificuldade: number; afinidade: number; sucesso: boolean; chanceMorteFalha: number; desempenho: number } {
-  const afinidade = calcAfinidadeCamara(group, camara);
-  const poder = Math.round(calcPoderGrupo(group, poderBonus) * afinidade);
-  const dificuldade = dificuldadeCamara(camara);
-  const sucesso = poder >= dificuldade;
-  const avgFadiga = fadigaMediaGrupo(group);
-  const base = camara.resultado.chanceMorteNPC ?? 0.12;
-  const chanceMorteFalha = Math.min(0.6, base * (0.6 + avgFadiga / 100));
-  // Desempenho (0–1): quão folgada foi a vitória (margem sobre a dificuldade) com
-  // peso maior, temperado pelo frescor do grupo. Alimenta o sorteio de recompensa.
-  const margem  = Math.max(0, Math.min(1, poder / dificuldade - 1));
-  const frescor = 1 - avgFadiga / 100;
-  const desempenho = Math.max(0, Math.min(1, margem * 0.7 + frescor * 0.3));
-  return { poder, dificuldade, afinidade, sucesso, chanceMorteFalha, desempenho };
-}
+// `dificuldadeCamara`, `calcAfinidadeCamara` e a rolagem `chanceAbrirCamara`
+// (que substitui a antiga `calcExploracaoCamara`) vivem em `floor-engine/rules.ts`.
 
 // Bônus de desempenho sorteado ao concluir uma câmara — além da recompensa
 // primária (recursos + moral + relíquia fixa). Puro: decide QUAL bônus e a
@@ -3868,7 +3801,7 @@ const FLOOR_BOSS: Record<number, { nome: string; epiteto: string }> = {
 
 // Dificuldade não-linear: cada andar tem seu próprio ritmo, não só floor*8.
 // Bosses (5, 10, 15, 20, 25, 30, 35, 40) têm pico maior; andares "difíceis de bioma" têm +10–20%.
-const BASE_DIFICULDADE: number[] = [
+export const BASE_DIFICULDADE: number[] = [
    8,  15,  20,  28,   42,  // 1–5  (boss 5)
   36,  44,  54,  64,   90,  // 6–10 (boss 10)
   75,  88, 100, 118,  155,  // 11–15 (boss 15)

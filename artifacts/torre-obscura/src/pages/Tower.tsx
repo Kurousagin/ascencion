@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO, calcPoderGrupo } from '../lib/game-data';
-import { CAMARAS_SECRETAS, dificuldadeCamara, calcAfinidadeCamara } from '../camara-engine';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen } from 'lucide-react';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO } from '../lib/game-data';
+import { verificarQuestAndar, verificarQuestOculta } from '../quest-engine';
+import { camarasDaTorre, chanceAbrirCamara } from '../floor-engine';
+import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen, Dices, KeyRound } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { SelecaoMoradores } from '../components/SelecaoMoradores';
@@ -387,7 +388,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 {/* Botão de Câmara Secreta — só aparece quando DESCOBERTA (requisito
                     atingido no processDay). Chave sempre por camaraId. */}
                 {(() => {
-                  const camarasDoAndar = Object.entries(CAMARAS_SECRETAS).filter(([id]) => id.startsWith(`${f.floor}_`));
+                  const camarasDoAndar = Object.entries(camarasDaTorre(state)).filter(([id]) => id.startsWith(`${f.floor}_`));
                   if (camarasDoAndar.length === 0) return null;
                   return camarasDoAndar.map(([camId, cam]) => {
                     const cEst = state.camarasSecretasEstado?.[camId];
@@ -875,7 +876,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 p-5 flex flex-col gap-4 z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-y-auto custom-scrollbar">
             {camaraSecretaModalId !== null && (() => {
               const camId = camaraSecretaModalId;
-              const cam = CAMARAS_SECRETAS[camId];
+              const cam = camarasDaTorre(state)[camId];
               if (!cam) return null;
               const cf = cam.floor;
               const cEst = state.camarasSecretasEstado?.[camId] ?? { descoberta: false, tentativas: 0, encontrada: false };
@@ -894,9 +895,12 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               const disponiveis = state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90);
               const grupoSel = state.npcs.filter(n => camaraGrupo.includes(n.id));
               const ef = getEfeitos(state.edificios, state.npcs);
-              const afinidadeCam = calcAfinidadeCamara(grupoSel, cam);
-              const poderGrupo = calcPoderGrupo(grupoSel, ef.poderBonus) * afinidadeCam;
-              const dificuldadeCam = dificuldadeCamara(cam);
+              // Rolagem probabilística — a pista não garante 100%; a chance cresce com
+              // o over-level do grupo vs a dificuldade estocástica da câmara.
+              const { chance, poder: poderGrupo, dificuldade: dificuldadeCam, afinidade: afinidadeCam } = chanceAbrirCamara(cam, grupoSel, ef.poderBonus);
+              const chancePct = Math.round(chance * 100);
+              const chanceCor = chancePct >= 55 ? 'text-success' : chancePct >= 30 ? 'text-warning' : 'text-destructive';
+              const biomaCam = BIOMA_META[FLOORS[cf - 1]?.bioma ?? 'floresta'];
               const sanidadeMediaGrupo = grupoSel.length ? Math.round(grupoSel.reduce((a, n) => a + n.sanidade, 0) / grupoSel.length) : 0;
               const semComida = state.recursos.comida < cam.custo;
               const podeExplorar = !esgotada && !semComida && camaraGrupo.length > 0;
@@ -909,7 +913,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
                           {cam.titulo}
                         </Dialog.Title>
-                        <div className="text-[11px] text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · CÂMARA SECRETA</div>
+                        <div className="text-[11px] text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · {biomaCam.icone} {cEst.encontrada ? 'CÂMARA' : 'PISTA'}</div>
                       </div>
                     </div>
                     <Dialog.Close asChild>
@@ -963,9 +967,16 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     </>
                   ) : (
                     <>
+                      {/* A PISTA (requisito atingido) — como o oculto se insinuou */}
+                      <div className="flex items-start gap-2 bg-primary/5 border border-primary/20 rounded-sm px-3 py-2">
+                        <KeyRound size={12} className="text-primary/80 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-[10px] text-primary/60 tracking-[0.25em] mb-0.5">A PISTA</div>
+                          <div className="text-[12px] text-white/60 leading-relaxed">{cam.requisito.textoRequisito}</div>
+                        </div>
+                      </div>
                       <div className="text-[12px] text-secondary/70 text-center">
-                        Monte uma incursão. Incursões restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
-                        {' · '}dificuldade <span className="text-foreground font-bold">{dificuldadeCam}</span>
+                        Investigar a pista não garante êxito. Tentativas restantes: <span className="text-foreground font-bold">{Math.max(0, restantes)}</span> / {cam.maxTentativas}
                       </div>
 
                       <div className="max-h-[34vh] overflow-y-auto custom-scrollbar pr-1 -mr-1">
@@ -979,9 +990,15 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
                       <div className="space-y-2 bg-black/40 p-3 rounded-sm border border-primary/10">
                         <div className="flex justify-between items-center">
-                          <span className="text-secondary font-cinzel tracking-widest text-[12px]">PODER DO GRUPO</span>
-                          <span className={`font-bold font-cinzel text-base flex items-center gap-2 ${poderGrupo >= dificuldadeCam ? 'text-success' : 'text-destructive'}`}>
-                            <Swords size={14} /> {poderGrupo.toFixed(1)} <span className="text-xs text-muted-foreground">/ {dificuldadeCam}</span>
+                          <span className="text-secondary font-cinzel tracking-widest text-[12px]">CHANCE DE SUCESSO</span>
+                          <span className={`font-bold font-cinzel text-lg flex items-center gap-2 ${camaraGrupo.length === 0 ? 'text-muted-foreground' : chanceCor}`}>
+                            <Dices size={15} /> {camaraGrupo.length === 0 ? '—' : `${chancePct}%`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-secondary font-cinzel tracking-widest text-[12px]">PODER · DIFICULDADE</span>
+                          <span className="font-bold text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Swords size={12} /> {poderGrupo.toFixed(0)} / {dificuldadeCam}
                           </span>
                         </div>
                         {afinidadeCam !== 1 && (
@@ -1017,7 +1034,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             : 'bg-card-border/30 text-white/40 border border-card-border cursor-not-allowed'
                         }`}
                       >
-                        <DoorOpen size={16} /> {semComida ? 'COMIDA INSUFICIENTE' : camaraGrupo.length === 0 ? 'SELECIONE O GRUPO' : 'EXPLORAR CÂMARA'}
+                        <DoorOpen size={16} /> {semComida ? 'COMIDA INSUFICIENTE' : camaraGrupo.length === 0 ? 'SELECIONE O GRUPO' : `INVESTIGAR A PISTA (${chancePct}%)`}
                       </button>
                     </>
                   )}

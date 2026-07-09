@@ -116,7 +116,7 @@ function MysteryCard() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function Citadel() {
+export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }) {
   const { state, buildEdificio, invocarGacha } = useGame();
 
   const ef      = getEfeitos(state.edificios, state.npcs);
@@ -252,7 +252,7 @@ export function Citadel() {
         ) : (
           <button
             disabled={!canAfford}
-            onClick={() => buildEdificio(tipo)}
+            onClick={() => buildEdificio(tipo, t2Desbloqueado)}
             className={`w-full h-8 border text-[11px] tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
               canAfford
                 ? 'border-primary text-primary hover:bg-primary/20'
@@ -266,7 +266,9 @@ export function Citadel() {
     );
   };
 
-  const buildingOrder: EdificioTipo[] = ['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'];
+  // RetratoTorre só existe a partir da Temporada 2 (bloqueado na T1 — nem aparece na lista).
+  const buildingOrder: EdificioTipo[] = (['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'] as EdificioTipo[])
+    .filter(t => t !== 'RetratoTorre' || t2Desbloqueado);
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
