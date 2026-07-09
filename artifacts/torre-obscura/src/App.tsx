@@ -160,7 +160,7 @@ function MainGameInner() {
             >
               {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'torre'    && <Tower t2Desbloqueado={t2Desbloqueado} pioneerPosicao={pioneer.posicao} pioneersTotal={pioneer.status?.total ?? 0} />}
-              {tab === 'cidadela' && <Citadel />}
+              {tab === 'cidadela' && <Citadel t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'povo'     && <People />}
               {tab === 'alianca'  && <Alliance />}
               {tab === 'guerra'   && <War />}
