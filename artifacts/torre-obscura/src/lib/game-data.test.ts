@@ -4,29 +4,12 @@ import {
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   CAMARAS_SECRETAS,
   getMsPerDay, MS_PER_GAME_DAY_BASE, verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
-  temporadaDeAndar, temporadaAtiva, andarMaxTemporada,
   avancarGuerra, getEfeitos,
   type CamaraSecreta, type NPC, type ProfissaoId, type GameState, type GuerraAtiva,
 } from './game-data';
 
 const armazem = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over });
 const base = () => ({ comida: 100, madeira: 50, pedra: 30, ferro: 10, capacidadeArmazem: 300 });
-
-describe('selectors de temporada', () => {
-  it('temporadaDeAndar mapeia andares em temporadas (20/andar)', () => {
-    expect(temporadaDeAndar(1)).toBe(1);
-    expect(temporadaDeAndar(20)).toBe(1);
-    expect(temporadaDeAndar(21)).toBe(2);
-    expect(temporadaDeAndar(40)).toBe(2);
-    expect(temporadaDeAndar(100)).toBe(5);
-  });
-  it('temporadaAtiva + andarMaxTemporada seguem o desbloqueio de T2', () => {
-    expect(temporadaAtiva(false)).toBe(1);
-    expect(temporadaAtiva(true)).toBe(2);
-    expect(andarMaxTemporada(false)).toBe(20);
-    expect(andarMaxTemporada(true)).toBe(40);
-  });
-});
 
 describe('getMsPerDay (duração real do dia de jogo)', () => {
   it('base é 2h e escala com a velocidade', () => {

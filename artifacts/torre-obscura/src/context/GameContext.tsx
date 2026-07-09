@@ -73,7 +73,7 @@ interface GameContextType {
   continueGame: () => void;
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
-  buildEdificio: (tipo: EdificioTipo, t2Desbloqueado?: boolean) => void;
+  buildEdificio: (tipo: EdificioTipo) => void;
   sendExpedition: (npcIds: string[], targetFloor?: number) => void;
   invocarGacha: () => NPC[]; // retorna os NPCs gerados (já adicionados ao estado)
   assignPosto: (npcId: string, tipo: EdificioTipo | null) => void;
@@ -748,10 +748,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState({ ...state, velocidade: speed });
   };
 
-  const buildEdificio = (tipo: EdificioTipo, t2Desbloqueado = true) => {
+  const buildEdificio = (tipo: EdificioTipo) => {
     if (!state) return;
-    // RetratoTorre é liberado a partir da Temporada 2 (defesa além do filtro da UI).
-    if (tipo === 'RetratoTorre' && !t2Desbloqueado) return;
     const def = BUILDINGS[tipo];
     if (!def) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
