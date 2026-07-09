@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { flushSync } from 'react-dom';
 import {
   GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
+  getMsPerDay,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcBiomaMultiplier, autoExplorar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase, ProfissaoId, HabilidadeId,
@@ -22,7 +23,11 @@ import {
   CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
   sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
-import { tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, type PromocaoResultado } from '../npc-engine';
+import {
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
+  fatorHumor, getAfinidade, AF_AMIZADE,
+  type PromocaoResultado, type FeitoId,
+} from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
 import { getDeviceId } from '../lib/alliance-identity';
@@ -134,8 +139,6 @@ const resumoRecursos = (r: Recursos, sinal: '+' | '-') =>
 
 // Time: at 1x, one real-world day equals five in-game days.
 // (24h / 5 game days = 4.8h of real time per game day at 1x; 2x and 5x accelerate.)
-const MS_PER_GAME_DAY_BASE =  2 * 60 * 60 * 1000;
-const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
 
 const GameContext = createContext<GameContextType | null>(null);
 
@@ -177,11 +180,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
-  // Ao concluir uma sessão de treino/estudo: registra o feito e, se a promoção
-  // levou o morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa
-  // e narra o momento. Centraliza o gancho do motor de vida usado em treino e estudo.
-  const promoverEnobrecer = (s: GameState, npc: NPC) => {
-    registrarFeito(npc, 'treino_concluido');
+  // Ao promover um morador (treino/estudo/buff de câmara): registra o feito
+  // (quando houver — a câmara já registra o dela) e, se a promoção levou o
+  // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
+  const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
+    if (feito) registrarFeito(npc, feito);
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
     if (promo.tipo === 'adocao') {
@@ -245,8 +248,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const vivos = draft.npcs.filter(n => n.vivo);
     if (vivos.length === 0) { draft.gameOver = true; return draft; }
 
-    // Aggregate building effects (levels + workers) once per day
-    const ef = getEfeitos(draft.edificios, draft.npcs);
+    // Aggregate building effects (levels + workers) once per day.
+    // O humor escala a contribuição de cada trabalhador (motor de vida).
+    const ef = getEfeitos(draft.edificios, draft.npcs, fatorHumor);
     draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
 
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
@@ -377,7 +381,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // 9.5 Guerra em curso: resolve o dia de campanha (suprimento, escaramuça,
     //     baixas, término). Muta o draft e devolve as entradas de log.
-    avancarGuerra(draft).forEach(l => addLog(draft, l.tipo, l.mensagem));
+    const diaGuerra = avancarGuerra(draft);
+    diaGuerra.logs.forEach(l => addLog(draft, l.tipo, l.mensagem));
+    // Luto pelos que tombaram no front (game-data não pode importar o motor).
+    diaGuerra.mortos.forEach(m =>
+      aplicarLuto(draft, m.id, m.nome).forEach(l => addLog(draft, l.tipo, l.mensagem)));
+    diaGuerra.vitoriaIds?.forEach(id => {
+      const n = draft.npcs.find(x => x.id === id);
+      if (n) registrarFeito(n, 'guerra_vencida');
+    });
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
     //     Se expirar sem resposta → auto-defesa (todos os aptos marcham) ou
@@ -653,6 +665,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
+    if (!parsed.vinculosEspeciais) parsed.vinculosEspeciais = {};
     parsed.npcs.forEach(n => {
       if (n.fama === undefined) n.fama = 0;
       // Nobres legados guardam o sobrenome embutido no `nome`; recupera a casa
@@ -775,14 +788,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     registrarProgressoMetaDiaria(s, 'explorar');
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
-    const ef = getEfeitos(s.edificios, s.npcs);
+    const ef = getEfeitos(s.edificios, s.npcs, fatorHumor);
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
-    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
+    // Humor pesa no poder individual: gente abalada luta pior.
+    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n), 0);
     // O bioma afeta o poder efetivo do grupo: profissão certa = +30%, errada = -20%.
     const biomaMultiplier = calcBiomaMultiplier(group, floorData.bioma);
     const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
     const isVictory = groupPower >= floorData.difficulty;
+
+    // Vínculo forte salva vidas: se alguém cair, um companheiro de grupo com
+    // afinidade alta tem uma chance de puxá-lo de volta (custa fadiga a ambos).
+    const tentarResgateVinculo = (n: NPC): NPC | null => {
+      const salvador = group.find(x =>
+        x.id !== n.id && x.vivo && getAfinidade(s, x.id, n.id) >= AF_AMIZADE);
+      if (!salvador || Math.random() >= 0.3) return null;
+      n.fadiga = Math.min(100, n.fadiga + 20);
+      salvador.fadiga = Math.min(100, salvador.fadiga + 10);
+      addLog(s, 'evento', `${salvador.nome.toUpperCase()} puxou ${n.nome} de volta da beirada no andar ${floorData.floor}.`);
+      return salvador;
+    };
 
     // Passivas de vestígios ativas nesta expedição (escopo de sendExpedition inteiro)
     const hasVeterano = group.some(n => n.passivaId === 'veterano_das_profundezas');
@@ -929,7 +955,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (n.lancamento) mort *= 0.1;
         // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
         if (hasVeterano && !n.lancamento) mort *= 0.70;
-        if (Math.random() * 100 < mort) {
+        if (Math.random() * 100 < mort && !tentarResgateVinculo(n)) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
@@ -946,15 +972,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
           registrarFeito(n, 'expedicao_sobrevivida');
+          if (!isFarming) registrarFeito(n, 'andar_conquistado');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
-      // Verificar câmaras secretas desbloqueadas. Só andares já conquistados podem
-      // revelar câmaras — evita descobrir câmaras de andares distantes só porque um
-      // requisito global (recursos, mortes totais) foi atingido cedo.
+      // Descoberta de câmaras: só a(s) câmara(s) do ANDAR recém-explorado podem ser
+      // reveladas nesta volta — a descoberta é fruto de explorar aquele andar e,
+      // no retorno, perceber que o requisito foi atingido (narrativa da janela
+      // dourada). Evita revelar câmaras de andares distantes por um requisito global.
       Object.entries(CAMARAS_SECRETAS).forEach(([camaraId, camara]) => {
-        if (camara.floor > s.andarAtual) return;
+        if (camara.floor !== floorData.floor) return;
         if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
@@ -1004,7 +1032,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         let mortFalha = n.lancamento ? floorData.mortality * 0.1 : floorData.mortality;
         // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
         if (hasVeterano && !n.lancamento) mortFalha *= 0.70;
-        if (Math.random() * 100 < mortFalha) {
+        if (Math.random() * 100 < mortFalha && !tentarResgateVinculo(n)) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
@@ -1378,7 +1406,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const statKey = statTreinamento(npc);
     const instrutor = calcInstrutor(npcId, s.npcs, statKey);
     const instrutorStat = instrutor ? instrutor[statKey] : 0;
-    const ganho = (instrutor && instrutorStat > npc[statKey]) ? 2 : 1;
+    const extraMentor = bonusMentor(s, npc, statKey);
+    const ganho = ((instrutor && instrutorStat > npc[statKey]) ? 2 : 1) + extraMentor;
 
     if (isErudito) {
       const custo = calcCustoEstudo(treinamentos);
@@ -1402,8 +1431,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const instrutorStr = instrutor
       ? ` orientado por ${instrutor.nome} (${statLabel}:${instrutor[statKey]})`
       : '';
+    const mentorStr = extraMentor > 0 ? ' [mentor +1]' : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     promoverEnobrecer(s, npc);
     saveState(s);
@@ -1430,7 +1460,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const treinamentos = npc.treinamentos ?? 0;
     const instrutor = calcInstrutor(npcId, s.npcs, 'inteligencia');
     const instrutorStat = instrutor ? instrutor.inteligencia : 0;
-    const ganho = (instrutor && instrutorStat > npc.inteligencia) ? 2 : 1;
+    const extraMentor = bonusMentor(s, npc, 'inteligencia');
+    const ganho = ((instrutor && instrutorStat > npc.inteligencia) ? 2 : 1) + extraMentor;
 
     let local: string;
     if (podeT2) {
@@ -1455,8 +1486,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const instrutorStr = instrutor
       ? ` orientado por ${instrutor.nome} (INT:${instrutor.inteligencia})`
       : '';
+    const mentorStr = extraMentor > 0 ? ' [mentor +1]' : '';
     addLog(s, 'info',
-      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
+      `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
     promoverEnobrecer(s, npc);
     saveState(s);
@@ -1648,6 +1680,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const statKey = statTreinamento(npc);
           npc[statKey] += bonus.incremento;
           npc.raridade = recalcRaridade(npc);
+          // Buff de câmara também enobrece (a câmara já registrou o feito do grupo).
+          promoverEnobrecer(s, npc, null);
           const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : statKey === 'inteligencia' ? 'INT' : 'FOR';
           recompensas.push(`${npc.nome} +${bonus.incremento} ${statLabel} permanente`);
         }
@@ -1685,6 +1719,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     s.camarasSecretasEstado[camaraId] = est;
+    // Remove esta câmara da fila de descobertas no MESMO setState — evita que uma
+    // chamada separada a reconhecerCamaraDescoberta (lendo state stale) sobrescreva
+    // este resultado (encontrada/recompensas) no "explorar agora".
+    s.camarasNovasDescobertas = (s.camarasNovasDescobertas ?? []).filter(id => id !== camaraId);
     setResultadoCamara({ camaraId, sucesso, poder, dificuldade, mortos, recompensas });
     saveState(s);
   };

@@ -5,7 +5,7 @@
 // autoExplorar) para o GameContext registrar; e limpa os vínculos do morto.
 
 import type { GameState, LogTipo } from '../lib/game-data';
-import { getAfinidade } from './relationships';
+import { getAfinidade, parKey } from './relationships';
 
 export interface LogIntent { tipo: LogTipo; mensagem: string; }
 
@@ -20,18 +20,26 @@ export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string
     if (!n.vivo || n.id === mortoId) continue;
     const af = getAfinidade(draft, n.id, mortoId);
     if (af < LIMIAR_LUTO) continue;
-    const sanPenalty  = Math.round(2 + af / 10);  // af 100 → −12 sanidade
-    const lealPenalty = Math.round(af / 20);      // af 100 → −5 lealdade
+    // Perder o par de um romance dói o dobro.
+    const viuvez = draft.vinculosEspeciais?.[parKey(n.id, mortoId)] === 'romance' ? 2 : 1;
+    const sanPenalty  = Math.round(2 + af / 10) * viuvez;  // af 100 → −12 sanidade (−24 em romance)
+    const lealPenalty = Math.round(af / 20) * viuvez;      // af 100 → −5 lealdade
     n.sanidade = Math.max(0, n.sanidade - sanPenalty);
     n.lealdade = Math.max(0, n.lealdade - lealPenalty);
     enlutados.push({ nome: n.nome, af });
   }
 
-  // Limpa os vínculos do morto para não deixar fantasmas no mapa.
+  // Limpa os vínculos do morto para não deixar fantasmas nos mapas.
   if (draft.relacionamentos) {
     for (const key in draft.relacionamentos) {
       const [a, b] = key.split('__');
       if (a === mortoId || b === mortoId) delete draft.relacionamentos[key];
+    }
+  }
+  if (draft.vinculosEspeciais) {
+    for (const key in draft.vinculosEspeciais) {
+      const [a, b] = key.split('__');
+      if (a === mortoId || b === mortoId) delete draft.vinculosEspeciais[key];
     }
   }
 

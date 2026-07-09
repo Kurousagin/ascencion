@@ -74,6 +74,9 @@ export async function subscribeToPush(
     // Send subscription to server
     const p256dhKey = subscription.getKey("p256dh");
     const authKey = subscription.getKey("auth");
+    if (!p256dhKey || !authKey) {
+      throw new Error("Subscription sem chaves de criptografia (p256dh/auth)");
+    }
 
     const subscriptionData = {
       deviceId,
@@ -100,6 +103,18 @@ export async function subscribeToPush(
 
     if (!response.ok) {
       throw new Error("Failed to register subscription on server");
+    }
+
+    // Guarda o deviceId onde o Service Worker consegue ler (localStorage é
+    // inacessível ao SW). Usado no handler `pushsubscriptionchange` para
+    // re-inscrever automaticamente quando o navegador rotaciona a subscription.
+    if ("caches" in window) {
+      try {
+        const cache = await caches.open("torre-config");
+        await cache.put("/__device_id", new Response(deviceId));
+      } catch {
+        /* cache indisponível — rotação dependerá do próximo heartbeat */
+      }
     }
 
     setPushEnabled(true);
@@ -145,7 +160,7 @@ export async function updateNextEvent(
   nextEventAt: Date | null,
   nextEventText: string | null
 ): Promise<void> {
-  await fetch("/api/notificacoes/proximo-evento", {
+  const res = await fetch("/api/notificacoes/proximo-evento", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -154,4 +169,7 @@ export async function updateNextEvent(
       proximoEventoTexto: nextEventText,
     }),
   });
+  if (!res.ok) {
+    throw new Error(`Falha ao atualizar próximo evento (${res.status})`);
+  }
 }

@@ -1524,6 +1524,7 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
 // vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
 export type RequisitoCamara =
   | { tipo: 'class_farms'; profissao: ProfissaoId; minFarmsComClasse: number; textoRequisito: string }
+  | { tipo: 'farms_andar'; floor: number; minFarms: number; textoRequisito: string }
   | { tipo: 'mortes_andar'; minMortes: number; textoRequisito: string }
   | { tipo: 'quest_habitante'; floor: number; textoRequisito: string }
   | { tipo: 'recurso_minimo'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; quantidade: number; textoRequisito: string }
@@ -1583,6 +1584,28 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
       recursosBonus: { comida: 20, madeira: 12 },
       moralBonus: 4,
       loreGanho: { titulo: 'A Ordem Interceptada', texto: 'Uma ordem original, queimada: dizia para destruir o selo, não guardá-lo. Alguém trocou uma única palavra e mudou tudo.' },
+    },
+  },
+
+  // [TESTE] Câmara de validação da feature de descoberta — abre ao FARMAR o andar 1
+  // duas vezes (farms_andar). REMOVER antes de produção.
+  '1_teste': {
+    floor: 1,
+    titulo: '[TESTE] Nicho na Parede',
+    icone: '🧪',
+    descricao: 'Na segunda passagem pela Mata Cinzenta, o grupo reparou numa fenda estreita atrás das raízes — algo esteve escondido ali por muito tempo.',
+    requisito: { tipo: 'farms_andar' as const, floor: 1, minFarms: 2, textoRequisito: 'Explorar o Andar 1 duas vezes revela a fenda escondida' },
+    tipo: 'benéfica',
+    dificuldade: 10,
+    custo: 10,
+    maxTentativas: 3,
+    chancePerTentativa: 0.5,
+    resultado: {
+      sucessoTexto: 'Dentro da fenda havia um pequeno depósito esquecido.',
+      falhaTexto: 'A fenda desmoronou parcialmente — recuaram a tempo.',
+      recursosBonus: { comida: 15, madeira: 10 },
+      moralBonus: 3,
+      loreGanho: { titulo: '[Teste] Fragmento de Validação', texto: 'Uma página em branco — deixada aqui apenas para confirmar que o livro recebe o que é encontrado.' },
     },
   },
 
@@ -2076,6 +2099,9 @@ export function verificarRequisitoCamara(state: GameState, requisito: RequisitoC
       return sum + (andarFarms[requisito.profissao] ?? 0);
     }, 0);
     return totalFarms >= requisito.minFarmsComClasse;
+  }
+  if (requisito.tipo === 'farms_andar') {
+    return (state.farmsPerFloor?.[requisito.floor] ?? 0) >= requisito.minFarms;
   }
   if (requisito.tipo === 'mortes_andar') {
     const totalMortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
@@ -2940,6 +2966,10 @@ export interface GameState {
   // Afinidade entre NPCs, por par. Chave canônica `parKey(idA,idB)` (ids ordenados);
   // valor −100..100. Ausência = 0 (desconhecidos). Ver src/npc-engine/relationships.
   relacionamentos?: Record<string, number>;
+  // Arcos persistidos por par (mesma chave canônica). Amizade/rivalidade são
+  // derivadas da afinidade; romance/mentoria são eventos e ficam gravados aqui.
+  // Ver src/npc-engine/systems/vinculos-tipados.
+  vinculosEspeciais?: Record<string, 'romance' | 'mentoria'>;
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -3436,6 +3466,12 @@ export function sortearRecompensaCamara(
   return { tipo: 'nenhum' };
 }
 
+// ─── TEMPO DE JOGO ─────────────────────────────────────────────────────────────
+// Duração real de um dia de jogo. Fonte única de verdade — usada pelo catch-up
+// offline (GameContext) e pela previsão de próximo evento das notificações push.
+export const MS_PER_GAME_DAY_BASE = 2 * 60 * 60 * 1000; // 2h na velocidade 1x
+export const getMsPerDay = (velocidade: number) => MS_PER_GAME_DAY_BASE / velocidade;
+
 // ─── INITIAL STATE ────────────────────────────────────────────────────────────
 
 export const CAPACIDADE_BASE = 80;
@@ -3672,7 +3708,14 @@ export function trabalhadoresDe(tipo: EdificioTipo, nivel: number, npcs: NPC[]):
 }
 
 // Aggregate all built levels + assigned workers into the daily effect bundle.
-export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<EfeitoEdificio> {
+// `fatorNpc` (opcional) escala a contribuição individual de cada trabalhador —
+// o GameContext injeta o fator de humor do motor de vida por aqui (game-data
+// não pode importar o npc-engine). Ausente ⇒ fator 1 (chamadas internas).
+export function getEfeitos(
+  edificios: Edificio[],
+  npcs: NPC[] = [],
+  fatorNpc?: (n: NPC) => number,
+): Required<EfeitoEdificio> {
   const ef: Required<EfeitoEdificio> = {
     comidaDia: 0, moralDia: 0, sanidadeDia: 0, fadigaRec: 0, poderBonus: 0,
     capacidadeArmazem: CAPACIDADE_BASE, capPopulacao: POP_BASE,
@@ -3695,7 +3738,7 @@ export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<Ef
     const afim = POSTO_AFIM[e.tipo];
     if (afim) {
       for (const w of trabalhadoresDe(e.tipo, e.nivel, npcs)) {
-        const mult = getProfissao(w) === afim ? 1.5 : 1;
+        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1);
         switch (e.tipo) {
           case 'Fazenda':    ef.comidaDia += Math.round(w.inteligencia * 0.5 * mult); break;
           case 'Enfermaria': ef.fadigaRec += Math.round(w.inteligencia * 0.4 * mult); break;
@@ -4164,14 +4207,15 @@ export function calcPoderTropa(tropa: NPC[], poderBonus: number): number {
   return base * (1 + poderBonus);
 }
 
-type LogGuerra = { tipo: LogTipo; mensagem: string };
+export type LogGuerra = { tipo: LogTipo; mensagem: string };
 
 // Encerra a guerra: apura vencedor, devolve sobreviventes, aplica espólio/pilhagem
 // e registra no histórico. Muta `draft`. Chamada de dentro de avancarGuerra.
+// Em vitória devolve os ids da tropa sobrevivente (para o caller registrar feitos).
 function resolverGuerra(
   draft: GameState,
   motivo: 'prazo' | 'colapso' | 'exercito_rival_quebrado',
-): LogGuerra[] {
+): { logs: LogGuerra[]; vitoriaIds?: string[] } {
   const g = draft.guerra!;
   const logs: LogGuerra[] = [];
   const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
@@ -4269,7 +4313,7 @@ function resolverGuerra(
   }
 
   draft.guerra = null;
-  return logs;
+  return vitoria ? { logs, vitoriaIds: tropaViva.map((n) => n.id) } : { logs };
 }
 
 // Calcula o custo diário de suprimento da guerra para um número de tropas vivas.
@@ -4280,13 +4324,23 @@ export function calcCustoSuprimentoGuerra(numTropaViva: number): { comida: numbe
   };
 }
 
+// Resultado de um dia de guerra: logs + quem tombou hoje (para o GameContext
+// aplicar luto — game-data não pode importar o motor de vida) e, se a guerra
+// terminou em vitória, os ids dos sobreviventes (para registrar o feito).
+export interface ResultadoDiaGuerra {
+  logs: LogGuerra[];
+  mortos: { id: string; nome: string }[];
+  vitoriaIds?: string[];
+}
+
 // Avança um dia da guerra em curso. Muta `draft` (guerra, moradores, recursos,
 // moral, histórico) e retorna as entradas de log a serem registradas. Deve ser
 // chamada uma vez por dia dentro de processDay.
-export function avancarGuerra(draft: GameState): LogGuerra[] {
+export function avancarGuerra(draft: GameState): ResultadoDiaGuerra {
   const g = draft.guerra;
-  if (!g) return [];
+  if (!g) return { logs: [], mortos: [] };
   const logs: LogGuerra[] = [];
+  const mortos: ResultadoDiaGuerra['mortos'] = [];
   const ef = getEfeitos(draft.edificios, draft.npcs);
 
   g.diasDecorridos += 1;
@@ -4295,7 +4349,7 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
 
   // Sem tropa viva → colapso imediato (derrota).
   if (tropa.length === 0) {
-    return resolverGuerra(draft, 'colapso');
+    return { ...resolverGuerra(draft, 'colapso'), mortos };
   }
 
   // 1) Suprimento próprio: custo extra de guerra por dia (comida + ferro).
@@ -4349,6 +4403,7 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
       n.posto = null;
       g.baixasJogador += 1;
       mortosHoje += 1;
+      mortos.push({ id: n.id, nome: n.nome });
       draft.moral = Math.max(0, draft.moral - 4);
     }
   });
@@ -4380,15 +4435,17 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
 
   // 8) Condições de término.
   const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
-  if (g.rivalIntegridade <= 0) {
-    logs.push(...resolverGuerra(draft, 'exercito_rival_quebrado'));
-  } else if (tropaViva.length === 0) {
-    logs.push(...resolverGuerra(draft, 'colapso'));
-  } else if (g.diasDecorridos >= g.duracao) {
-    logs.push(...resolverGuerra(draft, 'prazo'));
-  }
+  let vitoriaIds: string[] | undefined;
+  const encerrar = (motivo: 'prazo' | 'colapso' | 'exercito_rival_quebrado') => {
+    const fim = resolverGuerra(draft, motivo);
+    logs.push(...fim.logs);
+    vitoriaIds = fim.vitoriaIds;
+  };
+  if (g.rivalIntegridade <= 0) encerrar('exercito_rival_quebrado');
+  else if (tropaViva.length === 0) encerrar('colapso');
+  else if (g.diasDecorridos >= g.duracao) encerrar('prazo');
 
-  return logs;
+  return { logs, mortos, vitoriaIds };
 }
 
 // ─── EXPLORAÇÃO AUTÔNOMA ──────────────────────────────────────────────────────

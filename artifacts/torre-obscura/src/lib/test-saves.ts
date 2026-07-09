@@ -1,4 +1,4 @@
-import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAMARAS_SECRETAS, CAPACIDADE_BASE } from './game-data';
+import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAMARAS_SECRETAS, CAPACIDADE_BASE, type ProfissaoId } from './game-data';
 
 /**
  * Cidadelas de teste pré-populadas para validar features durante desenvolvimento.
@@ -24,13 +24,29 @@ function populateHabitanteEstado(maxFloor: number): Record<number, 'oculto' | 'd
   return estado;
 }
 
-// Helper: marca como DESCOBERTAS todas as câmaras secretas até maxFloor, para a
-// cidadela de teste ter tudo desbloqueado e pronto para explorar.
-function populateCamaras(maxFloor: number): Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }> {
-  const estado: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }> = {};
-  Object.entries(CAMARAS_SECRETAS).forEach(([id, cam]) => {
-    if (cam.floor <= maxFloor) estado[id] = { descoberta: true, tentativas: 0, encontrada: false };
-  });
+// Câmaras começam OCULTAS — a visibilidade depende da descoberta, que só acontece
+// ao explorar/farmar um andar já conquistado e atingir o requisito (fluxo real).
+// A cidadela de teste não pré-descobre nada; ela apenas pré-satisfaz os requisitos
+// (ver farmsProntos/mortesProntas), de modo que a PRIMEIRA expedição/farm em um
+// andar dispara o evento de descoberta (janela dourada).
+function populateCamaras(): Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }> {
+  return {};
+}
+
+// Farms por classe já acumulados em cada andar conquistado — satisfaz os
+// requisitos `class_farms`/`combinado` para que a descoberta dispare ao explorar.
+function farmsProntos(maxFloor: number): Record<number, Record<ProfissaoId, number>> {
+  const estado: Record<number, Record<ProfissaoId, number>> = {};
+  for (let f = 1; f <= maxFloor; f++) {
+    estado[f] = { combatente: 12, batedor: 12, erudito: 12, sentinela: 12 };
+  }
+  return estado;
+}
+
+// Mortes acumuladas por andar — satisfaz requisitos `mortes_andar`/`combinado`.
+function mortesProntas(maxFloor: number): Record<number, number> {
+  const estado: Record<number, number> = {};
+  for (let f = 1; f <= maxFloor; f++) estado[f] = 6;
   return estado;
 }
 
@@ -85,9 +101,9 @@ function createTestSaveBasic(): GameState {
     ],
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: populateCamaras(5),
-    farmsPorAndarEClasse: {},
-    totalMortesAndar: {},
+    camarasSecretasEstado: populateCamaras(),
+    farmsPorAndarEClasse: farmsProntos(5),
+    totalMortesAndar: mortesProntas(5),
     reliquias: [
       'mensagem-selada',
       'palavras-fundador',
@@ -157,9 +173,9 @@ function createTestSaveCompleta(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: populateCamaras(20),
-    farmsPorAndarEClasse: {},
-    totalMortesAndar: {},
+    camarasSecretasEstado: populateCamaras(),
+    farmsPorAndarEClasse: farmsProntos(20),
+    totalMortesAndar: mortesProntas(20),
     reliquias: [
       'mensagem-selada',
       'palavras-fundador',
@@ -231,9 +247,9 @@ function createTestSaveT2(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camarasSecretasEstado: populateCamaras(30),
-    farmsPorAndarEClasse: {},
-    totalMortesAndar: {},
+    camarasSecretasEstado: populateCamaras(),
+    farmsPorAndarEClasse: farmsProntos(30),
+    totalMortesAndar: mortesProntas(30),
     reliquias: [
       'mensagem-selada',
       'palavras-fundador',

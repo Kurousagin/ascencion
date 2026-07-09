@@ -15,6 +15,34 @@ import {
 
 const router: IRouter = Router();
 
+// ─── Rate limit simples (in-memory) ────────────────────────────────────────────
+// Protege as rotas públicas de escrita contra abuso. Chaveado por deviceId (do
+// corpo) com fallback no IP — mais estável que só IP atrás do proxy do Render.
+const RATE_LIMIT = 30;          // requisições
+const RATE_WINDOW_MS = 60_000;  // por minuto
+const rateBuckets = new Map<string, number[]>();
+
+function rateLimit(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction): void {
+  const deviceId = (req.body?.deviceId as string | undefined) ?? "";
+  const ip = req.ip ?? req.socket?.remoteAddress ?? "unknown";
+  const key = `${deviceId}:${ip}`;
+  const now = Date.now();
+  const hits = (rateBuckets.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (hits.length >= RATE_LIMIT) {
+    res.status(429).json({ error: "Muitas requisições. Tente novamente em instantes." });
+    return;
+  }
+  hits.push(now);
+  rateBuckets.set(key, hits);
+  // Limpeza oportunista para o mapa não crescer indefinidamente.
+  if (rateBuckets.size > 5000) {
+    for (const [k, arr] of rateBuckets) {
+      if (arr.every((t) => now - t >= RATE_WINDOW_MS)) rateBuckets.delete(k);
+    }
+  }
+  next();
+}
+
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const SUBJECT = process.env.VAPID_SUBJECT;
@@ -34,7 +62,7 @@ router.get("/notificacoes/chave-publica", async (req, res): Promise<void> => {
 });
 
 // POST /notificacoes/inscrever
-router.post("/notificacoes/inscrever", async (req, res): Promise<void> => {
+router.post("/notificacoes/inscrever", rateLimit, async (req, res): Promise<void> => {
   const parsed = InscreverNotificacoesBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -77,7 +105,7 @@ router.post("/notificacoes/inscrever", async (req, res): Promise<void> => {
 });
 
 // POST /notificacoes/desinscrever
-router.post("/notificacoes/desinscrever", async (req, res): Promise<void> => {
+router.post("/notificacoes/desinscrever", rateLimit, async (req, res): Promise<void> => {
   const parsed = DesinscreverNotificacoesBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -94,7 +122,7 @@ router.post("/notificacoes/desinscrever", async (req, res): Promise<void> => {
 });
 
 // PATCH /notificacoes/proximo-evento
-router.patch("/notificacoes/proximo-evento", async (req, res): Promise<void> => {
+router.patch("/notificacoes/proximo-evento", rateLimit, async (req, res): Promise<void> => {
   const parsed = AtualizarProximoEventoBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -159,9 +187,12 @@ router.patch("/notificacoes/proximo-evento", async (req, res): Promise<void> => 
             payload
           );
 
+          // Grava o MESMO valor de nextEventAt para que o ciclo do cron
+          // reconheça (por getTime) que este evento já foi notificado e não o
+          // reenvie. Antes gravava `now`, que diferia de nextEventAt.
           await db
             .update(pushSubscriptionsTable)
-            .set({ lastNotifiedEventAt: now })
+            .set({ lastNotifiedEventAt: eventTime })
             .where(eq(pushSubscriptionsTable.deviceId, deviceId));
 
           req.log.info({ deviceId, statusCode: result.statusCode }, "✅ Notificação Tier 3 enviada com sucesso");

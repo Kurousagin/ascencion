@@ -1,4 +1,4 @@
-const CACHE_NAME = 'torre-obscura-v4';
+const CACHE_NAME = 'torre-obscura-v5';
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_URLS = ['/'];
@@ -60,13 +60,17 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
+  let data = {};
+  if (event.data) {
+    try { data = event.data.json(); }
+    catch { data = { body: event.data.text() }; }
+  }
   event.waitUntil(
     self.registration.showNotification(data.title ?? 'Torre Obscura', {
       body: data.body ?? 'Sua cidadela precisa de você.',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: 'torre-obscura-reminder',
+      icon: data.icon ?? '/icon-192.png',
+      badge: data.badge ?? '/icon-192.png',
+      tag: data.tag ?? 'torre-obscura-reminder',
       data: { url: data.url ?? '/' },
     })
   );
@@ -78,8 +82,75 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       const existing = list.find((c) => c.url.includes(self.location.origin));
-      if (existing) return existing.focus();
+      if (existing) {
+        // Foca a janela existente e navega até a URL do evento (quando aplicável).
+        const focar = existing.focus();
+        if (url !== '/' && 'navigate' in existing) {
+          return Promise.resolve(focar).then(() => existing.navigate(url).catch(() => {}));
+        }
+        return focar;
+      }
       return self.clients.openWindow(url);
     })
   );
+});
+
+// ─── Re-inscrição automática quando o navegador rotaciona a subscription ───────
+// Sem isto, a rotação/expiração da subscription faz o push ser perdido silenciosa-
+// mente até o app reabrir. Lê o deviceId do Cache (gravado pelo app ao inscrever),
+// re-inscreve e faz upsert via /inscrever (idempotente por deviceId).
+function urlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = self.atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+function bufToB64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return self.btoa(bin);
+}
+
+async function lerDeviceId() {
+  try {
+    const cache = await caches.open('torre-config');
+    const res = await cache.match('/__device_id');
+    return res ? await res.text() : null;
+  } catch { return null; }
+}
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    const deviceId = await lerDeviceId();
+    if (!deviceId) return; // sem deviceId, o próximo heartbeat re-inscreve
+
+    let applicationServerKey = event.oldSubscription?.options?.applicationServerKey;
+    if (!applicationServerKey) {
+      try {
+        const r = await fetch('/api/notificacoes/chave-publica');
+        if (!r.ok) return;
+        const { publicKey } = await r.json();
+        applicationServerKey = urlB64ToUint8Array(publicKey);
+      } catch { return; }
+    }
+
+    let sub;
+    try {
+      sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+    } catch { return; }
+
+    const p256dh = sub.getKey('p256dh');
+    const auth = sub.getKey('auth');
+    if (!p256dh || !auth) return;
+
+    await fetch('/api/notificacoes/inscrever', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, endpoint: sub.endpoint, p256dh: bufToB64(p256dh), auth: bufToB64(auth) }),
+    }).catch(() => {});
+  })());
 });
