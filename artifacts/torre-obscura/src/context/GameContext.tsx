@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { flushSync } from 'react-dom';
 import {
   GameState, NPC, Raridade, createInitialState, LogEntry, generateNPC, getRandomInt,
-  getMsPerDay,
+  getMsPerDay, importanciaDe, type Acontecimento,
   BUILDINGS, getEfeitos, FLOORS, calcNpcPower,
   calcCustoExpedicao, calcRecompensaAndar, calcBiomaMultiplier, autoExplorar,
   getProfissao, aceitaTrabalho, EdificioTipo, MoradorBase, ProfissaoId, HabilidadeId,
@@ -177,6 +177,20 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (draft.log.length > 200) draft.log = draft.log.slice(0, 200);
   };
 
+  // Registra um ACONTECIMENTO: entra no log (como sempre) e, conforme a importância,
+  // no feed (mural) e na fila de toasts — entrega orgânica dos eventos de autonomia
+  // sem exigir que o jogador abra o log. Anti-spam: feed cap 15, toasts cap 4.
+  const registrarAcontecimento = (draft: GameState, tipo: LogEntry['tipo'], mensagem: string) => {
+    addLog(draft, tipo, mensagem);
+    const importancia = importanciaDe(tipo);
+    if (importancia === 'baixa') return;
+    const ac: Acontecimento = { id: crypto.randomUUID(), tipo, mensagem, dia: draft.dia, importancia };
+    draft.feed = [ac, ...(draft.feed ?? [])].slice(0, 15);
+    if (importancia === 'alta') {
+      draft.toastsPendentes = [...(draft.toastsPendentes ?? []), ac].slice(-4);
+    }
+  };
+
   // Desbloqueia um fragmento do Codex (idempotente). Retorna true se foi novo.
   const desbloquearFragmento = (s: GameState, id: string): boolean => {
     if (!CODEX_FRAGMENTOS[id]) return false;
@@ -335,7 +349,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         fadigaRec: ef.fadigaRec,
       },
       rng: Math.random,
-      log: (tipo, mensagem) => addLog(draft, tipo, mensagem),
+      log: (tipo, mensagem) => registrarAcontecimento(draft, tipo, mensagem),
     });
 
     // 7. Eventos aleatórios (15% por dia) — mais negativos, moral mais difícil
@@ -461,7 +475,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (chance > 0 && Math.random() < chance) {
         const rival = gerarRivalAgressor(draft);
         draft.guerraPendente = { rival, prazoResposta: 3, diaDeclarado: draft.dia };
-        addLog(draft, 'evento', `INVASÃO IMINENTE: ${rival.nome.toUpperCase()} marchou em direção à sua cidadela! Você tem 3 dias para mobilizar defesa — acesse a aba GUERRA.`);
+        registrarAcontecimento(draft, 'evento', `INVASÃO IMINENTE: ${rival.nome.toUpperCase()} marchou em direção à sua cidadela! Você tem 3 dias para mobilizar defesa — acesse a aba GUERRA.`);
       }
     }
 
@@ -1001,7 +1015,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
           else s.camarasSecretasEstado[camaraId].descoberta = true;
-          addLog(s, 'descoberta', `CÂMARA SECRETA REVELADA — ${camara.titulo} (Andar ${camara.floor}) pode ser explorada!`);
+          registrarAcontecimento(s, 'descoberta', `CÂMARA SECRETA REVELADA — ${camara.titulo} (Andar ${camara.floor}) pode ser explorada!`);
           // Enfileira para o modal de evento que chama a atenção do jogador.
           s.camarasNovasDescobertas = [...(s.camarasNovasDescobertas ?? []), camaraId];
         }

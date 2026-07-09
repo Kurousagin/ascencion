@@ -240,6 +240,23 @@ export interface LogEntry {
   dia: number;
 }
 
+// ─── Acontecimentos (feed de vida + toasts) ───────────────────────────────────
+// Entrega orgânica dos eventos de autonomia dos NPCs/mundo — sem exigir que o
+// jogador abra o log. Importância deriva do tipo do evento.
+export type ImportanciaAcontecimento = 'baixa' | 'media' | 'alta';
+export interface Acontecimento {
+  id: string;
+  tipo: LogTipo;
+  mensagem: string;
+  dia: number;
+  importancia: ImportanciaAcontecimento;
+}
+export function importanciaDe(tipo: LogTipo): ImportanciaAcontecimento {
+  if (tipo === 'morte' || tipo === 'traicao' || tipo === 'vitoria') return 'alta';
+  if (tipo === 'descoberta' || tipo === 'evento' || tipo === 'alerta') return 'media';
+  return 'baixa';
+}
+
 // ─── HABITANTES DA TORRE ─────────────────────────────────────────────────────
 // Cada andar não-boss tem um Habitante — entidade descoberta ao conquistar o andar.
 // O habitante oferece uma mini-quest e recompensa com um Eco (bônus permanente de loot).
@@ -2893,6 +2910,10 @@ export interface GameState {
   npcs: NPC[];
   edificios: Edificio[];
   log: LogEntry[];
+  // Feed de acontecimentos (mural) — ring-buffer dos eventos notáveis recentes.
+  feed?: Acontecimento[];
+  // Fila de acontecimentos de alta importância a exibir como toast (drenada pela UI).
+  toastsPendentes?: Acontecimento[];
 
   // ─── Guerra entre cidadelas ──────────────────────────────────────────────
   guerra: GuerraAtiva | null;           // guerra em curso (uma por vez), ou null
