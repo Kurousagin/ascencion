@@ -4196,14 +4196,15 @@ export function calcPoderTropa(tropa: NPC[], poderBonus: number): number {
   return base * (1 + poderBonus);
 }
 
-type LogGuerra = { tipo: LogTipo; mensagem: string };
+export type LogGuerra = { tipo: LogTipo; mensagem: string };
 
 // Encerra a guerra: apura vencedor, devolve sobreviventes, aplica espólio/pilhagem
 // e registra no histórico. Muta `draft`. Chamada de dentro de avancarGuerra.
+// Em vitória devolve os ids da tropa sobrevivente (para o caller registrar feitos).
 function resolverGuerra(
   draft: GameState,
   motivo: 'prazo' | 'colapso' | 'exercito_rival_quebrado',
-): LogGuerra[] {
+): { logs: LogGuerra[]; vitoriaIds?: string[] } {
   const g = draft.guerra!;
   const logs: LogGuerra[] = [];
   const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
@@ -4301,7 +4302,7 @@ function resolverGuerra(
   }
 
   draft.guerra = null;
-  return logs;
+  return vitoria ? { logs, vitoriaIds: tropaViva.map((n) => n.id) } : { logs };
 }
 
 // Calcula o custo diário de suprimento da guerra para um número de tropas vivas.
@@ -4312,13 +4313,23 @@ export function calcCustoSuprimentoGuerra(numTropaViva: number): { comida: numbe
   };
 }
 
+// Resultado de um dia de guerra: logs + quem tombou hoje (para o GameContext
+// aplicar luto — game-data não pode importar o motor de vida) e, se a guerra
+// terminou em vitória, os ids dos sobreviventes (para registrar o feito).
+export interface ResultadoDiaGuerra {
+  logs: LogGuerra[];
+  mortos: { id: string; nome: string }[];
+  vitoriaIds?: string[];
+}
+
 // Avança um dia da guerra em curso. Muta `draft` (guerra, moradores, recursos,
 // moral, histórico) e retorna as entradas de log a serem registradas. Deve ser
 // chamada uma vez por dia dentro de processDay.
-export function avancarGuerra(draft: GameState): LogGuerra[] {
+export function avancarGuerra(draft: GameState): ResultadoDiaGuerra {
   const g = draft.guerra;
-  if (!g) return [];
+  if (!g) return { logs: [], mortos: [] };
   const logs: LogGuerra[] = [];
+  const mortos: ResultadoDiaGuerra['mortos'] = [];
   const ef = getEfeitos(draft.edificios, draft.npcs);
 
   g.diasDecorridos += 1;
@@ -4327,7 +4338,7 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
 
   // Sem tropa viva → colapso imediato (derrota).
   if (tropa.length === 0) {
-    return resolverGuerra(draft, 'colapso');
+    return { ...resolverGuerra(draft, 'colapso'), mortos };
   }
 
   // 1) Suprimento próprio: custo extra de guerra por dia (comida + ferro).
@@ -4381,6 +4392,7 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
       n.posto = null;
       g.baixasJogador += 1;
       mortosHoje += 1;
+      mortos.push({ id: n.id, nome: n.nome });
       draft.moral = Math.max(0, draft.moral - 4);
     }
   });
@@ -4412,15 +4424,17 @@ export function avancarGuerra(draft: GameState): LogGuerra[] {
 
   // 8) Condições de término.
   const tropaViva = draft.npcs.filter((n) => g.tropaIds.includes(n.id) && n.vivo);
-  if (g.rivalIntegridade <= 0) {
-    logs.push(...resolverGuerra(draft, 'exercito_rival_quebrado'));
-  } else if (tropaViva.length === 0) {
-    logs.push(...resolverGuerra(draft, 'colapso'));
-  } else if (g.diasDecorridos >= g.duracao) {
-    logs.push(...resolverGuerra(draft, 'prazo'));
-  }
+  let vitoriaIds: string[] | undefined;
+  const encerrar = (motivo: 'prazo' | 'colapso' | 'exercito_rival_quebrado') => {
+    const fim = resolverGuerra(draft, motivo);
+    logs.push(...fim.logs);
+    vitoriaIds = fim.vitoriaIds;
+  };
+  if (g.rivalIntegridade <= 0) encerrar('exercito_rival_quebrado');
+  else if (tropaViva.length === 0) encerrar('colapso');
+  else if (g.diasDecorridos >= g.duracao) encerrar('prazo');
 
-  return logs;
+  return { logs, mortos, vitoriaIds };
 }
 
 // ─── EXPLORAÇÃO AUTÔNOMA ──────────────────────────────────────────────────────

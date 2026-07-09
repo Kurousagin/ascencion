@@ -40,6 +40,10 @@ pareçam **pessoas vivas** — gerando tensão ao descartá-los ou forçá-los a
   stat dominante, e **Humor / Casa / Vínculos**.
 - **Testes**: `src/npc-engine/npc-engine.test.ts` (relacionamentos, convívio, decaimento,
   traição, luto, adoção/fundação/fallback, humor). `pnpm --filter @workspace/torre-obscura run test`.
+- **Luto na guerra** (opção (a) do plano): `avancarGuerra` retorna `ResultadoDiaGuerra`
+  (`{ logs, mortos, vitoriaIds? }`); o `GameContext` aplica `aplicarLuto` nos mortos do dia
+  e registra `guerra_vencida` nos sobreviventes da vitória. Feito `andar_conquistado`
+  registrado na vitória de expedição em modo avançar. Testes em `game-data.test.ts`.
 
 ## ⏳ TODO / Fases futuras
 
@@ -50,26 +54,20 @@ com arcos próprios. Implementar como **novo sistema** `systems/vinculos-tipados
 Sugestão: derivar o tipo de um par a partir de `getAfinidade` + diferença de idade/mentor
 (stat/treinos) + flags; guardar em `GameState` um `Record<parKey, TipoVinculo>` se preciso.
 
-### 2. Luto na guerra
-As mortes de guerra ocorrem em `avancarGuerra` (dentro de `game-data.ts`), que **não**
-pode importar o motor (evita ciclo). Opções: (a) `avancarGuerra` retornar os ids dos
-mortos e o `GameContext` chamar `aplicarLuto` após a chamada; (b) mover a resolução de
-guerra para um sistema/adaptador no `npc-engine`. Preferir (a) no curto prazo.
-
-### 3. Migrar os corpos do domínio para o módulo
+### 2. Migrar os corpos do domínio para o módulo
 Hoje `generateNPC`, `calcNpcPower`, `getProfissao`, treino etc. ainda **residem** em
 `game-data.ts` e são re-exportados pela façade. Passo futuro: mover os corpos para
 `npc-engine/domain.ts` e fazer `game-data` re-exportar do módulo (cuidando para não
 reintroduzir ciclos — mover junto os tipos base se necessário).
 
-### 4. Aprofundar o convívio e o impacto no jogo
+### 3. Aprofundar o convívio e o impacto no jogo
 - Humor afetar produção/expedição (ex.: "Abalado" reduz eficiência; vínculo forte no
   mesmo grupo reduz mortalidade).
 - Eventos sociais raros (brigas, reconciliações, juras de lealdade) como um sistema.
 - Promoção via buff de câmara (`GameContext` ~linha do `recalcRaridade` no bônus
   `buff_permanente`) também poderia chamar `promoverEnobrecer` — hoje só treino/estudo.
 
-### 5. Balanceamento
+### 4. Balanceamento
 Revisar constantes: deltas de convívio (`CONVIVIO_*`, `ATRITO`), `LIMIAR_ADOCAO`,
 `FAMA_CASA`/`CHANCE_FUNDAR_CASA`, penalidades de luto (`grief.ts`). Idealmente com
 telemetria/observação de partidas.
