@@ -1,13 +1,13 @@
-// ─── Pools curados para geração procedural de câmaras ────────────────────────
+// ─── Pools de TEMAS para geração procedural de câmaras ───────────────────────
 // A geração NÃO inventa texto: compõe cada câmara a partir de POOLS curados —
 // garantindo qualidade — mas SORTEIA por seed a colocação (qual tema em qual
-// andar), o requisito (local ao andar) e a dureza. Assim cada torre é única.
+// andar). Assim cada torre é única.
 //
 // Temas de T1 são reaproveitados do conteúdo já escrito (CAMARAS_SECRETAS vira
 // catálogo de temas, não mais colocações fixas). Temas de T2 ("O Intervalo",
 // andares 21–40) são novos, seguindo o LORE_BIBLE.
 
-import { CAMARAS_SECRETAS, capituloDoAndar, type ProfissaoId } from '../lib/game-data';
+import { CAMARAS_SECRETAS, capituloDoAndar, type ProfissaoId } from '../../lib/game-data';
 
 export interface TemaCamara {
   titulo: string;
@@ -104,21 +104,3 @@ export function temasDoCapitulo(capitulo: number): TemaCamara[] {
   const maior = Math.max(...conhecidos);
   return TEMAS_T1[maior] ?? TEMAS_T2[maior] ?? [];
 }
-
-// ─── Requisitos (arquétipos, preferencialmente LOCAIS ao andar) ───────────────
-// Cada arquétipo instancia um RequisitoCamara escalado ao andar, com limiar
-// sorteado — a "receita" muda por jogador e não é globalmente compartilhável.
-export type RequisitoArquetipo =
-  | 'farms_andar'      // farmar ESTE andar N vezes
-  | 'mortes_andar'     // acumular mortes (global, mas limiar sorteado)
-  | 'quest_habitante'  // concluir a quest do habitante do andar
-  | 'npc_raridade'     // ter N moradores de raridade X
-  | 'recurso_minimo';  // estocar N de um recurso
-
-export const REQUISITOS_POOL: ReadonlyArray<{ item: RequisitoArquetipo; peso: number }> = [
-  { item: 'farms_andar', peso: 4 },
-  { item: 'quest_habitante', peso: 2 },
-  { item: 'mortes_andar', peso: 2 },
-  { item: 'npc_raridade', peso: 2 },
-  { item: 'recurso_minimo', peso: 2 },
-];

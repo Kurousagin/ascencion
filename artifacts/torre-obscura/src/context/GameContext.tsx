@@ -22,9 +22,9 @@ import {
   RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
 import {
-  camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, calcExploracaoCamara,
+  camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, chanceAbrirCamara,
   sortearRecompensaCamara, type CamaraSecreta,
-} from '../camara-engine';
+} from '../floor-engine';
 import {
   verificarQuestAndar, verificarQuestOculta, gerarQuestOculta, gerarObjetivosDoDia,
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
@@ -1005,17 +1005,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
-      // Descoberta de câmaras: só a(s) câmara(s) do ANDAR recém-explorado podem ser
-      // reveladas nesta volta — a descoberta é fruto de explorar aquele andar e,
-      // no retorno, perceber que o requisito foi atingido (narrativa da janela
-      // dourada). Evita revelar câmaras de andares distantes por um requisito global.
+      // PISTA de câmara: só a(s) câmara(s) do ANDAR recém-explorado podem ter a
+      // pista revelada nesta volta — fruto de explorar aquele andar e, no retorno,
+      // perceber que o requisito ESTRITO foi atingido. A pista (est.descoberta) NÃO
+      // abre a câmara: investigar depois é uma rolagem (ver explorarCamaraSecreta).
       Object.entries(camarasDaTorre(s)).forEach(([camaraId, camara]) => {
         if (camara.floor !== floorData.floor) return;
         if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
           if (!s.camarasSecretasEstado[camaraId]) s.camarasSecretasEstado[camaraId] = { descoberta: true, tentativas: 0, encontrada: false };
           else s.camarasSecretasEstado[camaraId].descoberta = true;
-          registrarAcontecimento(s, 'descoberta', `CÂMARA SECRETA REVELADA — ${camara.titulo} (Andar ${camara.floor}) pode ser explorada!`);
+          registrarAcontecimento(s, 'descoberta', `PISTA ENCONTRADA — algo se esconde no Andar ${camara.floor}. Investigue a pista para tentar revelá-lo.`);
           // Enfileira para o modal de evento que chama a atenção do jogador.
           s.camarasNovasDescobertas = [...(s.camarasNovasDescobertas ?? []), camaraId];
         }
@@ -1637,11 +1637,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ─── CÂMARAS SECRETAS ────────────────────────────────────────────────────
-  // Explora uma câmara descoberta como uma EXPEDIÇÃO: o grupo escolhido enfrenta
-  // a câmara (poder do grupo vs dificuldade — ver calcExploracaoCamara). Sucesso
-  // revela a lore (loreGanho) e concede a recompensa; falha gasta uma tentativa e
-  // pode matar moradores (mortalidade escalada pela fadiga do grupo). Chave por
-  // camaraId (ex.: "5_1"). Custo de comida cobrado por tentativa.
+  // Investiga a PISTA de uma câmara: ter a pista (est.descoberta) NÃO garante
+  // sucesso. Cada tentativa é uma ROLAGEM (chanceAbrirCamara — chance nunca 0/100%,
+  // cresce com o over-level do grupo vs dificuldade estocástica). Sucesso revela a
+  // lore + recompensa; falha gasta a tentativa e pode matar (mortalidade escalada
+  // pela fadiga). Chave por camaraId (ex.: "5_1"). Custo de comida por tentativa.
   const explorarCamaraSecreta = (camaraId: string, npcIds: string[]) => {
     if (!state || npcIds.length === 0) return;
     const camara: CamaraSecreta | undefined = camarasDaTorre(state)[camaraId];
@@ -1654,13 +1654,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     const group = s.npcs.filter(n => npcIds.includes(n.id) && n.vivo && !n.emExpedicao && !n.emGuerra);
     if (group.length === 0) return;
+    // Pré-check de comida: bloqueia (sem soft-lock, sem comida negativa, tentativa
+    // NÃO gasta). Falhas consecutivas nunca zeram a comida à força aqui — a inanição
+    // (diasSemComida) e a exaustão seguem pelo processDay/npc-engine, desacopladas.
     if (s.recursos.comida < camara.custo) return;
     s.recursos.comida -= camara.custo;
     est.tentativas += 1;
 
     const ef = getEfeitos(s.edificios, s.npcs);
     const cap = ef.capacidadeArmazem;
-    const { poder, dificuldade, sucesso, chanceMorteFalha, desempenho } = calcExploracaoCamara(camara, group, ef.poderBonus);
+    const { poder, dificuldade, chance, chanceMorteFalha, desempenho } = chanceAbrirCamara(camara, group, ef.poderBonus);
+    const sucesso = Math.random() < chance;  // rolagem estocástica (nunca garantida)
     const r = camara.resultado;
     const mortos: string[] = [];
     const recompensas: string[] = [];
@@ -1733,7 +1737,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (disponivel) { s.reliquias = [...(s.reliquias ?? []), disponivel]; recompensas.push(`Relíquia: ${disponivel}`); }
       }
 
-      addLog(s, 'descoberta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.sucessoTexto}${recompensas.length ? ` [${recompensas.join(' · ')}]` : ''}`);
+      registrarAcontecimento(s, 'descoberta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.sucessoTexto}${recompensas.length ? ` [${recompensas.join(' · ')}]` : ''}`);
     } else {
       if (r.recursosPerdidos?.comida)  s.recursos.comida  = Math.max(0, s.recursos.comida  - r.recursosPerdidos.comida);
       if (r.recursosPerdidos?.madeira) s.recursos.madeira = Math.max(0, s.recursos.madeira - r.recursosPerdidos.madeira);
@@ -1751,7 +1755,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       mortos.forEach(nome => addLog(s, 'morte', `${nome.toUpperCase()} não voltou da ${camara.titulo} (Andar ${camara.floor}).`));
-      addLog(s, 'alerta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.falhaTexto}`);
+      // Micro-log de falha imersivo (tom "a Torre omite, nunca mente") — vai ao feed.
+      registrarAcontecimento(s, 'alerta', `${camara.titulo.toUpperCase()} (Andar ${camara.floor}) — ${r.falhaTexto} A Torre apenas omite.`);
     }
 
     s.camarasSecretasEstado[camaraId] = est;

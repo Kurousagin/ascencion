@@ -1,63 +1,33 @@
-// ─── Geração procedural das câmaras da torre ──────────────────────────────────
-// A partir da `camaraSeed` do save, monta o conjunto de câmaras — colocação de
-// temas por andar + requisito local + dureza — de forma determinística. Mesma
-// seed → mesma torre; seeds diferentes → torres diferentes (anti-guia).
+// ─── Geração procedural do ECOSSISTEMA de cada andar ─────────────────────────
+// A partir da `camaraSeed` do save, monta as câmaras de cada andar — colocação de
+// temas + requisito (pista) local + dureza — de forma determinística. Mesma seed →
+// mesma torre; seeds diferentes → torres diferentes (anti-guia). Os ids são
+// ESTÁVEIS por (seed, floor) — `${floor}_${idx}` — garantindo que estado/pistas
+// persistidos nunca fiquem pendurados (ver FloorEcosystem/activeClues).
 
-import { HABITANTES, capituloDoAndar, type GameState, type CamaraSecreta, type RequisitoCamara } from '../lib/game-data';
-import { mulberry32, rngPara, rngInt, rngPick, rngWeighted, type Rng } from './rng';
-import { temasDoCapitulo, REQUISITOS_POOL, type TemaCamara } from './pools';
+import { capituloDoAndar, type GameState, type CamaraSecreta } from '../lib/game-data';
+import { mulberry32, rngPara, rngInt, rngWeighted, type Rng } from './rng';
+import { temasDoCapitulo, type TemaCamara } from './pools/temas';
+import { REQUISITOS_POOL, montarRequisito } from './pools/requisitos';
 
 // Até onde geramos câmaras nesta fase (T1 + T2). 41–100 estende os pools depois.
 const ANDAR_MAX = 40;
 const BOSS = new Set([5, 10, 15, 20, 25, 30, 35, 40]);
 
-function montarRequisito(floor: number, rng: Rng): RequisitoCamara {
-  let arq = rngWeighted(rng, REQUISITOS_POOL);
-  // quest_habitante só existe em andar com habitante (não-chefe).
-  if (arq === 'quest_habitante' && (BOSS.has(floor) || !HABITANTES[floor])) arq = 'farms_andar';
-
-  switch (arq) {
-    case 'farms_andar': {
-      const minFarms = rngInt(rng, 2, 4);
-      return { tipo: 'farms_andar', floor, minFarms,
-        textoRequisito: `Explorar o Andar ${floor} ${minFarms} vezes revela a passagem escondida.` };
-    }
-    case 'quest_habitante':
-      return { tipo: 'quest_habitante', floor,
-        textoRequisito: `Concluir a história do morador do Andar ${floor} desvela a câmara.` };
-    case 'mortes_andar': {
-      const minMortes = rngInt(rng, 3, 3 + Math.floor(floor / 4));
-      return { tipo: 'mortes_andar', minMortes,
-        textoRequisito: `Só depois de ${minMortes} perdas na Torre a fenda se abre.` };
-    }
-    case 'npc_raridade': {
-      const raridade = rngPick(rng, ['incomum', 'raro'] as const);
-      const quantidade = rngInt(rng, 2, 3);
-      return { tipo: 'npc_raridade', raridade, quantidade,
-        textoRequisito: `Reunir ${quantidade} moradores ${raridade}s para pressentir o oculto.` };
-    }
-    case 'recurso_minimo': {
-      const recurso = rngPick(rng, ['comida', 'madeira', 'pedra', 'ferro'] as const);
-      const quantidade = (floor * 15) + rngInt(rng, 0, 40);
-      return { tipo: 'recurso_minimo', recurso, quantidade,
-        textoRequisito: `Acumular ${quantidade} de ${recurso} atrai o que estava escondido.` };
-    }
-  }
-}
-
-function montarCamara(floor: number, idx: number, tema: TemaCamara, rng: Rng): CamaraSecreta {
-  // Dureza: default 1.25×; chefes e sorteios raros ficam mais duros.
-  let multiplicador = 1.25;
+function montarCamara(floor: number, tema: TemaCamara, rng: Rng): CamaraSecreta {
+  // Dureza: default 1.5×; chefes e sorteios raros ficam ainda mais duros.
+  let multiplicador = 1.5;
   if (BOSS.has(floor)) multiplicador += 0.2;
   if (rng() < 0.15) multiplicador += rngInt(rng, 1, 3) / 10; // pico raro
   const moralBonus = rngInt(rng, 2, 5);
   const custo = 12 + floor + rngInt(rng, 0, 8);
+  const arq = rngWeighted(rng, REQUISITOS_POOL);
   return {
     floor,
     titulo: tema.titulo,
     icone: tema.icone,
     descricao: tema.descricao,
-    requisito: montarRequisito(floor, rng),
+    requisito: montarRequisito(floor, arq, rng),
     tipo: 'benéfica',
     dificuldade: 10 + floor,              // legado (não lido; dificuldadeCamara escala pelo andar)
     multiplicadorDificuldade: Math.round(multiplicador * 100) / 100,
@@ -84,7 +54,7 @@ export function gerarCamarasDoAndar(floor: number, seedBase: number): Record<str
   for (let i = 0; i < qtd && temas.length > 0; i++) {
     const ti = Math.floor(rng() * temas.length);
     const tema = temas.splice(ti, 1)[0];
-    out[`${floor}_${i + 1}`] = montarCamara(floor, i + 1, tema, rng);
+    out[`${floor}_${i + 1}`] = montarCamara(floor, tema, rng);
   }
   return out;
 }
@@ -107,6 +77,31 @@ export function camarasDaTorre(state: Pick<GameState, 'camaraSeed'>): Record<str
   cacheSeed = seed;
   cache = todas;
   return todas;
+}
+
+// ─── Ecossistema do andar (gancho para o futuro) ─────────────────────────────
+// Objeto unificado do andar: hoje câmaras + pistas ativas; preparado para receber
+// `encounters`/`localEvents`. `activeClues` é uma PROJEÇÃO derivada do estado
+// persistido (camarasSecretasEstado[id].descoberta) sobre ids ESTÁVEIS — não é um
+// buffer armazenado, então trocar de andar não gera/perde nada. Orphan-safe: só
+// lista ids cuja câmara existe no ecossistema regenerado.
+export interface FloorEcosystem {
+  floor: number;
+  chambers: Record<string, CamaraSecreta>;
+  activeClues: string[];
+  // futuro: encounters?: ...; localEvents?: ...
+}
+
+export function ecossistemaDoAndar(
+  state: Pick<GameState, 'camaraSeed' | 'camarasSecretasEstado'>,
+  floor: number,
+): FloorEcosystem {
+  const seed = state.camaraSeed;
+  const chambers = seed == null ? {} : gerarCamarasDoAndar(floor, seed);
+  const activeClues = Object.keys(chambers).filter(
+    id => state.camarasSecretasEstado?.[id]?.descoberta && !state.camarasSecretasEstado?.[id]?.encontrada,
+  );
+  return { floor, chambers, activeClues };
 }
 
 // Seed nova para um save (deriva do deviceId quando disponível + entropia).

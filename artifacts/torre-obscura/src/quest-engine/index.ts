@@ -1,6 +1,6 @@
 // ─── quest-engine — motor de quests ───────────────────────────────────────────
 // Façade única dos 3 subsistemas de quest: quests de Habitante, Quests Ocultas e
-// Metas Diárias. Espelha npc-engine/camara-engine: por ora RE-EXPORTA as regras
+// Metas Diárias. Espelha npc-engine/floor-engine: por ora RE-EXPORTA as regras
 // puras + tipos de game-data; a orquestração de estado segue no GameContext, mas
 // consumindo daqui. Direção única GameContext → quest-engine → game-data.
 
