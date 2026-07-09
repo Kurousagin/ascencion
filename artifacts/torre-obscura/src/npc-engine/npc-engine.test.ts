@@ -8,6 +8,7 @@ import { sistemaConvivio } from './systems/convivio';
 import { aplicarLuto } from './grief';
 import { promoverParaNobre } from './houses';
 import { humorDe } from './mood';
+import { sistemaVinculosTipados, tipoVinculo, bonusMentor } from './systems/vinculos-tipados';
 
 let idc = 0;
 const mkNpc = (over: Partial<NPC> = {}): NPC => ({
@@ -149,6 +150,63 @@ describe('promoverParaNobre', () => {
     const npc = mkNpc({ raridade: 'Comum' });
     const s = mkState([npc]);
     expect(promoverParaNobre(s, npc, seq([0]))).toBeNull();
+  });
+});
+
+describe('sistemaVinculosTipados', () => {
+  it('romance nasce com afinidade alta e rng favorável — e é exclusivo', () => {
+    const a = mkNpc(); const b = mkNpc(); const c = mkNpc();
+    const s = mkState([a, b, c], { vinculosEspeciais: {} });
+    ajustarAfinidade(s, a.id, b.id, 80);
+    ajustarAfinidade(s, a.id, c.id, 80);
+    sistemaVinculosTipados.processarDia(ctx(s, colonia(), seq([0]))); // rng 0 → dispara o 1º par
+    const especiais = Object.values(s.vinculosEspeciais!);
+    expect(especiais).toEqual(['romance']); // só 1 arco por dia
+    const par = Object.keys(s.vinculosEspeciais!)[0].split('__');
+    // Quem já está em romance não inicia outro no dia seguinte.
+    sistemaVinculosTipados.processarDia(ctx(s, colonia(), seq([0])));
+    const romances = Object.values(s.vinculosEspeciais!).filter(t => t === 'romance');
+    expect(romances.length).toBe(1);
+    expect(par).toContain(a.id);
+  });
+
+  it('mentoria exige diferença de calibre e dá tipo ao par', () => {
+    const mentor = mkNpc({ forca: 25 });
+    const aprendiz = mkNpc({ forca: 5 });
+    const s = mkState([mentor, aprendiz], { vinculosEspeciais: {} });
+    ajustarAfinidade(s, mentor.id, aprendiz.id, 40); // amizade ainda não (≥50), mentoria sim (≥30)
+    sistemaVinculosTipados.processarDia(ctx(s, colonia(), seq([0])));
+    expect(tipoVinculo(s, mentor.id, aprendiz.id)).toBe('mentoria');
+    expect(bonusMentor(s, aprendiz, 'forca')).toBe(1);
+    expect(bonusMentor(s, mentor, 'forca')).toBe(0); // o mais forte não tem mentor
+  });
+
+  it('dissolução: arco esfria quando a afinidade despenca', () => {
+    const a = mkNpc(); const b = mkNpc();
+    const s = mkState([a, b], { vinculosEspeciais: { [parKey(a.id, b.id)]: 'romance' } });
+    ajustarAfinidade(s, a.id, b.id, 5); // abaixo de AF_DISSOLUCAO (20)
+    sistemaVinculosTipados.processarDia(ctx(s, colonia(), seq([0.99])));
+    expect(s.vinculosEspeciais![parKey(a.id, b.id)]).toBeUndefined();
+  });
+
+  it('tipoVinculo deriva amizade/rivalidade da afinidade', () => {
+    const s = mkState([]);
+    ajustarAfinidade(s, 'a', 'b', 60);
+    ajustarAfinidade(s, 'a', 'c', -50);
+    ajustarAfinidade(s, 'a', 'd', 10);
+    expect(tipoVinculo(s, 'a', 'b')).toBe('amizade');
+    expect(tipoVinculo(s, 'a', 'c')).toBe('rivalidade');
+    expect(tipoVinculo(s, 'a', 'd')).toBeNull();
+  });
+
+  it('luto de romance dói o dobro e limpa o arco do morto', () => {
+    const viuva = mkNpc({ sanidade: 80, lealdade: 80 });
+    const s = mkState([viuva], { vinculosEspeciais: { [parKey(viuva.id, 'morto')]: 'romance' } });
+    ajustarAfinidade(s, viuva.id, 'morto', 80);
+    aplicarLuto(s, 'morto', 'Morto');
+    expect(viuva.sanidade).toBe(60); // −(2 + 80/10) × 2
+    expect(viuva.lealdade).toBe(72); // −(80/20) × 2
+    expect(s.vinculosEspeciais![parKey(viuva.id, 'morto')]).toBeUndefined();
   });
 });
 
