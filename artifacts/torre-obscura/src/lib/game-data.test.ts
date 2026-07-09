@@ -1,15 +1,30 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
-  debitarArmazem, creditarArmazem,
-  dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
-  idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
-  getMsPerDay, MS_PER_GAME_DAY_BASE, verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
+  debitarArmazem, creditarArmazem, sortearRecompensaCamara,
+  getMsPerDay, MS_PER_GAME_DAY_BASE, calcNpcPower, gerarNomeNpc,
+  temporadaDeAndar, temporadaAtiva, andarMaxTemporada,
   avancarGuerra, getEfeitos,
-  type CamaraSecreta, type NPC, type ProfissaoId, type GameState, type GuerraAtiva,
+  type NPC, type GameState, type GuerraAtiva,
 } from './game-data';
 
 const armazem = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over });
 const base = () => ({ comida: 100, madeira: 50, pedra: 30, ferro: 10, capacidadeArmazem: 300 });
+
+describe('selectors de temporada', () => {
+  it('temporadaDeAndar mapeia andares em temporadas (20/andar)', () => {
+    expect(temporadaDeAndar(1)).toBe(1);
+    expect(temporadaDeAndar(20)).toBe(1);
+    expect(temporadaDeAndar(21)).toBe(2);
+    expect(temporadaDeAndar(40)).toBe(2);
+    expect(temporadaDeAndar(100)).toBe(5);
+  });
+  it('temporadaAtiva + andarMaxTemporada seguem o desbloqueio de T2', () => {
+    expect(temporadaAtiva(false)).toBe(1);
+    expect(temporadaAtiva(true)).toBe(2);
+    expect(andarMaxTemporada(false)).toBe(20);
+    expect(andarMaxTemporada(true)).toBe(40);
+  });
+});
 
 describe('getMsPerDay (duração real do dia de jogo)', () => {
   it('base é 2h e escala com a velocidade', () => {
@@ -63,69 +78,9 @@ describe('creditarArmazem (recebimento / estorno)', () => {
 });
 
 // ─── Câmaras secretas ─────────────────────────────────────────────────────────
-
-// Só os 4 stats importam para getProfissao/afinidade; o resto é casteado.
-const mkNpc = (prof: ProfissaoId): NPC => {
-  const stats = { forca: 1, agilidade: 1, inteligencia: 1, resistencia: 1 };
-  const key = prof === 'combatente' ? 'forca' : prof === 'batedor' ? 'agilidade' : prof === 'erudito' ? 'inteligencia' : 'resistencia';
-  stats[key] = 10;
-  return stats as unknown as NPC;
-};
-
-const mkCamara = (over: Partial<CamaraSecreta>): CamaraSecreta => ({
-  floor: 20, titulo: 't', icone: '?', descricao: 'd',
-  requisito: { tipo: 'mortes_andar', minMortes: 1, textoRequisito: '' },
-  tipo: 'benéfica', dificuldade: 18, custo: 20, maxTentativas: 3, chancePerTentativa: 0.4,
-  resultado: { sucessoTexto: 's', falhaTexto: 'f' },
-  ...over,
-});
-
-describe('dificuldadeCamara (escala ao andar)', () => {
-  it('usa 1.25× a dificuldade do andar por padrão', () => {
-    expect(dificuldadeCamara(mkCamara({ floor: 20 }))).toBe(Math.round(230 * 1.25)); // 288
-    expect(dificuldadeCamara(mkCamara({ floor: 5 }))).toBe(Math.round(42 * 1.25));    // 53
-  });
-
-  it('respeita multiplicadorDificuldade quando definido', () => {
-    expect(dificuldadeCamara(mkCamara({ floor: 20, multiplicadorDificuldade: 1.5 }))).toBe(Math.round(230 * 1.5)); // 345
-  });
-
-  it('é muito maior que o campo legado para andares altos', () => {
-    const cam = mkCamara({ floor: 20, dificuldade: 18 });
-    expect(dificuldadeCamara(cam)).toBeGreaterThan(cam.dificuldade * 10);
-  });
-
-  it('câmaras curadas pela lore são mais duras que o padrão do andar', () => {
-    const curadas: Record<string, number> = {
-      'Câmara da Primeira Verdade': Math.round(230 * 1.6),   // 368
-      'Câmara da Entidade Dormida': Math.round(230 * 1.5),   // 345
-      'Câmara da Pergunta Sem Resposta': Math.round(155 * 1.5), // 233
-      'Câmara do Limiar': Math.round(42 * 1.35),             // 57
-    };
-    Object.values(CAMARAS_SECRETAS).forEach(cam => {
-      const esperado = curadas[cam.titulo];
-      if (esperado === undefined) return;
-      expect(cam.multiplicadorDificuldade).toBeDefined();
-      expect(dificuldadeCamara(cam)).toBe(esperado);
-    });
-  });
-});
-
-describe('calcAfinidadeCamara (grupo temático)', () => {
-  const camBatedor = mkCamara({ requisito: { tipo: 'class_farms', profissao: 'batedor', minFarmsComClasse: 8, textoRequisito: '' } });
-
-  it('bonifica grupo majoritariamente temático (+30%)', () => {
-    expect(calcAfinidadeCamara([mkNpc('batedor'), mkNpc('batedor'), mkNpc('combatente')], camBatedor)).toBe(1.30);
-  });
-
-  it('penaliza grupo destoante (−20%)', () => {
-    expect(calcAfinidadeCamara([mkNpc('combatente'), mkNpc('erudito')], camBatedor)).toBe(0.80);
-  });
-
-  it('é neutro quando o requisito não tem profissão temática', () => {
-    expect(calcAfinidadeCamara([mkNpc('combatente')], mkCamara({}))).toBe(1.0);
-  });
-});
+// As regras de câmara (dificuldadeCamara, calcAfinidadeCamara, verificarRequisitoCamara,
+// chanceAbrirCamara) vivem e são testadas em floor-engine.test.ts. Aqui fica só a
+// recompensa por desempenho, que permanece em game-data.
 
 describe('sortearRecompensaCamara (bônus por desempenho)', () => {
   // rng estável a partir de uma sequência de valores.
@@ -158,29 +113,6 @@ const stateReq = (over: Partial<GameState>): GameState => ({
   recursos: { comida: 0, madeira: 0, pedra: 0, ferro: 0, capacidadeArmazem: 300 },
   ...over,
 } as unknown as GameState);
-
-describe('verificarRequisitoCamara — npc_raridade por tier', () => {
-  it('Épico satisfaz requisito de "raro" (bug antigo omitia Raro)', () => {
-    const s = stateReq({ npcs: [npcFull({ raridade: 'Épico' }), npcFull({ raridade: 'Épico' })] });
-    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 2, textoRequisito: '' })).toBe(true);
-  });
-  it('conta Raro exato', () => {
-    const s = stateReq({ npcs: [npcFull({ raridade: 'Raro' })] });
-    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 2, textoRequisito: '' })).toBe(false);
-  });
-  it('Comum não satisfaz "raro"', () => {
-    const s = stateReq({ npcs: [npcFull({ raridade: 'Comum' }), npcFull({ raridade: 'Comum' })] });
-    expect(verificarRequisitoCamara(s, { tipo: 'npc_raridade', raridade: 'raro', quantidade: 1, textoRequisito: '' })).toBe(false);
-  });
-});
-
-describe('verificarRequisitoCamara — combinado class_farms soma todas as classes', () => {
-  it('soma farms de qualquer profissão (antes somava 0)', () => {
-    const s = stateReq({ farmsPorAndarEClasse: { 5: { combatente: 5, batedor: 4 } } as GameState['farmsPorAndarEClasse'] });
-    const req = { tipo: 'combinado' as const, conditions: [{ tipo: 'class_farms', value: 8 }, { tipo: 'mortes', value: 0 }], textoRequisito: '' };
-    expect(verificarRequisitoCamara(s, req)).toBe(true);
-  });
-});
 
 describe('calcNpcPower — sanidade influencia o poder', () => {
   it('sanidade baixa reduz o poder efetivo', () => {
@@ -278,15 +210,3 @@ describe('avancarGuerra (mortos do dia + feitos de vitória)', () => {
   });
 });
 
-describe('páginas de câmara no Codex', () => {
-  it('gera um fragmento cam_<id> para cada câmara com loreGanho', () => {
-    Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
-      if (!cam.resultado.loreGanho) return;
-      const frag = CODEX_FRAGMENTOS[idFragmentoCamara(key)];
-      expect(frag).toBeDefined();
-      expect(frag.tipo).toBe('camara');
-      expect(frag.titulo).toBe(cam.resultado.loreGanho.titulo);
-      expect(frag.capitulo).toBe(Math.ceil(cam.floor / 5));
-    });
-  });
-});
