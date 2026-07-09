@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
 import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
-import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM, TEMPORADAS, temporadaAtiva } from '../lib/game-data';
+import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
 import { METAS_DIARIAS_META } from '../quest-engine';
 import {
   isPushSupported,
@@ -71,24 +71,6 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       <header className="pb-1.5 border-b border-primary/30 relative">
         <h2 className="text-xl font-cinzel font-bold tracking-widest text-primary">OBSERVATÓRIO</h2>
       </header>
-
-      {/* ── Faixa da temporada ativa (muda visualmente ao desbloquear a T2) ── */}
-      {(() => {
-        const temp = TEMPORADAS[temporadaAtiva(t2Desbloqueado)];
-        return (
-          <div
-            className="rounded px-3 py-1.5 flex items-center justify-between border"
-            style={{ borderColor: `${temp.corTema}55`, backgroundColor: `${temp.corTema}12` }}
-          >
-            <span className="text-[11px] font-cinzel tracking-[0.2em]" style={{ color: temp.corTema }}>
-              TEMPORADA {temp.numero === 1 ? 'I' : 'II'} · {temp.nome.toUpperCase()}
-            </span>
-            <span className="text-[10px] text-white/45">
-              {t2Desbloqueado ? 'O véu entre as temporadas se rasgou' : 'A Torre parece acabar no vigésimo'}
-            </span>
-          </div>
-        );
-      })()}
 
       {/* ── VITALS SECTION (above the fold) ─────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2">
