@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
 import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
-import { humorDe, vinculosDe } from '../npc-engine';
+import { humorDe, vinculosDe, tipoVinculo, type TipoVinculo } from '../npc-engine';
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -123,8 +123,8 @@ export function People() {
     const humor = humorDe(npc);
     const humorCor = humor.tom === 'bom' ? 'text-success' : humor.tom === 'critico' ? 'text-destructive' : humor.tom === 'ruim' ? 'text-warning' : 'text-secondary';
     const vinculosResolvidos = vinculosDe(state, npc.id)
-      .map(v => { const o = state.npcs.find(n => n.id === v.id && n.vivo); return o ? { id: v.id, nome: o.nome, afinidade: v.afinidade } : null; })
-      .filter((v): v is { id: string; nome: string; afinidade: number } => v !== null);
+      .map(v => { const o = state.npcs.find(n => n.id === v.id && n.vivo); return o ? { id: v.id, nome: o.nome, afinidade: v.afinidade, tipo: tipoVinculo(state, npc.id, v.id) } : null; })
+      .filter((v): v is { id: string; nome: string; afinidade: number; tipo: TipoVinculo | null } => v !== null);
     const aliados = vinculosResolvidos.filter(v => v.afinidade > 0).slice(0, 2);
     const rival = vinculosResolvidos.filter(v => v.afinidade < 0).slice(-1);
     const vinculosMostrar = [...aliados, ...rival];
@@ -283,14 +283,19 @@ export function People() {
                   <div>
                     <div className="text-[9px] text-secondary tracking-widest mb-1">VÍNCULOS</div>
                     <div className="flex flex-wrap gap-1">
-                      {vinculosMostrar.map(v => (
-                        <span
-                          key={v.id}
-                          className={`text-[9px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
-                        >
-                          {v.afinidade >= 0 ? '♥' : '⚔'} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
-                        </span>
-                      ))}
+                      {vinculosMostrar.map(v => {
+                        const icone = v.tipo === 'romance' ? '❤' : v.tipo === 'mentoria' ? '★' : v.afinidade >= 0 ? '♥' : '⚔';
+                        const rotulo = v.tipo === 'romance' ? 'Romance' : v.tipo === 'mentoria' ? 'Mentoria' : v.tipo === 'amizade' ? 'Amizade' : v.tipo === 'rivalidade' ? 'Rivalidade' : undefined;
+                        return (
+                          <span
+                            key={v.id}
+                            title={rotulo}
+                            className={`text-[9px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                          >
+                            {icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>{rotulo && <span className="opacity-70">· {rotulo}</span>}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

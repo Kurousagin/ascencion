@@ -30,3 +30,15 @@ export function humorDe(npc: NPC): Humor {
   }
   return { rotulo: 'Estável', tom: 'neutro' };
 }
+
+// Multiplicador de eficiência derivado do humor — usado em produção (via o
+// parâmetro `fatorNpc` de getEfeitos) e no poder de expedição. O humor passa a
+// ter consequência: gente abalada rende menos, gente radiante rende um pouco mais.
+export function fatorHumor(npc: NPC): number {
+  switch (humorDe(npc).tom) {
+    case 'bom':     return 1.05;
+    case 'ruim':    return 0.9;
+    case 'critico': return 0.75;
+    default:        return 1;
+  }
+}
