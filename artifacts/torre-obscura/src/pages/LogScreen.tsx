@@ -31,7 +31,7 @@ export function LogScreen() {
             return (
               <div key={l.id} className="relative pl-8">
                 <div className={`absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full ${styles.dot} z-10 outline outline-4 outline-[#0D1117]`} />
-                <div className="text-[10px] font-mono text-muted-foreground mb-1 tracking-wider bg-[#161B22] w-max px-1.5 py-0.5 rounded-sm border border-white/5">
+                <div className="text-[12px] font-mono text-muted-foreground mb-1 tracking-wider bg-[#161B22] w-max px-1.5 py-0.5 rounded-sm border border-white/5">
                   [DIA {l.dia.toString().padStart(3, '0')}]
                 </div>
                 <div className={`text-sm font-inter leading-relaxed ${styles.text}`}>

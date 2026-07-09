@@ -74,33 +74,33 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       {/* ── VITALS SECTION (above the fold) ─────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col items-center justify-center">
-          <span className="text-[8px] text-secondary tracking-widest mb-0.5">DIA</span>
+          <span className="text-[10px] text-secondary tracking-widest mb-0.5">DIA</span>
           <span className="text-2xl text-primary font-bold font-cinzel">{state.dia}</span>
         </div>
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col justify-center">
-          <span className="text-[8px] text-secondary tracking-widest mb-0.5">ANDARES</span>
+          <span className="text-[10px] text-secondary tracking-widest mb-0.5">ANDARES</span>
           <span className="text-lg text-foreground font-bold font-cinzel">{Math.min(state.andarAtual - 1, t2Desbloqueado ? 40 : 20)}/{t2Desbloqueado ? 40 : 20}</span>
         </div>
 
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col justify-center">
-          <span className="text-[8px] text-secondary tracking-widest mb-0.5">MORAL</span>
+          <span className="text-[10px] text-secondary tracking-widest mb-0.5">MORAL</span>
           <span className={`text-lg font-bold font-cinzel ${getMoralColor(state.moral)}`}>{Math.round(state.moral)}%</span>
         </div>
       </div>
 
       {/* ── POPULATION (full width) ────────────────────────────────────── */}
-      <div className={`border p-2 rounded text-[10px] flex justify-between items-center ${
+      <div className={`border p-2 rounded text-[12px] flex justify-between items-center ${
         superlotado ? 'bg-destructive/10 border-destructive/50' : 'bg-[#1C2333] border-primary/30'
       }`}>
         <span className={`tracking-widest font-cinzel ${superlotado ? 'text-destructive' : 'text-secondary'}`}>
           POPULAÇÃO: {proprios}/{cap} {superlotado && <span className="animate-pulse">⚠ +{excedente}</span>}
         </span>
-        {vivos !== proprios && <span className="text-muted-foreground text-[9px]">+{vivos - proprios} hóspedes</span>}
+        {vivos !== proprios && <span className="text-muted-foreground text-[11px]">+{vivos - proprios} hóspedes</span>}
       </div>
 
       {/* ── METAS DE HOJE ──────────────────────────────────────────────────── */}
       <div className="space-y-1">
-        <span className="text-[9px] text-secondary tracking-widest block">METAS DE HOJE</span>
+        <span className="text-[11px] text-secondary tracking-widest block">METAS DE HOJE</span>
         <div className="bg-[#1C2333] border border-primary/30 rounded p-2 space-y-1.5">
           {md.objetivos.map(id => {
             const meta = METAS_DIARIAS_META[id];
@@ -110,7 +110,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
                 <span className={`text-lg leading-none shrink-0 ${feito ? '' : 'opacity-50'}`}>{meta.icone}</span>
                 <div className="flex-1 min-w-0">
                   <div className={`text-xs font-cinzel font-bold leading-tight ${feito ? 'text-success' : 'text-foreground'}`}>{meta.titulo}</div>
-                  <div className="text-[9px] text-secondary/60 leading-tight">{meta.descricao}</div>
+                  <div className="text-[11px] text-secondary/60 leading-tight">{meta.descricao}</div>
                 </div>
               </div>
             );
@@ -138,7 +138,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
 
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] text-secondary tracking-widest">VELOCIDADE</span>
+          <span className="text-[11px] text-secondary tracking-widest">VELOCIDADE</span>
           <div className="flex gap-1">
             {[1, 2, 5].map(spd => (
               <button
@@ -177,13 +177,13 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         onClick={() => setExpandedSection(expandedSection === 'construcoes' ? null : 'construcoes')}
         className="w-full flex items-center justify-between px-2 py-1.5 bg-[#1C2333] border border-primary/30 rounded hover:border-primary/50 transition-all text-left"
       >
-        <span className="text-[9px] font-cinzel text-primary tracking-widest flex items-center gap-1">
+        <span className="text-[11px] font-cinzel text-primary tracking-widest flex items-center gap-1">
           <Hammer size={11} /> CONSTRUÇÕES
         </span>
         <ChevronDown size={12} className={`transition-transform ${expandedSection === 'construcoes' ? 'rotate-180' : ''}`} />
       </button>
       {expandedSection === 'construcoes' && (
-        <div className="grid grid-cols-2 gap-1 text-[9px]">
+        <div className="grid grid-cols-2 gap-1 text-[11px]">
           {(['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'] as EdificioTipo[]).map(tipo => {
             const edificio = state.edificios.find(e => e.tipo === tipo);
             const nivelAtual = edificio?.nivel || 0;
@@ -198,7 +198,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
                     <span className="text-success font-bold">{workers.length}</span>/{nivelAtual}
                   </span>
                 ) : (
-                  <span className="text-muted-foreground text-[8px] ml-1">L{nivelAtual}</span>
+                  <span className="text-muted-foreground text-[10px] ml-1">L{nivelAtual}</span>
                 )}
               </div>
             );
@@ -210,7 +210,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         onClick={() => setExpandedSection(expandedSection === 'intel' ? null : 'intel')}
         className="w-full flex items-center justify-between px-2 py-1.5 bg-[#1C2333] border border-primary/30 rounded hover:border-primary/50 transition-all text-left"
       >
-        <span className="text-[9px] font-cinzel text-primary tracking-widest flex items-center gap-1">
+        <span className="text-[11px] font-cinzel text-primary tracking-widest flex items-center gap-1">
           <ShieldAlert size={11} /> INTEL
         </span>
         <ChevronDown size={12} className={`transition-transform ${expandedSection === 'intel' ? 'rotate-180' : ''}`} />
@@ -220,7 +220,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
           {state.log.filter(l => ['alerta', 'morte', 'traicao'].includes(l.tipo)).slice(0, 5).map(l => {
             const isMorte = l.tipo === 'morte';
             return (
-              <div key={l.id} className={`flex gap-1.5 text-[9px] items-start p-1 rounded ${isMorte ? 'text-destructive/80' : 'text-warning/80'}`}>
+              <div key={l.id} className={`flex gap-1.5 text-[11px] items-start p-1 rounded ${isMorte ? 'text-destructive/80' : 'text-warning/80'}`}>
                 <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${isMorte ? 'bg-destructive' : 'bg-warning'}`} />
                 <div className="flex-1 min-w-0">
                   <span className="opacity-60 mr-1">D{l.dia}</span>
@@ -230,7 +230,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
             );
           })}
           {state.log.filter(l => ['alerta', 'morte', 'traicao'].includes(l.tipo)).length === 0 && (
-            <div className="text-[9px] text-muted-foreground italic px-2 py-1">sem eventos críticos</div>
+            <div className="text-[11px] text-muted-foreground italic px-2 py-1">sem eventos críticos</div>
           )}
         </div>
       )}

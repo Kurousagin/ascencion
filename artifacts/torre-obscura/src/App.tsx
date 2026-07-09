@@ -29,14 +29,14 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
   const gp = state?.guerraPendente;
   if (!gp) return null;
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[11px] animate-pulse">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[12px] animate-pulse">
       <span className="text-destructive font-bold tracking-wide flex items-center gap-1.5 min-w-0">
         ⚔ INVASÃO: <span className="font-normal truncate">{gp.rival.nome}</span>
         <span className="text-destructive/70 font-normal shrink-0">— {gp.prazoResposta} dia{gp.prazoResposta !== 1 ? 's' : ''} para responder</span>
       </span>
       <button
         onClick={onGoToWar}
-        className="shrink-0 px-2 py-1 bg-destructive text-destructive-foreground rounded-sm font-bold tracking-widest touch-manipulation text-[10px]"
+        className="shrink-0 px-2 py-1 bg-destructive text-destructive-foreground rounded-sm font-bold tracking-widest touch-manipulation text-[12px]"
       >
         DEFENDER
       </button>
@@ -143,7 +143,7 @@ function MainGameInner() {
     <>
     <WarProvider>
       <div
-        className="relative w-full h-dvh max-w-md mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
+        className="relative w-full h-dvh max-w-lg mx-auto bg-background border-x border-border shadow-2xl flex flex-col"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />

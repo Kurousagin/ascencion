@@ -363,7 +363,7 @@ export function Alliance() {
           <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
         </div>
         <span
-          className={`flex items-center gap-1 text-[10px] tracking-widest ${online ? "text-success" : "text-muted-foreground"}`}
+          className={`flex items-center gap-1 text-[12px] tracking-widest ${online ? "text-success" : "text-muted-foreground"}`}
         >
           {online ? <Wifi size={12} /> : <WifiOff size={12} />}
           {online ? "CONECTADO" : "OFFLINE"}
@@ -388,7 +388,7 @@ export function Alliance() {
           SEU CÓDIGO DE ALIANÇA
         </h3>
         <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 rounded-sm p-4">
-          <p className="text-[10px] text-secondary/80 mb-3 leading-relaxed">
+          <p className="text-[12px] text-secondary/80 mb-3 leading-relaxed">
             Compartilhe este código com suas aliadas para unir as cidadelas.
           </p>
           <div className="flex items-center gap-3">
@@ -405,7 +405,7 @@ export function Alliance() {
             </button>
           </div>
           {perfil && (
-            <div className="flex items-center gap-1.5 mt-3 text-[10px] text-secondary">
+            <div className="flex items-center gap-1.5 mt-3 text-[12px] text-secondary">
               <Pencil size={10} className="text-primary/60" /> Sua cidadela:{" "}
               <span className="text-foreground font-bold">{perfil.nome}</span>
             </div>
@@ -417,19 +417,19 @@ export function Alliance() {
       <section>
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
           <Handshake size={13} /> UNIR-SE A UMA ALIADA
-          <span className="ml-auto text-[10px] text-secondary normal-case tracking-normal">
+          <span className="ml-auto text-[12px] text-secondary normal-case tracking-normal">
             {numAliadas}/{maxAliadas} aliadas
           </span>
         </h3>
         <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
           {cheio ? (
-            <p className="text-[11px] text-warning leading-relaxed">
+            <p className="text-[12px] text-warning leading-relaxed">
               Você atingiu o limite de {maxAliadas} aliadas. Desfaça uma aliança
               para formar outra.
             </p>
           ) : (
             <>
-              <p className="text-[10px] text-secondary/80 leading-relaxed">
+              <p className="text-[12px] text-secondary/80 leading-relaxed">
                 Digite o código de uma aliada para formar uma aliança. Vocês
                 poderão trocar recursos e moradores.
               </p>
@@ -463,7 +463,7 @@ export function Alliance() {
           </h3>
 
           {aliadasCarregando && aliadas.length === 0 ? (
-            <div className="text-center text-[11px] text-muted-foreground py-6 border border-dashed border-card-border rounded-sm animate-pulse">
+            <div className="text-center text-[12px] text-muted-foreground py-6 border border-dashed border-card-border rounded-sm animate-pulse">
               Sincronizando aliadas...
             </div>
           ) : (
@@ -481,7 +481,7 @@ export function Alliance() {
                           {aliada.nome}
                         </div>
                         {aliada.resumo?.emGuerra && (
-                          <div className="text-[9px] px-2 py-1 bg-destructive/20 border border-destructive/50 rounded-sm text-destructive font-bold tracking-widest whitespace-nowrap">
+                          <div className="text-[11px] px-2 py-1 bg-destructive/20 border border-destructive/50 rounded-sm text-destructive font-bold tracking-widest whitespace-nowrap">
                             ⚔️ EM GUERRA
                           </div>
                         )}
@@ -491,7 +491,7 @@ export function Alliance() {
                           <button
                             onClick={() => handleDesfazer(aliada.deviceId)}
                             disabled={desfazendo === aliada.deviceId}
-                            className="min-h-[32px] px-2.5 text-[10px] font-bold rounded-sm border border-destructive text-destructive hover:bg-destructive hover:text-background transition-all active:scale-95 disabled:opacity-40 touch-manipulation"
+                            className="min-h-[32px] px-2.5 text-[12px] font-bold rounded-sm border border-destructive text-destructive hover:bg-destructive hover:text-background transition-all active:scale-95 disabled:opacity-40 touch-manipulation"
                           >
                             {desfazendo === aliada.deviceId
                               ? "..."
@@ -509,13 +509,13 @@ export function Alliance() {
                       ) : (
                         <button
                           onClick={() => setConfirmarDesfazer(aliada.deviceId)}
-                          className="min-h-[32px] px-2.5 flex items-center gap-1 text-[10px] font-bold rounded-sm border border-destructive/40 text-destructive/80 hover:border-destructive hover:text-destructive transition-all active:scale-95 touch-manipulation shrink-0"
+                          className="min-h-[32px] px-2.5 flex items-center gap-1 text-[12px] font-bold rounded-sm border border-destructive/40 text-destructive/80 hover:border-destructive hover:text-destructive transition-all active:scale-95 touch-manipulation shrink-0"
                         >
                           <Link2Off size={12} /> DESFAZER
                         </button>
                       )}
                     </div>
-                    <div className="flex gap-4 flex-wrap mt-3 text-[11px] relative z-10">
+                    <div className="flex gap-4 flex-wrap mt-3 text-[12px] relative z-10">
                       <span className="flex items-center gap-1 text-secondary">
                         <CalendarDays size={12} className="text-primary/70" />{" "}
                         Dia{" "}
@@ -544,7 +544,7 @@ export function Alliance() {
                         ).map((p) => (
                           <span
                             key={p}
-                            className={`text-[10px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? "bg-primary/10 border-primary/30 text-primary" : "bg-background/40 border-card-border text-muted-foreground"}`}
+                            className={`text-[12px] px-2 py-1 rounded-sm border ${aliada.resumo!.profissoes[p] > 0 ? "bg-primary/10 border-primary/30 text-primary" : "bg-background/40 border-card-border text-muted-foreground"}`}
                           >
                             {PROFISSOES[p].nome}{" "}
                             <span className="font-bold">
@@ -555,7 +555,7 @@ export function Alliance() {
                       </div>
                     )}
                     {confirmarDesfazer === aliada.deviceId && (
-                      <p className="text-[10px] text-destructive/90 mt-3 relative z-10">
+                      <p className="text-[12px] text-destructive/90 mt-3 relative z-10">
                         Desfazer encerra a troca de recursos e moradores com{" "}
                         {aliada.nome}. Empréstimos já em curso ainda retornam
                         normalmente.
@@ -564,7 +564,7 @@ export function Alliance() {
                   </div>
                 ))}
               </div>
-              <p className="text-[9px] text-muted-foreground mt-3">
+              <p className="text-[11px] text-muted-foreground mt-3">
                 Resumos sincronizados periodicamente — não é tempo real.
               </p>
             </>
@@ -597,7 +597,7 @@ export function Alliance() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none"
               />
             </div>
-            <p className="text-[9px] text-muted-foreground mt-2">
+            <p className="text-[11px] text-muted-foreground mt-2">
               Recursos, reforços e empréstimos abaixo vão para{" "}
               <span className="text-primary font-bold">{nomeAlvo}</span>.
             </p>
@@ -612,7 +612,7 @@ export function Alliance() {
               <div className="grid grid-cols-2 gap-3">
                 {RES_META.map(({ key, label, icon: Icon }) => (
                   <div key={key} className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                    <label className="text-[12px] text-secondary tracking-wide flex items-center gap-1">
                       <Icon size={11} className="text-primary/70" /> {label}
                       <span className="text-muted-foreground/60 ml-auto">
                         ({Math.floor(state.recursos[key])})
@@ -632,7 +632,7 @@ export function Alliance() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] text-secondary border-t border-primary/10 pt-3">
+              <div className="flex justify-between text-[12px] text-secondary border-t border-primary/10 pt-3">
                 <span>
                   Restante hoje:{" "}
                   <span
@@ -648,7 +648,7 @@ export function Alliance() {
                   </span>
                 </span>
               </div>
-              <p className="text-[9px] text-muted-foreground -mt-1">
+              <p className="text-[11px] text-muted-foreground -mt-1">
                 O limite diário é somado entre todas as aliadas. Parte se perde
                 no caminho. Enviando: {totalEnvio()} recurso(s).
               </p>
@@ -670,7 +670,7 @@ export function Alliance() {
               <Shield size={13} /> ENVIAR REFORÇO
             </h3>
             <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
-              <p className="text-[10px] text-secondary/80 leading-relaxed">
+              <p className="text-[12px] text-secondary/80 leading-relaxed">
                 Envie um morador para reforçar a próxima expedição da aliada.
                 Ele some da sua cidadela, entra no grupo dela somando poder (e
                 efeitos de profissão), e retorna ao fim da expedição com o
@@ -678,13 +678,13 @@ export function Alliance() {
               </p>
 
               {elegiveis.length === 0 ? (
-                <div className="text-[11px] text-muted-foreground italic py-2">
+                <div className="text-[12px] text-muted-foreground italic py-2">
                   Nenhum morador elegível. Reforço requer morador vivo e ocioso.
                 </div>
               ) : (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide">
+                    <label className="text-[12px] text-secondary tracking-wide">
                       Morador de reforço
                     </label>
                     <select
@@ -721,18 +721,18 @@ export function Alliance() {
                 <Swords size={13} /> ENVIAR REFORÇO DE GUERRA
               </h3>
               <div className="bg-gradient-to-b from-destructive/10 to-transparent border border-destructive/30 rounded-sm p-4 space-y-3">
-                <p className="text-[10px] text-secondary/80 leading-relaxed">
+                <p className="text-[12px] text-secondary/80 leading-relaxed">
                   {nomeAlvo} está em guerra contra {aliadaAlvo?.resumo?.guerraRivalNome}! Envie um morador para lutar no front. Ele entra direto no combate e retorna quando a campanha terminar.
                 </p>
 
                 {elegiveis.length === 0 ? (
-                  <div className="text-[11px] text-muted-foreground italic py-2">
+                  <div className="text-[12px] text-muted-foreground italic py-2">
                     Nenhum morador elegível. Reforço requer morador vivo, ocioso e não emprestado.
                   </div>
                 ) : (
                   <>
                     <div className="space-y-1">
-                      <label className="text-[10px] text-secondary tracking-wide">
+                      <label className="text-[12px] text-secondary tracking-wide">
                         Morador de guerra
                       </label>
                       <select
@@ -769,7 +769,7 @@ export function Alliance() {
               <UserPlus size={13} /> EMPRESTAR MORADOR
             </h3>
             <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-4 space-y-3">
-              <p className="text-[10px] text-secondary/80 leading-relaxed">
+              <p className="text-[12px] text-secondary/80 leading-relaxed">
                 Empreste um morador ocioso à aliada por um prazo. Ele some da
                 sua cidadela, trabalha e vai a expedições na dela, e retorna ao
                 fim do prazo com o estado atualizado. Se cair numa expedição da
@@ -777,14 +777,14 @@ export function Alliance() {
               </p>
 
               {elegiveis.length === 0 ? (
-                <div className="text-[11px] text-muted-foreground italic py-2">
+                <div className="text-[12px] text-muted-foreground italic py-2">
                   Nenhum morador elegível. Só é possível emprestar quem está
                   vivo, ocioso (sem posto) e fora de expedição.
                 </div>
               ) : (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide">
+                    <label className="text-[12px] text-secondary tracking-wide">
                       Morador
                     </label>
                     <select
@@ -803,7 +803,7 @@ export function Alliance() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                    <label className="text-[12px] text-secondary tracking-wide flex items-center gap-1">
                       <Clock size={11} className="text-primary/70" /> Prazo
                       (dias da aliada)
                     </label>
@@ -853,7 +853,7 @@ export function Alliance() {
             <div className="flex gap-2">
               <button
                 onClick={() => setModoAjuda('tropa')}
-                className={`flex-1 py-2 px-3 rounded-sm border text-[10px] font-bold tracking-widest transition-all ${
+                className={`flex-1 py-2 px-3 rounded-sm border text-[12px] font-bold tracking-widest transition-all ${
                   modoAjuda === 'tropa'
                     ? 'border-warning bg-warning/20 text-foreground'
                     : 'border-card-border text-secondary hover:border-warning/50'
@@ -863,7 +863,7 @@ export function Alliance() {
               </button>
               <button
                 onClick={() => setModoAjuda('suprimentos')}
-                className={`flex-1 py-2 px-3 rounded-sm border text-[10px] font-bold tracking-widest transition-all ${
+                className={`flex-1 py-2 px-3 rounded-sm border text-[12px] font-bold tracking-widest transition-all ${
                   modoAjuda === 'suprimentos'
                     ? 'border-warning bg-warning/20 text-foreground'
                     : 'border-card-border text-secondary hover:border-warning/50'
@@ -876,12 +876,12 @@ export function Alliance() {
             {/* Modo: Reforço de tropa */}
             {modoAjuda === 'tropa' && (
               <>
-                <p className="text-[11px] text-secondary">
+                <p className="text-[12px] text-secondary">
                   Selecione um morador para enviar à guerra:
                 </p>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {state.npcs.filter((n) => n.vivo && podeEmprestar(n)).length === 0 ? (
-                    <div className="text-[10px] text-muted-foreground italic py-4">
+                    <div className="text-[12px] text-muted-foreground italic py-4">
                       Nenhum morador elegível disponível.
                     </div>
                   ) : (
@@ -891,14 +891,14 @@ export function Alliance() {
                         <button
                           key={n.id}
                           onClick={() => setNpcParaPedido(n.id)}
-                          className={`w-full text-left px-3 py-2.5 rounded-sm border text-[10px] transition-all ${
+                          className={`w-full text-left px-3 py-2.5 rounded-sm border text-[12px] transition-all ${
                             npcParaPedido === n.id
                               ? "border-warning bg-warning/20 text-foreground"
                               : "border-card-border bg-background/40 text-secondary hover:border-warning/50"
                           }`}
                         >
                           <div className="font-bold text-foreground">{n.nome}</div>
-                          <div className="text-[9px] text-muted-foreground">
+                          <div className="text-[11px] text-muted-foreground">
                             {PROFISSOES[getProfissao(n)].nome} • {n.raridade}
                           </div>
                         </button>
@@ -911,12 +911,12 @@ export function Alliance() {
             {/* Modo: Suprimentos */}
             {modoAjuda === 'suprimentos' && (
               <>
-                <p className="text-[11px] text-secondary">
+                <p className="text-[12px] text-secondary">
                   Envie comida e ferro para fortalecer a defesa:
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                    <label className="text-[12px] text-secondary tracking-wide flex items-center gap-1">
                       <Wheat size={11} className="text-success/70" /> Comida
                       <span className="text-muted-foreground/60 ml-auto">
                         ({Math.floor(state.recursos.comida)})
@@ -933,7 +933,7 @@ export function Alliance() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] text-secondary tracking-wide flex items-center gap-1">
+                    <label className="text-[12px] text-secondary tracking-wide flex items-center gap-1">
                       <Zap size={11} className="text-primary/70" /> Ferro
                       <span className="text-muted-foreground/60 ml-auto">
                         ({Math.floor(state.recursos.ferro)})
@@ -950,7 +950,7 @@ export function Alliance() {
                     />
                   </div>
                 </div>
-                <div className="text-[10px] text-secondary border-t border-primary/10 pt-2">
+                <div className="text-[12px] text-secondary border-t border-primary/10 pt-2">
                   <div>Restante hoje: <span className={restanteHoje > 0 ? 'text-primary font-bold' : 'text-destructive font-bold'}>{restanteHoje}</span></div>
                 </div>
               </>
@@ -989,7 +989,7 @@ export function Alliance() {
           )}
         </h3>
         {caixa.length === 0 ? (
-          <div className="text-center text-[11px] text-muted-foreground py-6 border border-dashed border-card-border rounded-sm">
+          <div className="text-center text-[12px] text-muted-foreground py-6 border border-dashed border-card-border rounded-sm">
             Nenhum envio pendente.
           </div>
         ) : (
@@ -1006,7 +1006,7 @@ export function Alliance() {
                   key={item.id}
                   className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-3"
                 >
-                  <div className="text-[11px] text-secondary mb-2">
+                  <div className="text-[12px] text-secondary mb-2">
                     {isEmprestimo && (
                       <span className="text-primary font-bold">
                         Empréstimo ·{" "}
@@ -1041,17 +1041,17 @@ export function Alliance() {
                   </div>
 
                   {isEmprestimo && item.morador && (
-                    <div className="mb-3 text-[11px] bg-background/50 border border-primary/20 rounded-sm p-2.5">
+                    <div className="mb-3 text-[12px] bg-background/50 border border-primary/20 rounded-sm p-2.5">
                       <div className="flex items-center gap-2 mb-1">
                         <UserPlus size={12} className="text-primary" />
                         <span className="text-foreground font-bold">
                           {item.morador.nome}
                         </span>
-                        <span className="text-primary text-[10px]">
+                        <span className="text-primary text-[12px]">
                           {PROFISSOES[getProfissao(item.morador)].nome}
                         </span>
                       </div>
-                      <div className="text-[10px] text-secondary flex items-center gap-1">
+                      <div className="text-[12px] text-secondary flex items-center gap-1">
                         <Clock size={10} className="text-primary/70" /> Prazo:{" "}
                         {item.prazoDias ?? "—"} dias na sua cidadela
                       </div>
@@ -1059,17 +1059,17 @@ export function Alliance() {
                   )}
 
                   {isReforco && item.morador && (
-                    <div className="mb-3 text-[11px] bg-blue-500/10 border border-blue-400/30 rounded-sm p-2.5">
+                    <div className="mb-3 text-[12px] bg-blue-500/10 border border-blue-400/30 rounded-sm p-2.5">
                       <div className="flex items-center gap-2 mb-1">
                         <Shield size={12} className="text-blue-300" />
                         <span className="text-foreground font-bold">
                           {item.morador.nome}
                         </span>
-                        <span className="text-blue-300 text-[10px]">
+                        <span className="text-blue-300 text-[12px]">
                           {PROFISSOES[getProfissao(item.morador)].nome}
                         </span>
                       </div>
-                      <div className="text-[10px] text-secondary">
+                      <div className="text-[12px] text-secondary">
                         Participa de uma expedição e retorna automaticamente ao
                         dono.
                       </div>
@@ -1077,28 +1077,28 @@ export function Alliance() {
                   )}
 
                   {isReforcoGuerra && item.morador && (
-                    <div className="mb-3 text-[11px] bg-destructive/10 border border-destructive/30 rounded-sm p-2.5">
+                    <div className="mb-3 text-[12px] bg-destructive/10 border border-destructive/30 rounded-sm p-2.5">
                       <div className="flex items-center gap-2 mb-1">
                         <Swords size={12} className="text-destructive" />
                         <span className="text-foreground font-bold">
                           {item.morador.nome}
                         </span>
-                        <span className="text-destructive text-[10px]">
+                        <span className="text-destructive text-[12px]">
                           {PROFISSOES[getProfissao(item.morador)].nome}
                         </span>
                       </div>
-                      <div className="text-[10px] text-secondary">
+                      <div className="text-[12px] text-secondary">
                         Entra direto no front de guerra e retorna ao fim da campanha.
                       </div>
                     </div>
                   )}
 
                   {isPedidoAjuda && item.pedidoAjuda && (
-                    <div className="mb-3 text-[11px] bg-warning/10 border border-warning/30 rounded-sm p-2.5">
+                    <div className="mb-3 text-[12px] bg-warning/10 border border-warning/30 rounded-sm p-2.5">
                       <div className="text-foreground font-bold mb-1">
                         {item.pedidoAjuda.rivalNome}
                       </div>
-                      <div className="text-[10px] text-secondary">
+                      <div className="text-[12px] text-secondary">
                         {item.pedidoAjuda.diasRestantes} dia(s) restante(s) · Clique para ciente
                       </div>
                     </div>
@@ -1106,7 +1106,7 @@ export function Alliance() {
 
                   {isRetorno && item.morador && (
                     <div
-                      className={`mb-3 text-[11px] bg-background/50 border rounded-sm p-2.5 ${item.morreu ? "border-destructive/30" : "border-success/30"}`}
+                      className={`mb-3 text-[12px] bg-background/50 border rounded-sm p-2.5 ${item.morreu ? "border-destructive/30" : "border-success/30"}`}
                     >
                       <div className="flex items-center gap-2">
                         {item.morreu ? (
@@ -1118,7 +1118,7 @@ export function Alliance() {
                           {item.morador.nome}
                         </span>
                         <span
-                          className={`text-[10px] ${item.morreu ? "text-destructive" : "text-success"}`}
+                          className={`text-[12px] ${item.morreu ? "text-destructive" : "text-success"}`}
                         >
                           {item.morreu
                             ? "PERDIDO EM EXPEDIÇÃO"
@@ -1129,7 +1129,7 @@ export function Alliance() {
                   )}
 
                   {!isEmprestimo && !isReforco && !isReforcoGuerra && !isPedidoAjuda && !isRetorno && (
-                    <div className="flex gap-2 flex-wrap mb-3 text-[10px] font-bold">
+                    <div className="flex gap-2 flex-wrap mb-3 text-[12px] font-bold">
                       {recursos &&
                         RES_META.filter((m) => recursos[m.key] > 0).map(
                           ({ key, icon: Icon }) => (
@@ -1242,17 +1242,17 @@ export function Alliance() {
                         <span className="font-bold text-foreground text-sm truncate">
                           {reg.npcNome}
                         </span>
-                        <span className="text-[9px] text-primary/70 uppercase shrink-0">
+                        <span className="text-[11px] text-primary/70 uppercase shrink-0">
                           {prof}
                         </span>
                         {reg.tipo === "reforco" && (
-                          <span className="text-[9px] bg-blue-500/10 border border-blue-400/30 text-blue-400 px-1 py-0.5 rounded-sm uppercase shrink-0">
+                          <span className="text-[11px] bg-blue-500/10 border border-blue-400/30 text-blue-400 px-1 py-0.5 rounded-sm uppercase shrink-0">
                             reforço
                           </span>
                         )}
                       </div>
                       <span
-                        className={`text-[9px] font-bold uppercase tracking-wide shrink-0 ${
+                        className={`text-[11px] font-bold uppercase tracking-wide shrink-0 ${
                           emCurso
                             ? "text-primary"
                             : caiu
@@ -1263,7 +1263,7 @@ export function Alliance() {
                         {emCurso ? "EM CURSO" : caiu ? "CAIU" : "VOLTOU"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-secondary flex-wrap">
+                    <div className="flex items-center gap-3 mt-1 text-[12px] text-secondary flex-wrap">
                       <span className="flex items-center gap-1">
                         <CalendarDays size={9} className="text-primary/60" />
                         Dia {reg.diaEnvio}

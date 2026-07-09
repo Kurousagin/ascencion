@@ -43,7 +43,7 @@ export function LancamentoModal({ open, lancamento, onIniciarRitual, onClose }: 
               <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.2em] text-sm leading-tight mb-1">
                 {lancamento.titulo}
               </Dialog.Title>
-              <p className="text-[10px] text-secondary/70 tracking-[0.2em] italic">
+              <p className="text-[12px] text-secondary/70 tracking-[0.2em] italic">
                 {lancamento.subtitulo}
               </p>
             </div>
@@ -51,7 +51,7 @@ export function LancamentoModal({ open, lancamento, onIniciarRitual, onClose }: 
             {/* Descrição */}
             <div className="px-6 pt-5 space-y-3">
               {lancamento.descricao.map((p, i) => (
-                <p key={i} className="text-[11px] text-white/55 leading-relaxed text-center">{p}</p>
+                <p key={i} className="text-[12px] text-white/55 leading-relaxed text-center">{p}</p>
               ))}
             </div>
 
@@ -67,13 +67,13 @@ export function LancamentoModal({ open, lancamento, onIniciarRitual, onClose }: 
 
             {/* Bônus de recursos */}
             <div className="mx-5 mb-5">
-              <div className="text-[9px] text-secondary/50 tracking-[0.2em] mb-2 text-center">BÔNUS DE LANÇAMENTO</div>
+              <div className="text-[11px] text-secondary/50 tracking-[0.2em] mb-2 text-center">BÔNUS DE LANÇAMENTO</div>
               <div className="flex flex-wrap justify-center gap-2">
                 {recursos.map(r => (
                   <div key={r.label} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/40 border border-white/10 rounded-sm">
                     <span className="text-[12px] leading-none">{r.emoji}</span>
                     <div>
-                      <div className="text-[8px] text-white/30 tracking-widest">{r.label.toUpperCase()}</div>
+                      <div className="text-[10px] text-white/30 tracking-widest">{r.label.toUpperCase()}</div>
                       <div className="text-[12px] font-bold text-white/80 font-cinzel leading-none">+{r.valor}</div>
                     </div>
                   </div>

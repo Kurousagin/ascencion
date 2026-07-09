@@ -151,7 +151,7 @@ export function Onboarding({ open, onClose }: Props) {
                     {current.titulo}
                   </Dialog.Title>
                   {current.subtitulo && (
-                    <p className="text-[10px] text-secondary tracking-[0.2em] uppercase mb-4">
+                    <p className="text-[12px] text-secondary tracking-[0.2em] uppercase mb-4">
                       {current.subtitulo}
                     </p>
                   )}
@@ -165,7 +165,7 @@ export function Onboarding({ open, onClose }: Props) {
                   {current.dica && (
                     <div className="mt-4 flex gap-2 p-3 bg-black/30 border border-primary/15 rounded-sm">
                       <BookOpen size={12} className="text-primary/60 mt-0.5 shrink-0" />
-                      <p className="text-[10px] text-primary/60 italic leading-relaxed">{current.dica}</p>
+                      <p className="text-[12px] text-primary/60 italic leading-relaxed">{current.dica}</p>
                     </div>
                   )}
                 </motion.div>
@@ -177,18 +177,18 @@ export function Onboarding({ open, onClose }: Props) {
               <button
                 onClick={prev}
                 disabled={isFirst}
-                className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 disabled:opacity-0 transition-colors font-cinzel tracking-wider touch-manipulation"
+                className="flex items-center gap-1 text-[12px] text-white/40 hover:text-white/70 disabled:opacity-0 transition-colors font-cinzel tracking-wider touch-manipulation"
               >
                 <ChevronLeft size={13} /> VOLTAR
               </button>
 
-              <div className="text-[9px] text-white/25 tracking-widest">
+              <div className="text-[11px] text-white/25 tracking-widest">
                 {slide + 1} / {SLIDES.length}
               </div>
 
               <button
                 onClick={next}
-                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-cinzel font-bold tracking-wider touch-manipulation"
+                className="flex items-center gap-1 text-[12px] text-primary hover:text-primary/80 transition-colors font-cinzel font-bold tracking-wider touch-manipulation"
               >
                 {isLast ? 'COMEÇAR' : 'AVANÇAR'} <ChevronRight size={13} />
               </button>

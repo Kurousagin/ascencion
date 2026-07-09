@@ -48,7 +48,7 @@ export function CamaraDescobertaModal() {
                 <Dialog.Title className="font-cinzel font-bold text-secondary tracking-[0.2em] text-sm">
                   CÂMARA SECRETA REVELADA
                 </Dialog.Title>
-                <div className="text-[9px] text-secondary/60 tracking-[0.25em] mt-1">
+                <div className="text-[11px] text-secondary/60 tracking-[0.25em] mt-1">
                   {cam.titulo.toUpperCase()} · ANDAR {cam.floor}
                 </div>
               </div>
@@ -57,7 +57,7 @@ export function CamaraDescobertaModal() {
 
                 {grupoAgora.length > 0 ? (
                   <>
-                    <p className="text-[10px] text-secondary/70 text-center leading-relaxed">
+                    <p className="text-[12px] text-secondary/70 text-center leading-relaxed">
                       Explorar agora leva o mesmo grupo da conquista — cansado, com mais risco.
                       Ou prepare uma incursão dedicada depois, pela Torre.
                     </p>
@@ -78,7 +78,7 @@ export function CamaraDescobertaModal() {
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] text-secondary/70 text-center leading-relaxed">
+                    <p className="text-[12px] text-secondary/70 text-center leading-relaxed">
                       Prepare uma incursão dedicada pela Torre para explorar esta câmara.
                     </p>
                     <button
