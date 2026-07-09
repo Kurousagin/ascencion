@@ -10,12 +10,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { DoorOpen, Clock, Sparkles, KeyRound } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { CAMARAS_SECRETAS } from '../camara-engine';
+import { camarasDaTorre } from '../camara-engine';
 
 export function CamaraDescobertaModal() {
   const { state, explorarCamaraSecreta, reconhecerCamaraDescoberta, lastExpeditionResult, ultimoResultadoCamara } = useGame();
   const camId = state?.camarasNovasDescobertas?.[0] ?? null;
-  const cam = camId ? CAMARAS_SECRETAS[camId] : undefined;
+  const cam = camId && state ? camarasDaTorre(state)[camId] : undefined;
   // Só abre DEPOIS de o jogador fechar o resultado da expedição (vitória/derrota)
   // e o resultado de uma exploração de câmara — a janela dourada é o próximo passo.
   const open = !!cam && !lastExpeditionResult && !ultimoResultadoCamara;
