@@ -23,7 +23,11 @@ import {
   CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara, CamaraSecreta,
   sortearRecompensaCamara, idFragmentoCamara, RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
-import { tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor, type PromocaoResultado } from '../npc-engine';
+import {
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
+  fatorHumor, getAfinidade, AF_AMIZADE,
+  type PromocaoResultado, type FeitoId,
+} from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from '../lib/lancamento';
 import { getDeviceId } from '../lib/alliance-identity';
@@ -176,11 +180,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
-  // Ao concluir uma sessão de treino/estudo: registra o feito e, se a promoção
-  // levou o morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa
-  // e narra o momento. Centraliza o gancho do motor de vida usado em treino e estudo.
-  const promoverEnobrecer = (s: GameState, npc: NPC) => {
-    registrarFeito(npc, 'treino_concluido');
+  // Ao promover um morador (treino/estudo/buff de câmara): registra o feito
+  // (quando houver — a câmara já registra o dela) e, se a promoção levou o
+  // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
+  const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
+    if (feito) registrarFeito(npc, feito);
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
     if (promo.tipo === 'adocao') {
@@ -244,8 +248,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const vivos = draft.npcs.filter(n => n.vivo);
     if (vivos.length === 0) { draft.gameOver = true; return draft; }
 
-    // Aggregate building effects (levels + workers) once per day
-    const ef = getEfeitos(draft.edificios, draft.npcs);
+    // Aggregate building effects (levels + workers) once per day.
+    // O humor escala a contribuição de cada trabalhador (motor de vida).
+    const ef = getEfeitos(draft.edificios, draft.npcs, fatorHumor);
     draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
 
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
@@ -783,14 +788,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     registrarProgressoMetaDiaria(s, 'explorar');
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
-    const ef = getEfeitos(s.edificios, s.npcs);
+    const ef = getEfeitos(s.edificios, s.npcs, fatorHumor);
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
-    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n), 0);
+    // Humor pesa no poder individual: gente abalada luta pior.
+    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n), 0);
     // O bioma afeta o poder efetivo do grupo: profissão certa = +30%, errada = -20%.
     const biomaMultiplier = calcBiomaMultiplier(group, floorData.bioma);
     const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
     const isVictory = groupPower >= floorData.difficulty;
+
+    // Vínculo forte salva vidas: se alguém cair, um companheiro de grupo com
+    // afinidade alta tem uma chance de puxá-lo de volta (custa fadiga a ambos).
+    const tentarResgateVinculo = (n: NPC): NPC | null => {
+      const salvador = group.find(x =>
+        x.id !== n.id && x.vivo && getAfinidade(s, x.id, n.id) >= AF_AMIZADE);
+      if (!salvador || Math.random() >= 0.3) return null;
+      n.fadiga = Math.min(100, n.fadiga + 20);
+      salvador.fadiga = Math.min(100, salvador.fadiga + 10);
+      addLog(s, 'evento', `${salvador.nome.toUpperCase()} puxou ${n.nome} de volta da beirada no andar ${floorData.floor}.`);
+      return salvador;
+    };
 
     // Passivas de vestígios ativas nesta expedição (escopo de sendExpedition inteiro)
     const hasVeterano = group.some(n => n.passivaId === 'veterano_das_profundezas');
@@ -937,7 +955,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (n.lancamento) mort *= 0.1;
         // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
         if (hasVeterano && !n.lancamento) mort *= 0.70;
-        if (Math.random() * 100 < mort) {
+        if (Math.random() * 100 < mort && !tentarResgateVinculo(n)) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
@@ -1014,7 +1032,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         let mortFalha = n.lancamento ? floorData.mortality * 0.1 : floorData.mortality;
         // Passiva: Veterano das Profundezas — −30% mortalidade para mortais do grupo.
         if (hasVeterano && !n.lancamento) mortFalha *= 0.70;
-        if (Math.random() * 100 < mortFalha) {
+        if (Math.random() * 100 < mortFalha && !tentarResgateVinculo(n)) {
           n.vivo = false; n.emExpedicao = false; n.posto = null;
           s.moral -= 5;
           s.npcs.filter(x => x.vivo && x.id !== n.id).forEach(x => { x.sanidade -= 3; });
@@ -1662,6 +1680,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const statKey = statTreinamento(npc);
           npc[statKey] += bonus.incremento;
           npc.raridade = recalcRaridade(npc);
+          // Buff de câmara também enobrece (a câmara já registrou o feito do grupo).
+          promoverEnobrecer(s, npc, null);
           const statLabel = statKey === 'agilidade' ? 'AGI' : statKey === 'resistencia' ? 'RES' : statKey === 'inteligencia' ? 'INT' : 'FOR';
           recompensas.push(`${npc.nome} +${bonus.incremento} ${statLabel} permanente`);
         }

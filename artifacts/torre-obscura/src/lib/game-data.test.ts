@@ -4,7 +4,7 @@ import {
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
   idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
   getMsPerDay, MS_PER_GAME_DAY_BASE, verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
-  avancarGuerra,
+  avancarGuerra, getEfeitos,
   type CamaraSecreta, type NPC, type ProfissaoId, type GameState, type GuerraAtiva,
 } from './game-data';
 
@@ -205,6 +205,24 @@ describe('gerarNomeNpc (nobreza no nome)', () => {
       expect(sobrenome).toBeTruthy();
       expect(nome).toContain(sobrenome!);
     }
+  });
+});
+
+describe('getEfeitos — fatorNpc escala a contribuição do trabalhador', () => {
+  it('fator 0.75 reduz a comida produzida pelo fazendeiro', () => {
+    const fazendeiro = npcFull({ inteligencia: 10, posto: 'Fazenda' });
+    const edificios = [{ tipo: 'Fazenda' as const, nivel: 1 }];
+    const sem = getEfeitos(edificios, [fazendeiro]);
+    const com = getEfeitos(edificios, [fazendeiro], () => 0.75);
+    // Contribuição base do trabalhador: round(10 × 0.5 × mult).
+    expect(com.comidaDia).toBeLessThan(sem.comidaDia);
+    expect(sem.comidaDia - com.comidaDia).toBeGreaterThanOrEqual(1);
+  });
+  it('sem fatorNpc o comportamento é o de sempre (fator 1)', () => {
+    const fazendeiro = npcFull({ inteligencia: 10, posto: 'Fazenda' });
+    const edificios = [{ tipo: 'Fazenda' as const, nivel: 1 }];
+    expect(getEfeitos(edificios, [fazendeiro], () => 1))
+      .toEqual(getEfeitos(edificios, [fazendeiro]));
   });
 });
 
