@@ -1524,7 +1524,6 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
 // vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
 export type RequisitoCamara =
   | { tipo: 'class_farms'; profissao: ProfissaoId; minFarmsComClasse: number; textoRequisito: string }
-  | { tipo: 'farms_andar'; floor: number; minFarms: number; textoRequisito: string }
   | { tipo: 'mortes_andar'; minMortes: number; textoRequisito: string }
   | { tipo: 'quest_habitante'; floor: number; textoRequisito: string }
   | { tipo: 'recurso_minimo'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; quantidade: number; textoRequisito: string }
@@ -1584,28 +1583,6 @@ export const CAMARAS_SECRETAS: Record<string, CamaraSecreta> = {
       recursosBonus: { comida: 20, madeira: 12 },
       moralBonus: 4,
       loreGanho: { titulo: 'A Ordem Interceptada', texto: 'Uma ordem original, queimada: dizia para destruir o selo, não guardá-lo. Alguém trocou uma única palavra e mudou tudo.' },
-    },
-  },
-
-  // [TESTE] Câmara de validação da feature de descoberta — abre ao FARMAR o andar 1
-  // duas vezes (farms_andar). REMOVER antes de produção.
-  '1_teste': {
-    floor: 1,
-    titulo: '[TESTE] Nicho na Parede',
-    icone: '🧪',
-    descricao: 'Na segunda passagem pela Mata Cinzenta, o grupo reparou numa fenda estreita atrás das raízes — algo esteve escondido ali por muito tempo.',
-    requisito: { tipo: 'farms_andar' as const, floor: 1, minFarms: 2, textoRequisito: 'Explorar o Andar 1 duas vezes revela a fenda escondida' },
-    tipo: 'benéfica',
-    dificuldade: 10,
-    custo: 10,
-    maxTentativas: 3,
-    chancePerTentativa: 0.5,
-    resultado: {
-      sucessoTexto: 'Dentro da fenda havia um pequeno depósito esquecido.',
-      falhaTexto: 'A fenda desmoronou parcialmente — recuaram a tempo.',
-      recursosBonus: { comida: 15, madeira: 10 },
-      moralBonus: 3,
-      loreGanho: { titulo: '[Teste] Fragmento de Validação', texto: 'Uma página em branco — deixada aqui apenas para confirmar que o livro recebe o que é encontrado.' },
     },
   },
 
@@ -2099,9 +2076,6 @@ export function verificarRequisitoCamara(state: GameState, requisito: RequisitoC
       return sum + (andarFarms[requisito.profissao] ?? 0);
     }, 0);
     return totalFarms >= requisito.minFarmsComClasse;
-  }
-  if (requisito.tipo === 'farms_andar') {
-    return (state.farmsPerFloor?.[requisito.floor] ?? 0) >= requisito.minFarms;
   }
   if (requisito.tipo === 'mortes_andar') {
     const totalMortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
