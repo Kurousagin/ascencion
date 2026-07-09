@@ -9,6 +9,8 @@ import { aplicarLuto } from './grief';
 import { promoverParaNobre } from './houses';
 import { humorDe } from './mood';
 import { sistemaVinculosTipados, tipoVinculo, bonusMentor } from './systems/vinculos-tipados';
+import { sistemaEventosSociais } from './systems/eventos-sociais';
+import { fatorHumor } from './mood';
 
 let idc = 0;
 const mkNpc = (over: Partial<NPC> = {}): NPC => ({
@@ -216,5 +218,54 @@ describe('humorDe', () => {
   });
   it('tudo alto → bom', () => {
     expect(humorDe(mkNpc({ sanidade: 85, lealdade: 85, fadiga: 20 })).tom).toBe('bom');
+  });
+});
+
+describe('fatorHumor', () => {
+  it('escala eficiência conforme o tom do humor', () => {
+    expect(fatorHumor(mkNpc({ sanidade: 85, lealdade: 85, fadiga: 20 }))).toBe(1.05); // bom
+    expect(fatorHumor(mkNpc({ sanidade: 50, lealdade: 50, fadiga: 50 }))).toBe(1);    // neutro
+    expect(fatorHumor(mkNpc({ sanidade: 40 }))).toBe(0.9);                            // ruim
+    expect(fatorHumor(mkNpc({ sanidade: 10 }))).toBe(0.75);                           // crítico
+  });
+});
+
+describe('sistemaEventosSociais', () => {
+  it('briga entre desafetos piora a rixa e abala os dois', () => {
+    const a = mkNpc(); const b = mkNpc();
+    const s = mkState([a, b]);
+    ajustarAfinidade(s, a.id, b.id, -40);
+    sistemaEventosSociais.processarDia(ctx(s, colonia(), seq([0])));
+    expect(getAfinidade(s, a.id, b.id)).toBe(-45);
+    expect(a.sanidade).toBe(77);
+    expect(b.sanidade).toBe(77);
+  });
+
+  it('reconciliação salta a afinidade para positivo', () => {
+    const a = mkNpc(); const b = mkNpc();
+    const s = mkState([a, b]);
+    ajustarAfinidade(s, a.id, b.id, -20); // acima do limiar de briga → só rola reconciliação
+    sistemaEventosSociais.processarDia(ctx(s, colonia(), seq([0])));
+    expect(getAfinidade(s, a.id, b.id)).toBe(10);
+  });
+
+  it('jura de lealdade entre inseparáveis', () => {
+    const a = mkNpc({ lealdade: 80 }); const b = mkNpc({ lealdade: 80 });
+    const s = mkState([a, b]);
+    ajustarAfinidade(s, a.id, b.id, 80);
+    sistemaEventosSociais.processarDia(ctx(s, colonia(), seq([0])));
+    expect(a.lealdade).toBe(85);
+    expect(b.lealdade).toBe(85);
+  });
+
+  it('no máximo 1 evento por dia', () => {
+    const a = mkNpc(); const b = mkNpc(); const c = mkNpc(); const d = mkNpc();
+    const s = mkState([a, b, c, d]);
+    ajustarAfinidade(s, a.id, b.id, -40);
+    ajustarAfinidade(s, c.id, d.id, -40);
+    sistemaEventosSociais.processarDia(ctx(s, colonia(), seq([0])));
+    const mudados = [getAfinidade(s, a.id, b.id), getAfinidade(s, c.id, d.id)]
+      .filter(af => af === -45).length;
+    expect(mudados).toBe(1);
   });
 });

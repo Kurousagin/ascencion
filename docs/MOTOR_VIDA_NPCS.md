@@ -51,6 +51,13 @@ pareçam **pessoas vivas** — gerando tensão ao descartá-los ou forçá-los a
   Efeitos: luto de romance dói o dobro (`grief.ts`); `bonusMentor` dá +1 no ganho de
   treino/estudo quando um mentor vivo supera o aprendiz no stat treinado. UI mostra o
   tipo no card (`People.tsx`). Consulta via `tipoVinculo(state, a, b)`.
+- **Convívio com impacto** (Fase 3): `fatorHumor` (`mood.ts`) escala produção
+  (injetado em `getEfeitos` via parâmetro `fatorNpc` — sem ciclo de import) e o poder
+  individual na expedição; vínculo forte (af ≥ `AF_AMIZADE`) dá 30% de chance de salvar
+  um companheiro sorteado para morrer na expedição (`tentarResgateVinculo`, GameContext);
+  **eventos sociais raros** (`systems/eventos-sociais.ts`): brigas, reconciliações e juras
+  de lealdade, máx. 1/dia; buff de câmara agora também enobrece
+  (`promoverEnobrecer(s, npc, null)` no bloco `buff_permanente`).
 
 ## ⏳ TODO / Fases futuras
 
@@ -60,17 +67,11 @@ Hoje `generateNPC`, `calcNpcPower`, `getProfissao`, treino etc. ainda **residem*
 `npc-engine/domain.ts` e fazer `game-data` re-exportar do módulo (cuidando para não
 reintroduzir ciclos — mover junto os tipos base se necessário).
 
-### 2. Aprofundar o convívio e o impacto no jogo
-- Humor afetar produção/expedição (ex.: "Abalado" reduz eficiência; vínculo forte no
-  mesmo grupo reduz mortalidade).
-- Eventos sociais raros (brigas, reconciliações, juras de lealdade) como um sistema.
-- Promoção via buff de câmara (`GameContext` ~linha do `recalcRaridade` no bônus
-  `buff_permanente`) também poderia chamar `promoverEnobrecer` — hoje só treino/estudo.
-
-### 3. Balanceamento
+### 2. Balanceamento
 Revisar constantes: deltas de convívio (`CONVIVIO_*`, `ATRITO`), `LIMIAR_ADOCAO`,
-`FAMA_CASA`/`CHANCE_FUNDAR_CASA`, penalidades de luto (`grief.ts`). Idealmente com
-telemetria/observação de partidas.
+`FAMA_CASA`/`CHANCE_FUNDAR_CASA`, penalidades de luto (`grief.ts`), chances dos novos
+arcos/eventos (`vinculos-tipados.ts`, `eventos-sociais.ts`) e os degraus de `fatorHumor`
+(`mood.ts`). Idealmente com telemetria/observação de partidas.
 
 ## Como estender (checklist)
 

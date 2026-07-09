@@ -3708,7 +3708,14 @@ export function trabalhadoresDe(tipo: EdificioTipo, nivel: number, npcs: NPC[]):
 }
 
 // Aggregate all built levels + assigned workers into the daily effect bundle.
-export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<EfeitoEdificio> {
+// `fatorNpc` (opcional) escala a contribuição individual de cada trabalhador —
+// o GameContext injeta o fator de humor do motor de vida por aqui (game-data
+// não pode importar o npc-engine). Ausente ⇒ fator 1 (chamadas internas).
+export function getEfeitos(
+  edificios: Edificio[],
+  npcs: NPC[] = [],
+  fatorNpc?: (n: NPC) => number,
+): Required<EfeitoEdificio> {
   const ef: Required<EfeitoEdificio> = {
     comidaDia: 0, moralDia: 0, sanidadeDia: 0, fadigaRec: 0, poderBonus: 0,
     capacidadeArmazem: CAPACIDADE_BASE, capPopulacao: POP_BASE,
@@ -3731,7 +3738,7 @@ export function getEfeitos(edificios: Edificio[], npcs: NPC[] = []): Required<Ef
     const afim = POSTO_AFIM[e.tipo];
     if (afim) {
       for (const w of trabalhadoresDe(e.tipo, e.nivel, npcs)) {
-        const mult = getProfissao(w) === afim ? 1.5 : 1;
+        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1);
         switch (e.tipo) {
           case 'Fazenda':    ef.comidaDia += Math.round(w.inteligencia * 0.5 * mult); break;
           case 'Enfermaria': ef.fadigaRec += Math.round(w.inteligencia * 0.4 * mult); break;

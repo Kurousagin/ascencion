@@ -12,6 +12,7 @@ export * from './grief';
 export * from './mood';
 export * from './fama';
 export * from './systems/vinculos-tipados';
+export * from './systems/eventos-sociais';
 
 // Domínio de NPC (re-export de game-data — façade de compatibilidade)
 export {

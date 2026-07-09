@@ -10,6 +10,7 @@ import { sistemaDecaimento } from './systems/decaimento';
 import { sistemaTraicao } from './systems/traicao';
 import { sistemaConvivio } from './systems/convivio';
 import { sistemaVinculosTipados } from './systems/vinculos-tipados';
+import { sistemaEventosSociais } from './systems/eventos-sociais';
 
 // Condições da colônia no dia, computadas pelo GameContext antes do tick.
 export interface CondicoesColonia {
@@ -34,12 +35,13 @@ export interface SistemaVida {
 }
 
 // Ordem importa: decaimento (fome/fadiga/passivas) → traição → convívio (social)
-// → vínculos tipados (lê a afinidade já atualizada pelo convívio).
+// → vínculos tipados (lê a afinidade já atualizada) → eventos sociais (drama raro).
 export const SISTEMAS_VIDA: SistemaVida[] = [
   sistemaDecaimento,
   sistemaTraicao,
   sistemaConvivio,
   sistemaVinculosTipados,
+  sistemaEventosSociais,
 ];
 
 export function tickNpcs(ctx: CtxVida): void {
