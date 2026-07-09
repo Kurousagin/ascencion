@@ -1524,7 +1524,6 @@ export const BOSS_ECO_LORE: Record<number, { titulo: string; texto: string }> = 
 // vezes; ao achar, é permanente e concede recompensa + fragmento de lore único.
 export type RequisitoCamara =
   | { tipo: 'class_farms'; profissao: ProfissaoId; minFarmsComClasse: number; textoRequisito: string }
-  | { tipo: 'farms_andar'; floor: number; minFarms: number; textoRequisito: string }
   | { tipo: 'mortes_andar'; minMortes: number; textoRequisito: string }
   | { tipo: 'quest_habitante'; floor: number; textoRequisito: string }
   | { tipo: 'recurso_minimo'; recurso: 'comida' | 'madeira' | 'pedra' | 'ferro'; quantidade: number; textoRequisito: string }
@@ -2078,9 +2077,6 @@ export function verificarRequisitoCamara(state: GameState, requisito: RequisitoC
     }, 0);
     return totalFarms >= requisito.minFarmsComClasse;
   }
-  if (requisito.tipo === 'farms_andar') {
-    return (state.farmsPerFloor?.[requisito.floor] ?? 0) >= requisito.minFarms;
-  }
   if (requisito.tipo === 'mortes_andar') {
     const totalMortes = Object.values(state.totalMortesAndar ?? {}).reduce((sum, m) => sum + m, 0);
     return totalMortes >= requisito.minMortes;
@@ -2467,11 +2463,30 @@ export function idFragmentoCamara(camaraId: string): string {
   return `cam_${camaraId}`;
 }
 
-// NOTA: as câmaras agora são PROCEDURAIS por-save (ver src/camara-engine), então
-// suas "páginas recuperadas" não podem ser fragmentos estáticos em CODEX_FRAGMENTOS.
-// A lore de câmara descoberta é guardada em `state.camaraLoresDescobertas` e a
-// apresentação no Codex fica para o PR de livros. `idFragmentoCamara` é mantido
-// para compatibilidade de id.
+// Páginas rasgadas: cada câmara com `loreGanho` vira um fragmento de Codex do tipo
+// 'camara', gerado a partir de CAMARAS_SECRETAS (DRY — sem reescrever o texto) e
+// mesclado em CODEX_FRAGMENTOS. Assim totalFragmentosTemporada e a UI do Codex já
+// as contam e renderizam automaticamente. `ordem` 20+ posiciona as páginas após os
+// fragmentos-núcleo dentro do capítulo do andar.
+(() => {
+  const idxPorCapitulo: Record<number, number> = {};
+  Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
+    const lore = cam.resultado.loreGanho;
+    if (!lore) return;
+    const capitulo = capituloDoAndar(cam.floor);
+    idxPorCapitulo[capitulo] = (idxPorCapitulo[capitulo] ?? 0) + 1;
+    const id = idFragmentoCamara(key);
+    CODEX_FRAGMENTOS[id] = {
+      id,
+      tipo: 'camara',
+      temporada: cam.floor <= 20 ? 1 : 2,
+      capitulo,
+      ordem: 20 + idxPorCapitulo[capitulo],
+      titulo: lore.titulo,
+      texto: lore.texto,
+    };
+  });
+})();
 
 // Total de fragmentos de uma temporada (para a barra de progresso na UI).
 export function totalFragmentosTemporada(temporada: number): number {
@@ -2908,13 +2923,6 @@ export interface GameState {
   habitantesEscolhaFeita?: Record<number, 'a' | 'b'>; // floor → opção escolhida
 
   // ─── Câmaras Secretas ────────────────────────────────────────────────────
-  // Seed procedural do save: define QUAIS câmaras (tema/requisito/dureza) existem
-  // em cada andar desta torre. Duas torres com seeds diferentes têm câmaras
-  // diferentes → guias "faça X,Y,Z" não funcionam. Ver src/camara-engine.
-  camaraSeed?: number;
-  // Lore recuperada de câmaras exploradas (as câmaras são per-save, então a página
-  // não vem do CODEX_FRAGMENTOS estático). Apresentação no Codex fica p/ o PR de livros.
-  camaraLoresDescobertas?: Array<{ id: string; floor: number; titulo: string; texto: string }>;
   camarasSecretasEstado?: Record<string, { descoberta: boolean; tentativas: number; encontrada: boolean }>;
   // Fila de câmaras (por camaraId) recém-reveladas pelo processDay, aguardando o
   // modal de evento que avisa o jogador. Esvaziada conforme o jogador reconhece.

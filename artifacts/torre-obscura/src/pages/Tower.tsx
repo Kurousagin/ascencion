@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
 import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, verificarQuestOculta, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO, calcPoderGrupo } from '../lib/game-data';
-import { camarasDaTorre, dificuldadeCamara, calcAfinidadeCamara } from '../camara-engine';
+import { CAMARAS_SECRETAS, dificuldadeCamara, calcAfinidadeCamara } from '../camara-engine';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
@@ -387,7 +387,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 {/* Botão de Câmara Secreta — só aparece quando DESCOBERTA (requisito
                     atingido no processDay). Chave sempre por camaraId. */}
                 {(() => {
-                  const camarasDoAndar = Object.entries(camarasDaTorre(state)).filter(([id]) => id.startsWith(`${f.floor}_`));
+                  const camarasDoAndar = Object.entries(CAMARAS_SECRETAS).filter(([id]) => id.startsWith(`${f.floor}_`));
                   if (camarasDoAndar.length === 0) return null;
                   return camarasDoAndar.map(([camId, cam]) => {
                     const cEst = state.camarasSecretasEstado?.[camId];
@@ -875,7 +875,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[85vh] bg-gradient-to-b from-[#1A1F2E] to-[#161B22] border border-primary/30 p-5 flex flex-col gap-4 z-50 rounded-sm shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-y-auto custom-scrollbar">
             {camaraSecretaModalId !== null && (() => {
               const camId = camaraSecretaModalId;
-              const cam = camarasDaTorre(state)[camId];
+              const cam = CAMARAS_SECRETAS[camId];
               if (!cam) return null;
               const cf = cam.floor;
               const cEst = state.camarasSecretasEstado?.[camId] ?? { descoberta: false, tentativas: 0, encontrada: false };
