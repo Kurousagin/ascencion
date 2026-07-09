@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   debitarArmazem, creditarArmazem,
   dificuldadeCamara, calcAfinidadeCamara, sortearRecompensaCamara,
-  idFragmentoCamara, CODEX_FRAGMENTOS, CAMARAS_SECRETAS,
+  CAMARAS_SECRETAS,
   getMsPerDay, MS_PER_GAME_DAY_BASE, verificarRequisitoCamara, calcNpcPower, gerarNomeNpc,
   avancarGuerra, getEfeitos,
   type CamaraSecreta, type NPC, type ProfissaoId, type GameState, type GuerraAtiva,
@@ -278,15 +278,3 @@ describe('avancarGuerra (mortos do dia + feitos de vitória)', () => {
   });
 });
 
-describe('páginas de câmara no Codex', () => {
-  it('gera um fragmento cam_<id> para cada câmara com loreGanho', () => {
-    Object.entries(CAMARAS_SECRETAS).forEach(([key, cam]) => {
-      if (!cam.resultado.loreGanho) return;
-      const frag = CODEX_FRAGMENTOS[idFragmentoCamara(key)];
-      expect(frag).toBeDefined();
-      expect(frag.tipo).toBe('camara');
-      expect(frag.titulo).toBe(cam.resultado.loreGanho.titulo);
-      expect(frag.capitulo).toBe(Math.ceil(cam.floor / 5));
-    });
-  });
-});

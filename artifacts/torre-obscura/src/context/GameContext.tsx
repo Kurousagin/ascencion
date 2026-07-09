@@ -23,8 +23,8 @@ import {
   RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
 import {
-  CAMARAS_SECRETAS, verificarRequisitoCamara, calcExploracaoCamara,
-  sortearRecompensaCamara, idFragmentoCamara, type CamaraSecreta,
+  camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, calcExploracaoCamara,
+  sortearRecompensaCamara, type CamaraSecreta,
 } from '../camara-engine';
 import {
   tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
@@ -560,6 +560,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       void releaseAllPrimordialClaims(getDeviceId());
     }
     const s = createInitialState();
+    s.camaraSeed = novaCamaraSeed(getDeviceId()); // torre única deste jogador
     if (lancamento) {
       // O NPC especial é adicionado DEPOIS via adicionarNpcLancamento (gacha de lançamento).
       // Aqui apenas aplicamos bônus de recursos e moral.
@@ -662,6 +663,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.habitantesEscolhaFeita)  parsed.habitantesEscolhaFeita = {};
     if (!parsed.camarasSecretasEstado)   parsed.camarasSecretasEstado = {};
     if (!parsed.camarasNovasDescobertas) parsed.camarasNovasDescobertas = [];
+    // Câmaras procedurais: saves antigos ganham uma seed (sua torre passa a ter
+    // câmaras próprias). O estado de progresso legado por id é descartado, pois as
+    // câmaras antigas (fixas) não existem mais nesta torre.
+    if (parsed.camaraSeed == null) { parsed.camaraSeed = novaCamaraSeed(getDeviceId()); parsed.camarasSecretasEstado = {}; }
+    if (!parsed.camaraLoresDescobertas)  parsed.camaraLoresDescobertas = [];
     if (!parsed.ultimaExpedicaoGrupo)    parsed.ultimaExpedicaoGrupo = [];
     if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
     if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
@@ -984,7 +990,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // reveladas nesta volta — a descoberta é fruto de explorar aquele andar e,
       // no retorno, perceber que o requisito foi atingido (narrativa da janela
       // dourada). Evita revelar câmaras de andares distantes por um requisito global.
-      Object.entries(CAMARAS_SECRETAS).forEach(([camaraId, camara]) => {
+      Object.entries(camarasDaTorre(s)).forEach(([camaraId, camara]) => {
         if (camara.floor !== floorData.floor) return;
         if (!s.camarasSecretasEstado?.[camaraId]?.descoberta && verificarRequisitoCamara(s, camara.requisito)) {
           if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
@@ -1619,7 +1625,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // camaraId (ex.: "5_1"). Custo de comida cobrado por tentativa.
   const explorarCamaraSecreta = (camaraId: string, npcIds: string[]) => {
     if (!state || npcIds.length === 0) return;
-    const camara: CamaraSecreta | undefined = CAMARAS_SECRETAS[camaraId];
+    const camara: CamaraSecreta | undefined = camarasDaTorre(state)[camaraId];
     if (!camara) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
     if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
@@ -1666,8 +1672,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (r.moralBonus) { s.moral = Math.min(100, s.moral + r.moralBonus); recompensas.push(`+${r.moralBonus} moral`); }
       if (r.reliquia)   { s.reliquias = [...(s.reliquias ?? []), r.reliquia]; recompensas.push(`Relíquia: ${r.reliquia}`); }
 
-      // Página do Codex ("página rasgada" volta ao livro).
-      if (desbloquearFragmento(s, idFragmentoCamara(camaraId))) recompensas.push('Página Recuperada (Codex)');
+      // Página recuperada: câmaras são per-save, então guardamos a lore no state
+      // (apresentação no Codex/livros vem no PR de livros).
+      if (r.loreGanho) {
+        s.camaraLoresDescobertas = s.camaraLoresDescobertas ?? [];
+        if (!s.camaraLoresDescobertas.some(l => l.id === camaraId)) {
+          s.camaraLoresDescobertas.push({ id: camaraId, floor: camara.floor, titulo: r.loreGanho.titulo, texto: r.loreGanho.texto });
+          s.codexNovoFragmento = true;
+          recompensas.push('Página Recuperada');
+        }
+      }
 
       // Bônus de desempenho — sorteado, para que jogadores diferentes ganhem coisas diferentes.
       const bonus = sortearRecompensaCamara(desempenho);
