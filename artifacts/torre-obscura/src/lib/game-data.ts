@@ -2204,6 +2204,19 @@ export const TEMPORADAS: Record<number, TemporadaData> = {
 // Capítulo (tier 1-4) de um andar — Temporada I usa ceil(floor/5).
 export const capituloDoAndar = (floor: number): number => Math.ceil(floor / 5);
 
+// ─── Temporada (fonte única para telas/lore/gatilhos) ─────────────────────────
+// Temporada de um andar (T1=1–20, T2=21–40, …). Fonte única para modularidade —
+// T3–T5 plugam só estendendo TEMPORADAS.
+export const temporadaDeAndar = (floor: number): number => Math.min(5, Math.max(1, Math.ceil(floor / 20)));
+
+// Temporada "ativa" do save: até onde o conteúdo está liberado. Por ora, T2 quando
+// desbloqueado globalmente (10 pioneiros no Andar 20); senão T1.
+export const temporadaAtiva = (t2Desbloqueado: boolean): number => (t2Desbloqueado ? 2 : 1);
+
+// Último andar visível/jogável na temporada ativa.
+export const andarMaxTemporada = (t2Desbloqueado: boolean): number =>
+  TEMPORADAS[temporadaAtiva(t2Desbloqueado)].andares[1];
+
 export const CODEX_FRAGMENTOS: Record<string, FragmentoCodex> = {
   // ── Capítulo I (andares 1–5) ──────────────────────────────────────────────
   hab_1:    { id: 'hab_1',    tipo: 'habitante',    temporada: 1, capitulo: 1, ordem: 1,
