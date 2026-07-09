@@ -13,19 +13,22 @@ import {
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
   generateNpcGacha, calcCustoGacha, GACHA_BATCH,
-  HABITANTES, BOSS_ECO_LORE, verificarQuestAndar, HabitanteAndar,
+  HABITANTES, BOSS_ECO_LORE,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
   getRandomHabilidade,
-  QuestOculta, gerarQuestOculta, verificarQuestOculta,
   atualizarRecuperacaoPrimordial, PRIMORDIAL_RECUPERACAO_T1,
-  MetaDiariaId, hojeStrLocal, gerarObjetivosDoDia, METAS_DIARIAS_META,
+  hojeStrLocal,
   RELIQUIAS_CATALOGO,
 } from '../lib/game-data';
 import {
   camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, calcExploracaoCamara,
   sortearRecompensaCamara, type CamaraSecreta,
 } from '../camara-engine';
+import {
+  verificarQuestAndar, verificarQuestOculta, gerarQuestOculta, gerarObjetivosDoDia,
+  METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
+} from '../quest-engine';
 import {
   tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
   fatorHumor, getAfinidade, AF_AMIZADE,
