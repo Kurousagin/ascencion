@@ -5,9 +5,8 @@
 // superfície de import. Direção de dependência: GameContext → camara-engine →
 // game-data (nunca o contrário — evita ciclos).
 
-// Regras puras — permanecem em game-data (re-exportadas aqui). A geração
-// procedural por seed é o que o motor adiciona.
 export {
+  CAMARAS_SECRETAS,
   dificuldadeCamara,
   calcAfinidadeCamara,
   calcExploracaoCamara,
@@ -22,7 +21,3 @@ export type {
   ResultadoCamara,
   RecompensaCamaraBonus,
 } from '../lib/game-data';
-
-// Geração procedural (novo)
-export { camarasDaTorre, gerarCamarasDoAndar, novaCamaraSeed } from './generate';
-export { mulberry32, rngPara } from './rng';

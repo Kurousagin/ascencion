@@ -1,4 +1,4 @@
-import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAPACIDADE_BASE, type ProfissaoId } from './game-data';
+import { GameState, generateNPC, HABITANTES, CODEX_FRAGMENTOS, CAMARAS_SECRETAS, CAPACIDADE_BASE, type ProfissaoId } from './game-data';
 
 /**
  * Cidadelas de teste pré-populadas para validar features durante desenvolvimento.
@@ -101,8 +101,6 @@ function createTestSaveBasic(): GameState {
     ],
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camaraSeed: 987654321,
-    camaraLoresDescobertas: [],
     camarasSecretasEstado: populateCamaras(),
     farmsPorAndarEClasse: farmsProntos(5),
     totalMortesAndar: mortesProntas(5),
@@ -175,8 +173,6 @@ function createTestSaveCompleta(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camaraSeed: 987654321,
-    camaraLoresDescobertas: [],
     camarasSecretasEstado: populateCamaras(),
     farmsPorAndarEClasse: farmsProntos(20),
     totalMortesAndar: mortesProntas(20),
@@ -251,8 +247,6 @@ function createTestSaveT2(): GameState {
       }),
     codexNovoFragmento: false,
     habitantesEscolhaFeita: {},
-    camaraSeed: 987654321,
-    camaraLoresDescobertas: [],
     camarasSecretasEstado: populateCamaras(),
     farmsPorAndarEClasse: farmsProntos(30),
     totalMortesAndar: mortesProntas(30),
