@@ -166,27 +166,27 @@ export function People() {
                     {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                   </span>
                   {npc.posto && (
-                    <span className="text-xs px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <Hammer size={9} /> {npc.posto}
                     </span>
                   )}
                   {npc.obscuro && (
-                    <span className="text-xs bg-orange/10 border border-orange text-orange px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                    <span className="text-[11px] bg-orange/10 border border-orange text-orange px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
                       <ShieldAlert size={10}/> OBSCURO
                     </span>
                   )}
                   {npc.emprestado && (
-                    <span className="text-xs bg-primary/15 border border-primary text-primary px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] bg-primary/15 border border-primary text-primary px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <UserPlus size={10}/> EMPRESTADO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.emprestadoAte != null ? ` · volta dia ${npc.emprestadoAte}` : ''}
                     </span>
                   )}
                   {npc.reforco && (
-                    <span className="text-xs bg-blue-500/15 border border-blue-400 text-blue-300 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
+                    <span className="text-[11px] bg-blue-500/15 border border-blue-400 text-blue-300 px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider">
                       <UserPlus size={10}/> REFORÇO{npc.donoNome ? ` · ${npc.donoNome}` : ''}{npc.reforcoConcluido ? ' · aguardando retorno' : ' · em campo'}
                     </span>
                   )}
                   {npc.emGuerra && (
-                    <span className="text-xs bg-destructive/15 border border-destructive text-destructive px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                    <span className="text-[11px] bg-destructive/15 border border-destructive text-destructive px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider animate-pulse">
                       <Swords size={10}/> NO FRONT
                     </span>
                   )}
@@ -197,21 +197,21 @@ export function People() {
                     const proximoNivel = PRIMORDIAL_RECUPERACAO_T1[nivelAtual];
                     const completo = nivelAtual >= nivelMax;
                     return (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border ${completo ? 'bg-primary/20 border-primary text-primary' : 'bg-primary/8 border-primary/40 text-primary/80'}`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border ${completo ? 'bg-primary/20 border-primary text-primary' : 'bg-primary/8 border-primary/40 text-primary/80'}`}>
                         ✦ PRIMORDIAL · {nivelAtual}/{nivelMax}
                         {!completo && proximoNivel && ` · ${totalFrags}/${proximoNivel.minFragmentos} frags`}
                       </span>
                     );
                   })()}
                   {npc.vestigio && npc.passivaId && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border bg-[#7A3D00]/20 border-[#CC6B00]/50 text-[#FF8C00]/90">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 uppercase tracking-wider border bg-[#7A3D00]/20 border-[#CC6B00]/50 text-[#FF8C00]/90">
                       ◈ VESTÍGIO
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
+            <span className={`text-[11px] font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
           </div>
 
           <div className="flex gap-4 mb-2">
@@ -241,7 +241,7 @@ export function People() {
                       key={stat.key}
                       className={`py-2 border rounded-sm relative ${isDom ? 'bg-primary/10 border-primary/50' : 'bg-black/30 border-white/5'}`}
                     >
-                      <div className={`text-xs mb-1 tracking-widest ${isDom ? 'text-primary/80' : 'text-secondary'}`}>{stat.label}</div>
+                      <div className={`text-[11px] mb-1 tracking-widest ${isDom ? 'text-primary/80' : 'text-secondary'}`}>{stat.label}</div>
                       <div className={`font-bold font-cinzel text-sm ${isDom ? 'text-primary' : 'text-foreground'}`}>{stat.value}</div>
                       {isDom && <div className="absolute top-0.5 right-1 text-[7px] text-primary/70">▲</div>}
                     </div>
@@ -252,13 +252,13 @@ export function People() {
               {/* Identidade: profissão + habilidade e seus efeitos */}
               <div className="grid grid-cols-2 gap-2 mb-1">
                 <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
-                  <div className="text-xs text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                  <div className="text-[11px] text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
                     {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
                   </div>
                   <div className="text-[12px] text-white/55 leading-snug">{PROFISSOES[getProfissao(npc)].descricao}</div>
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
-                  <div className="text-xs text-secondary tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
+                  <div className="text-[11px] text-secondary tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
                     {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
                   </div>
                   <div className="text-[12px] text-white/55 leading-snug">{HABILIDADES[npc.habilidade].descricao}</div>
@@ -268,12 +268,12 @@ export function People() {
               {/* Motor de vida: humor, casa e vínculos */}
               <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-secondary tracking-widest">HUMOR</span>
+                  <span className="text-[11px] text-secondary tracking-widest">HUMOR</span>
                   <span className={`text-[12px] font-bold ${humorCor}`}>{humor.rotulo}</span>
                 </div>
                 {npc.sobrenome && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-secondary tracking-widest">CASA</span>
+                    <span className="text-[11px] text-secondary tracking-widest">CASA</span>
                     <span className="text-[12px] text-primary/80 flex items-center gap-1">
                       {npc.casaFundador && <span title="Fundador da casa">♜</span>}
                       {npc.casaFundador ? `Fundador · Casa ${npc.sobrenome}` : `Casa ${npc.sobrenome}`}
@@ -282,7 +282,7 @@ export function People() {
                 )}
                 {vinculosMostrar.length > 0 && (
                   <div>
-                    <div className="text-xs text-secondary tracking-widest mb-1">VÍNCULOS</div>
+                    <div className="text-[11px] text-secondary tracking-widest mb-1">VÍNCULOS</div>
                     <div className="flex flex-wrap gap-1">
                       {vinculosMostrar.map(v => {
                         // Ícone e rótulo SEMPRE explícitos (antes um '♥' sem rótulo era
@@ -302,8 +302,8 @@ export function People() {
                         return (
                           <span
                             key={v.id}
-                            title={rotulo}
-                            className={`text-xs px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                            title={info.rotulo}
+                            className={`text-[11px] px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
                           >
                             {info.icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
                             <span className="opacity-70">· {info.rotulo}</span>
@@ -333,7 +333,7 @@ export function People() {
                     : 1;
                 return (
                   <div className="mt-3 pt-3 border-t border-primary/20 bg-primary/5 rounded-sm p-3">
-                    <div className="text-xs text-primary/70 tracking-widest mb-2 flex items-center gap-1 font-bold">
+                    <div className="text-[11px] text-primary/70 tracking-widest mb-2 flex items-center gap-1 font-bold">
                       ✦ RECUPERAÇÃO PRIMORDIAL — {nivelAtual}/{nivelMax}
                     </div>
                     {/* Barra de progresso */}
@@ -352,7 +352,7 @@ export function People() {
                       </div>
                     ) : null}
                     {nivelAtual > 0 && (
-                      <div className="text-xs text-primary/40 mt-1">
+                      <div className="text-[11px] text-primary/40 mt-1">
                         Níveis aplicados: {PRIMORDIAL_RECUPERACAO_T1.slice(0, nivelAtual).map((r, i) =>
                           `${i + 1} (${r.minFragmentos}+)`
                         ).join(' · ')}
@@ -367,7 +367,7 @@ export function People() {
                 const p = PASSIVAS[npc.passivaId as PassivaId];
                 return (
                   <div className="mt-3 pt-3 border-t border-[#7A3D00]/30 bg-[#7A3D00]/5 rounded-sm p-3">
-                    <div className="text-xs text-[#FF8C00]/70 tracking-widest mb-1 flex items-center gap-1 font-bold">
+                    <div className="text-[11px] text-[#FF8C00]/70 tracking-widest mb-1 flex items-center gap-1 font-bold">
                       ◈ PASSIVA — {p.nome.toUpperCase()}
                     </div>
                     <div className="text-[12px] text-white/60 leading-relaxed">{p.descricao}</div>
@@ -377,7 +377,7 @@ export function People() {
 
               {/* Alocação de trabalho */}
               <div className="mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
-                <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-1">
+                <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
                   <Hammer size={10} className="text-primary" /> POSTO DE TRABALHO
                 </div>
                 {npc.emGuerra ? (
@@ -417,7 +417,7 @@ export function People() {
                         });
                       })()}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1.5">★ = profissão compatível (bônus maior). Toque no posto ativo para dispensar.</div>
+                    <div className="text-[11px] text-muted-foreground mt-1.5">★ = profissão compatível (bônus maior). Toque no posto ativo para dispensar.</div>
                   </>
                 )}
               </div>
@@ -449,9 +449,9 @@ export function People() {
                 if (state.andarAtual < 6 && quartelNivel < 1) return null;
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
-                    <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-2">
+                    <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Dumbbell size={10} className="text-primary" /> TREINAMENTO — QUARTEL
-                      <span className="ml-auto text-xs text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
+                      <span className="ml-auto text-[11px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
                       <div className="text-[12px] text-muted-foreground italic">{bloqueio}</div>
@@ -462,17 +462,17 @@ export function People() {
                             <span className="flex items-center gap-1"><span className="text-success">🪵</span> {custo.madeira} madeira</span>
                             <span className="flex items-center gap-1"><span className="text-primary">⚡</span> {custo.ferro} ferro</span>
                           </div>
-                          <span className="text-xs text-primary/80 font-bold">+{ganho} {statLabel}</span>
+                          <span className="text-[11px] text-primary/80 font-bold">+{ganho} {statLabel}</span>
                         </div>
                         {instrutor ? (
-                          <div className={`text-xs px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
+                          <div className={`text-[11px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
                             <Swords size={9} />
                             Instrutor: <span className="font-bold ml-1">{instrutor.nome}</span>
                             <span className="ml-1 opacity-70">({statLabel}:{instrutorStat})</span>
                             {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 {statLabel} ↑</span> : <span className="ml-auto opacity-60">+1 {statLabel}</span>}
                           </div>
                         ) : (
-                          <div className="text-xs text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                          <div className="text-[11px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
                             Sem instrutor — treinamento solo (+1 {statLabel})
                           </div>
                         )}
@@ -483,10 +483,10 @@ export function People() {
                         >
                           <Dumbbell size={12} /> TREINAR
                           {(state.recursos.madeira < custo.madeira || state.recursos.ferro < custo.ferro) && (
-                            <span className="text-xs text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                            <span className="text-[11px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
-                        <div className="text-xs text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                        <div className="text-[11px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
                       </>
                     )}
                   </div>
@@ -547,10 +547,10 @@ export function People() {
 
                 return (
                   <div className="mt-3 pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
-                    <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-2">
+                    <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-2">
                       <Brain size={10} className="text-primary" /> ESTUDO — {path.local}
                       {path.mult && <span className="text-[10px] text-warning/70 normal-case tracking-normal font-inter">(custo {path.mult})</span>}
-                      <span className="ml-auto text-xs text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
+                      <span className="ml-auto text-[11px] text-primary/70 font-bold tracking-widest">{treinamentos}/{MAX_TREINAMENTOS} SESSÕES</span>
                     </div>
                     {bloqueio ? (
                       <div className="text-[12px] text-muted-foreground italic">{bloqueio}</div>
@@ -570,17 +570,17 @@ export function People() {
                               </>
                             )}
                           </div>
-                          <span className="text-xs text-primary/80 font-bold">+{ganho} INT</span>
+                          <span className="text-[11px] text-primary/80 font-bold">+{ganho} INT</span>
                         </div>
                         {instrutor ? (
-                          <div className={`text-xs px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
+                          <div className={`text-[11px] px-2 py-1 rounded-sm mb-2 flex items-center gap-1 border ${ganho === 2 ? 'text-success bg-success/10 border-success/30' : 'text-secondary bg-white/5 border-white/10'}`}>
                             <BookOpen size={9} />
                             Tutor: <span className="font-bold ml-1">{instrutor.nome}</span>
                             <span className="ml-1 opacity-70">(INT:{instrutorStat})</span>
                             {ganho === 2 ? <span className="ml-auto font-bold text-success">+2 INT ↑</span> : <span className="ml-auto opacity-60">+1 INT</span>}
                           </div>
                         ) : (
-                          <div className="text-xs text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
+                          <div className="text-[11px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-1 rounded-sm mb-2">
                             Sem tutor disponível — estudo solo (+1 INT)
                           </div>
                         )}
@@ -591,10 +591,10 @@ export function People() {
                         >
                           <Brain size={12} /> ESTUDAR
                           {path.semRecursos && (
-                            <span className="text-xs text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
+                            <span className="text-[11px] text-destructive font-inter normal-case tracking-normal ml-1">(recursos insuficientes)</span>
                           )}
                         </button>
-                        <div className="text-xs text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
+                        <div className="text-[11px] text-muted-foreground mt-1.5">Gasta +25 fadiga. Raridade recalculada automaticamente.</div>
                       </>
                     )}
                   </div>
@@ -630,7 +630,7 @@ export function People() {
             className="w-full flex items-center justify-between px-3 py-2 border border-destructive/20 bg-destructive/5 text-destructive text-[12px] font-bold tracking-widest font-cinzel rounded-sm touch-manipulation"
           >
             <span>{state.npcs.filter(n => !n.vivo).length} FALECIDO{state.npcs.filter(n => !n.vivo).length !== 1 ? 'S' : ''}</span>
-            <span className="text-xs opacity-60">{mostrarMortos ? '▴ OCULTAR' : '▾ MOSTRAR'}</span>
+            <span className="text-[11px] opacity-60">{mostrarMortos ? '▴ OCULTAR' : '▾ MOSTRAR'}</span>
           </button>
           {mostrarMortos && (
             <div className="space-y-2 mt-2">
@@ -650,7 +650,7 @@ export function People() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm shrink-0 self-start">FALECIDO</span>
+                  <span className="text-[11px] text-destructive tracking-widest border border-destructive/40 px-2 py-0.5 bg-destructive/8 rounded-sm shrink-0 self-start">FALECIDO</span>
                 </div>
               ))}
             </div>

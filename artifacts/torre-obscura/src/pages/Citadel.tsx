@@ -56,7 +56,7 @@ function GachaCard({ npc, revealed }: { npc: NPC; revealed: boolean }) {
       >
         {/* Rarity banner */}
         <div
-          className="text-xs font-bold tracking-[0.25em] text-center py-1 font-cinzel"
+          className="text-[11px] font-bold tracking-[0.25em] text-center py-1 font-cinzel"
           style={{ background: color, color: '#0D1117' }}
         >
           {npc.raridade.toUpperCase()}
@@ -80,11 +80,11 @@ function GachaCard({ npc, revealed }: { npc: NPC; revealed: boolean }) {
 
         {/* Profession + habilidade */}
         <div className="flex flex-col items-center gap-1 px-2 pb-2">
-          <span className="text-xs px-1.5 py-0.5 rounded-sm border font-bold tracking-wider uppercase"
+          <span className="text-[11px] px-1.5 py-0.5 rounded-sm border font-bold tracking-wider uppercase"
             style={{ color, borderColor: color, background: `${color}18` }}>
             {PROFISSOES[getProfissao(npc)].nome}
           </span>
-          <span className="text-xs text-secondary border border-white/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider bg-black/30">
+          <span className="text-[11px] text-secondary border border-white/10 px-1.5 py-0.5 rounded-sm uppercase tracking-wider bg-black/30">
             {npc.habilidade}
           </span>
         </div>
@@ -219,7 +219,7 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
         )}
         <div className="mb-2">
           <div className="font-bold text-foreground font-cinzel text-sm">{nomeEdificio(tipo, state.andarAtual).toUpperCase()}</div>
-          <div className="text-xs text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
+          <div className="text-[11px] text-secondary/70 mt-1 leading-snug">{def.descricao}</div>
           {efeitoAtual && (
             <div className="text-[10px] text-success mt-1 font-bold">{efeitoAtual}</div>
           )}
@@ -253,7 +253,7 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
           <button
             disabled={!canAfford}
             onClick={() => buildEdificio(tipo, t2Desbloqueado)}
-            className={`w-full h-8 border text-xs tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
+            className={`w-full h-8 border text-[11px] tracking-widest font-cinzel font-bold rounded-sm transition-all touch-manipulation ${
               canAfford
                 ? 'border-primary text-primary hover:bg-primary/20'
                 : 'border-card-border text-muted-foreground opacity-40 cursor-not-allowed'
@@ -354,10 +354,10 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
           <div className="flex gap-2 mb-3 relative z-10">
             {GACHA_ODDS.map(o => (
               <div key={o.raridade} className="flex-1 text-center">
-                <div className="text-xs font-bold tracking-widest" style={{ color: RARITY_COLOR[o.raridade] }}>
+                <div className="text-[11px] font-bold tracking-widest" style={{ color: RARITY_COLOR[o.raridade] }}>
                   {o.raridade.slice(0,3).toUpperCase()}
                 </div>
-                <div className="text-xs text-secondary">{o.peso}%</div>
+                <div className="text-[11px] text-secondary">{o.peso}%</div>
               </div>
             ))}
           </div>
@@ -448,7 +448,7 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
                     >
                       <div className="w-5 h-5 rotate-45 border border-primary/50" />
                       <span className="font-cinzel font-bold text-primary/50 text-3xl tracking-widest">?</span>
-                      <span className="text-xs text-primary/30 tracking-[0.3em] uppercase">REVELAR</span>
+                      <span className="text-[11px] text-primary/30 tracking-[0.3em] uppercase">REVELAR</span>
                     </div>
                   )
               ))}

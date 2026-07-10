@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
+import { migrate } from "drizzle-orm/pg-core/migration";
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 

@@ -108,7 +108,7 @@ export function War() {
           <div className="bg-gradient-to-b from-destructive/20 to-transparent border border-destructive/60 rounded-md p-4 animate-pulse">
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle size={16} className="text-destructive" />
-              <span className="text-xs text-destructive tracking-[0.25em] font-bold">INVASÃO DECLARADA</span>
+              <span className="text-[11px] text-destructive tracking-[0.25em] font-bold">INVASÃO DECLARADA</span>
             </div>
             <div className="font-cinzel text-lg text-foreground">{guerraPendente.rival.nome}</div>
             <div className="text-[12px] text-muted-foreground mt-0.5">
@@ -127,18 +127,18 @@ export function War() {
           {/* Comparação de forças */}
           <div className="grid grid-cols-3 items-center gap-2 bg-[#0D1117] border border-card-border rounded-md p-3">
             <div className="text-center">
-              <div className="text-xs text-secondary tracking-widest mb-1">SEU PODER</div>
+              <div className="text-[11px] text-secondary tracking-widest mb-1">SEU PODER</div>
               <div className="font-cinzel text-xl text-success">{Math.round(calcPoderMilitar(state))}</div>
             </div>
             <div className="text-center text-muted-foreground text-xs font-cinzel">VS</div>
             <div className="text-center">
-              <div className="text-xs text-secondary tracking-widest mb-1">INVASOR</div>
+              <div className="text-[11px] text-secondary tracking-widest mb-1">INVASOR</div>
               <div className="font-cinzel text-xl text-destructive">{guerraPendente.rival.poderBase}</div>
             </div>
           </div>
 
           {/* Seleção de defensores */}
-          <div className="text-xs text-secondary tracking-widest mb-1">MOBILIZAR DEFENSORES ({tropaDef.size})</div>
+          <div className="text-[11px] text-secondary tracking-widest mb-1">MOBILIZAR DEFENSORES ({tropaDef.size})</div>
           {elegiveis.length === 0 ? (
             <div className="text-[12px] text-destructive italic border border-destructive/30 bg-destructive/5 rounded-md p-3">
               Nenhum morador disponível! A cidadela será saqueada ao expirar o prazo.
@@ -162,7 +162,7 @@ export function War() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs text-foreground truncate">{n.nome}</div>
-                        <div className="text-xs text-muted-foreground">{prof.nome} · {Math.round(calcNpcPower(n))} pwr</div>
+                        <div className="text-[11px] text-muted-foreground">{prof.nome} · {Math.round(calcNpcPower(n))} pwr</div>
                       </div>
                     </div>
                     <div className="font-cinzel text-sm text-primary flex-shrink-0">{Math.round(calcNpcPower(n))}</div>
@@ -172,7 +172,7 @@ export function War() {
             </div>
           )}
 
-          <div className="text-xs text-muted-foreground italic text-center">
+          <div className="text-[11px] text-muted-foreground italic text-center">
             Defesa não tem custo de mobilização. Sem resposta: auto-defesa com todos os disponíveis (ou saque imediato).
           </div>
 
@@ -191,7 +191,7 @@ export function War() {
           {/* Poder militar */}
           <div className="bg-[#0D1117] border border-card-border rounded-md p-3 mb-4 flex items-center justify-between">
             <div>
-              <div className="text-xs text-secondary tracking-widest mb-1">SEU PODER MILITAR</div>
+              <div className="text-[11px] text-secondary tracking-widest mb-1">SEU PODER MILITAR</div>
               <div className="font-cinzel text-2xl text-foreground flex items-center gap-2">
                 <Flame size={18} className="text-orange" /> {poderMilitar}
               </div>
@@ -209,7 +209,7 @@ export function War() {
           </div>
 
           {/* Lista de rivais */}
-          <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-1">
+          <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
             <Users size={11} className="text-primary" /> RIVAIS AVISTADOS
           </div>
 
@@ -250,12 +250,12 @@ export function War() {
               {/* Comparação de poder */}
               <div className="grid grid-cols-3 items-center gap-2 mb-4">
                 <div className="text-center">
-                  <div className="text-xs text-secondary tracking-widest mb-1">SUA TROPA</div>
+                  <div className="text-[11px] text-secondary tracking-widest mb-1">SUA TROPA</div>
                   <div className="font-cinzel text-xl text-success">{Math.round(poderTropa)}</div>
                 </div>
                 <div className="text-center text-muted-foreground text-xs font-cinzel">VS</div>
                 <div className="text-center">
-                  <div className="text-xs text-secondary tracking-widest mb-1">{alvo.nome}</div>
+                  <div className="text-[11px] text-secondary tracking-widest mb-1">{alvo.nome}</div>
                   <div className="font-cinzel text-xl text-destructive">{alvo.poderBase}</div>
                 </div>
               </div>
@@ -269,7 +269,7 @@ export function War() {
               </div>
 
               {/* Seleção de tropa */}
-              <div className="text-xs text-secondary tracking-widest mb-2">MOBILIZAR COMBATENTES ({tropaSel.size})</div>
+              <div className="text-[11px] text-secondary tracking-widest mb-2">MOBILIZAR COMBATENTES ({tropaSel.size})</div>
               {elegiveis.length === 0 ? (
                 <div className="text-[12px] text-muted-foreground italic mb-4">
                   Nenhum morador disponível. Combatentes em expedição, emprestados ou de reforço não podem ir à guerra.
@@ -295,7 +295,7 @@ export function War() {
                             <div className="text-xs text-foreground truncate">
                               {n.nome}{n.obscuro ? ' ⚫' : ''}
                             </div>
-                            <div className="text-xs text-muted-foreground">{prof.nome} · fad {Math.floor(n.fadiga)}</div>
+                            <div className="text-[11px] text-muted-foreground">{prof.nome} · fad {Math.floor(n.fadiga)}</div>
                           </div>
                         </div>
                         <div className="font-cinzel text-sm text-primary flex-shrink-0">{Math.round(calcNpcPower(n))}</div>
@@ -307,7 +307,7 @@ export function War() {
 
               {/* Custo de mobilização */}
               <div className="bg-black/30 border border-card-border rounded-sm p-3 mb-4">
-                <div className="text-xs text-secondary tracking-widest mb-2">CUSTO DE MOBILIZAÇÃO</div>
+                <div className="text-[11px] text-secondary tracking-widest mb-2">CUSTO DE MOBILIZAÇÃO</div>
                 <div className="flex flex-wrap gap-3">
                   {RES_META.map(({ key, icon: Icon }) => {
                     const need = (custo as any)[key] as number;
@@ -321,7 +321,7 @@ export function War() {
                   })}
                   {tropaSel.size === 0 && <span className="text-[12px] text-muted-foreground italic">Selecione combatentes</span>}
                 </div>
-                <div className="text-xs text-muted-foreground mt-2">
+                <div className="text-[11px] text-muted-foreground mt-2">
                   Campanha de {GUERRA_DURACAO} dias. Os mobilizados ficam indisponíveis para torre e trabalho até o fim.
                 </div>
               </div>
@@ -361,7 +361,7 @@ function RivalCard({ rival, meuPoder, onAtacar }: { rival: RivalCidadela; meuPod
           <div className="font-cinzel text-lg text-destructive flex items-center gap-1 justify-end">
             <Shield size={13} /> {rival.poderBase}
           </div>
-          <div className={`text-xs font-bold tracking-wider ${rel.c}`}>{rel.t}</div>
+          <div className={`text-[11px] font-bold tracking-wider ${rel.c}`}>{rel.t}</div>
         </div>
       </div>
       <div className="flex items-center justify-between">
@@ -402,11 +402,11 @@ function GuerraAtivaPanel() {
       <div className="bg-gradient-to-b from-destructive/10 to-transparent border border-destructive/40 rounded-md p-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs text-destructive tracking-widest mb-1 animate-pulse">CAMPANHA EM CURSO</div>
+            <div className="text-[11px] text-destructive tracking-widest mb-1 animate-pulse">CAMPANHA EM CURSO</div>
             <div className="font-cinzel text-lg text-foreground">{g.rival.nome}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-secondary tracking-widest">DIAS RESTANTES</div>
+            <div className="text-[11px] text-secondary tracking-widest">DIAS RESTANTES</div>
             <div className="font-cinzel text-2xl text-primary flex items-center gap-1 justify-end">
               <Clock size={16} /> {diasRestantes}
             </div>
@@ -415,7 +415,7 @@ function GuerraAtivaPanel() {
 
         {/* Momento */}
         <div className="mt-4">
-          <div className="flex justify-between text-xs tracking-widest mb-1">
+          <div className="flex justify-between text-[11px] tracking-widest mb-1">
             <span className="text-destructive">RECUO</span>
             <span className="text-secondary">MOMENTO {m > 0 ? '+' : ''}{m}</span>
             <span className="text-success">AVANÇO</span>
@@ -433,7 +433,7 @@ function GuerraAtivaPanel() {
         {/* Suprimento */}
         <div className="mt-3 space-y-2">
           <div>
-            <div className="text-xs text-secondary tracking-widest mb-1">CONSUMO DIÁRIO PREVISTO</div>
+            <div className="text-[11px] text-secondary tracking-widest mb-1">CONSUMO DIÁRIO PREVISTO</div>
             <div className="flex gap-4 text-[12px]">
               {(() => {
                 const custo = calcCustoSuprimentoGuerra(vivos.length);
@@ -464,22 +464,22 @@ function GuerraAtivaPanel() {
       {/* Baixas */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-[#0D1117] border border-card-border rounded-md p-2.5 text-center">
-          <div className="text-xs text-secondary tracking-widest mb-1">SEUS MORTOS</div>
+          <div className="text-[11px] text-secondary tracking-widest mb-1">SEUS MORTOS</div>
           <div className="font-cinzel text-lg text-destructive flex items-center justify-center gap-1"><Skull size={14} /> {g.baixasJogador}</div>
         </div>
         <div className="bg-[#0D1117] border border-card-border rounded-md p-2.5 text-center">
-          <div className="text-xs text-secondary tracking-widest mb-1">FERIDOS</div>
+          <div className="text-[11px] text-secondary tracking-widest mb-1">FERIDOS</div>
           <div className="font-cinzel text-lg text-warning flex items-center justify-center gap-1"><HeartPulse size={14} /> {g.feridosJogador}</div>
         </div>
         <div className="bg-[#0D1117] border border-card-border rounded-md p-2.5 text-center">
-          <div className="text-xs text-secondary tracking-widest mb-1">BAIXAS RIVAIS</div>
+          <div className="text-[11px] text-secondary tracking-widest mb-1">BAIXAS RIVAIS</div>
           <div className="font-cinzel text-lg text-primary flex items-center justify-center gap-1"><Swords size={14} /> {g.baixasRival}</div>
         </div>
       </div>
 
       {/* Integridade do rival */}
       <div>
-        <div className="flex justify-between text-xs text-secondary tracking-widest mb-1">
+        <div className="flex justify-between text-[11px] text-secondary tracking-widest mb-1">
           <span>EXÉRCITO RIVAL</span><span>{Math.round(g.rivalIntegridade * 100)}%</span>
         </div>
         <div className="h-2 bg-black/60 rounded-full overflow-hidden">
@@ -489,7 +489,7 @@ function GuerraAtivaPanel() {
 
       {/* Tropa mobilizada */}
       <div>
-        <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-1">
+        <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
           <Users size={11} className="text-primary" /> TROPA NO FRONT ({vivos.length}/{tropa.length})
         </div>
         <div className="space-y-1.5">
@@ -501,11 +501,11 @@ function GuerraAtivaPanel() {
               </div>
               {n.vivo ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">fad {Math.floor(n.fadiga)}</span>
+                  <span className="text-[11px] text-muted-foreground">fad {Math.floor(n.fadiga)}</span>
                   <span className="font-cinzel text-xs text-primary">{Math.round(calcNpcPower(n))}</span>
                 </div>
               ) : (
-                <span className="text-xs text-destructive tracking-widest">TOMBOU</span>
+                <span className="text-[11px] text-destructive tracking-widest">TOMBOU</span>
               )}
             </div>
           ))}
@@ -541,7 +541,7 @@ function HistoricoGuerras() {
   if (!h || h.length === 0) return null;
   return (
     <div className="mt-6">
-      <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-1">
+      <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
         <History size={11} className="text-primary" /> CAMPANHAS PASSADAS
       </div>
       <div className="space-y-1.5">
@@ -551,11 +551,11 @@ function HistoricoGuerras() {
             <div key={reg.id} className={`flex items-center justify-between px-3 py-2 rounded-sm border text-xs ${venceu ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'}`}>
               <div className="min-w-0">
                 <div className="text-foreground truncate">{reg.rivalNome}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-[11px] text-muted-foreground">
                   dias {reg.diaInicio}–{reg.diaFim} · {reg.baixasJogador} baixas
                 </div>
               </div>
-              <span className={`text-xs font-bold tracking-widest flex-shrink-0 ml-2 ${venceu ? 'text-success' : 'text-destructive'}`}>
+              <span className={`text-[11px] font-bold tracking-widest flex-shrink-0 ml-2 ${venceu ? 'text-success' : 'text-destructive'}`}>
                 {venceu ? 'VITÓRIA' : 'DERROTA'}
               </span>
             </div>

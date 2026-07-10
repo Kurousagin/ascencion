@@ -1,37 +1,25 @@
 {
   "name": "Torre Obscura",
   "short_name": "Torre Obscura",
-  "description": "Jogo de simulação e gerenciamento: guie sobreviventes em uma torre mística que não termina onde parece.",
+  "description": "Jogo de simulação e gerenciamento: guie sobreviventes em uma torre mística de 20 andares.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0A0E14",
-  "theme_color": "#0D1117",
+  "theme_color": "#00E5CC",
   "lang": "pt-BR",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }

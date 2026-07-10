@@ -1,4 +1,4 @@
-import { Eye, Building2, Landmark, Users, Handshake } from 'lucide-react';
+import { Eye, Building2, Landmark, Users, ScrollText, Handshake, Swords } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -8,15 +8,14 @@ interface BottomNavProps {
   badges?: Partial<Record<string, number>>;
 }
 
-// 5 destinos (teto confortável para thumb reach em mobile). LOG vive dentro de
-// OBS e GUERRA dentro de ALIANÇA, via sub-abas no App — o currentTab recebido
-// aqui já vem agrupado (log→obs, guerra→alianca).
 const tabs = [
   { id: 'obs',      label: 'OBS',      icon: Eye },
   { id: 'torre',    label: 'TORRE',    icon: Building2 },
   { id: 'cidadela', label: 'CIDADELA', icon: Landmark },
   { id: 'povo',     label: 'POVO',     icon: Users },
   { id: 'alianca',  label: 'ALIANÇA',  icon: Handshake },
+  { id: 'guerra',   label: 'GUERRA',   icon: Swords },
+  { id: 'log',      label: 'LOG',      icon: ScrollText },
 ];
 
 export function BottomNav({ currentTab, onTabChange, badges }: BottomNavProps) {
@@ -63,12 +62,12 @@ export function BottomNav({ currentTab, onTabChange, badges }: BottomNavProps) {
                 className={`mb-[3px] transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
               />
               {!!badges?.[t.id] && (
-                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border border-background animate-pulse-atencao leading-none">
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border border-background animate-pulse leading-none">
                   {badges[t.id]! > 9 ? '9+' : badges[t.id]}
                 </span>
               )}
             </span>
-            <span className={`text-xs font-bold tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+            <span className={`text-[11px] font-bold tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
               {t.label}
             </span>
           </button>
