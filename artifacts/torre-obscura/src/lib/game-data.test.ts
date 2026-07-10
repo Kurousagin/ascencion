@@ -4,7 +4,7 @@ import {
   getMsPerDay, MS_PER_GAME_DAY_BASE, calcNpcPower, gerarNomeNpc,
   temporadaDeAndar, temporadaAtiva, andarMaxTemporada,
   avancarGuerra, getEfeitos,
-  CODEX_FRAGMENTOS, ehFragmentoPrincipal, paginasDoLivro,
+  CODEX_FRAGMENTOS, ehFragmentoPrincipal, paginasDoLivro, capitulosDoLivro,
   progressoLivroTemporada, livroDaTemporadaDisponivel,
   type NPC, type GameState, type GuerraAtiva,
 } from './game-data';
@@ -247,5 +247,34 @@ describe('Livro da temporada (Codex — história principal)', () => {
     expect(paginasDoLivro(2).length).toBeGreaterThan(0);
     expect(paginasDoLivro(3)).toEqual([]);
     expect(livroDaTemporadaDisponivel(st([]), 3)).toBe(false);
+  });
+});
+
+import { livroDaTemporada } from './livros-content';
+
+describe('Livro — capítulos e narrativa autoral', () => {
+  it('capitulosDoLivro(1) agrupa os principais por capítulo (soma dos parágrafos = nº de páginas)', () => {
+    const caps = capitulosDoLivro(1);
+    expect(caps.length).toBeGreaterThan(0);
+    const totalPar = caps.reduce((n, c) => n + c.paragrafos.length, 0);
+    expect(totalPar).toBe(paginasDoLivro(1).length);
+    // capítulos em ordem crescente
+    for (let i = 1; i < caps.length; i++) expect(caps[i].capitulo).toBeGreaterThan(caps[i - 1].capitulo);
+  });
+
+  it('livroDaTemporada(1) e (2) retornam a versão AUTORAL (prosa costurada, 4 capítulos)', () => {
+    for (const t of [1, 2]) {
+      const livro = livroDaTemporada(t);
+      expect(livro.length).toBe(4);
+      expect(livro.every(c => c.nome.length > 0 && c.paragrafos.length >= 4)).toBe(true);
+    }
+    // T1: capítulos 1–4; T2: 5–8
+    expect(livroDaTemporada(1).map(c => c.capitulo)).toEqual([1, 2, 3, 4]);
+    expect(livroDaTemporada(2).map(c => c.capitulo)).toEqual([5, 6, 7, 8]);
+  });
+
+  it('temporada sem versão autoral cai no agrupamento cru (vazio em T3)', () => {
+    expect(livroDaTemporada(3)).toEqual(capitulosDoLivro(3));
+    expect(livroDaTemporada(3)).toEqual([]);
   });
 });
