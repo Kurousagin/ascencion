@@ -1,6 +1,7 @@
-// ─── CAMARAS_SECRETAS — Conteúdo narrativo apenas ───────────────────────────
-// Texto puro das câmaras secretas (descritivo, sucessoTexto, falhaTexto, loreGanho)
-// Recomendação: incluir este em lore-content.ts no futuro, separado temporariamente por tamanho
+// ─── CAMARAS_LORE — texto narrativo das câmaras secretas ─────────────────────
+// Única fonte de verdade do texto (descricao, sucessoTexto, falhaTexto, loreGanho).
+// A mecânica (requisito, dificuldade, custo, recompensas) vive em game-data.ts,
+// que consome este objeto via spread em CAMARAS_SECRETAS.
 
 export const CAMARAS_LORE: Record<string, {
   descricao: string;
@@ -73,8 +74,8 @@ export const CAMARAS_LORE: Record<string, {
   '7_2': {
     descricao: 'Entre as raízes do andar, há uma câmara que guarda o que germinou antes da Torre existir.',
     resultado: {
-      sucessoTexto: 'Os raros perceberam. Dentro, o primórdio documentado.',
-      falhaTexto: 'Sem raros, a câmara permanece invisível.',
+      sucessoTexto: 'Só olhos que a Torre marcou perceberam. Dentro, o primórdio preservado.',
+      falhaTexto: 'Sem esses olhos, a câmara permanece invisível.',
       loreGanho: { titulo: 'O Que Veio Primeiro', texto: 'Antes da Torre, algo crescia aqui. A Torre foi construída SOBRE isso, não antes. Aquilo continua crescendo.' },
     },
   },
@@ -90,7 +91,7 @@ export const CAMARAS_LORE: Record<string, {
     descricao: 'O Ferreiro Espectral mantém uma forja que só quem sofreu o suficiente consegue ligar.',
     resultado: {
       sucessoTexto: 'A forja acendeu. Dentro, armas que o Ferreiro nunca terminou.',
-      falhaTexto: 'A forja apagou — você não tinha suficiente morte para acendê-la.',
+      falhaTexto: 'A forja apagou — ela exige perdas que a sua cidadela ainda não conheceu.',
       loreGanho: { titulo: 'A Arma Inacabada', texto: 'O Ferreiro tentava forjar algo que pudesse ferir a própria Torre. Nunca terminou. Aqui estão seus rascunhos.' },
     },
   },
@@ -105,7 +106,7 @@ export const CAMARAS_LORE: Record<string, {
   '10_2': {
     descricao: 'Um segundo arquivo existe aqui — nomes que foram catalogados e depois apagados deliberadamente.',
     resultado: {
-      sucessoTexto: 'Os nomes apareceram. Cada um uma história que foi deletada.',
+      sucessoTexto: 'Os nomes apareceram. Cada um, uma história riscada dos registros.',
       falhaTexto: 'Os nomes permaneceram invisíveis — você não tinha direito de ler.',
       loreGanho: { titulo: 'Os Esquecidos', texto: 'Expedições inteiras passaram aqui. A Torre catalogou cada uma. Depois apagou. Aqui estão seus nomes, como resistência contra o esquecimento.' },
     },
@@ -139,7 +140,7 @@ export const CAMARAS_LORE: Record<string, {
     resultado: {
       sucessoTexto: 'Encontrou o plano. O Comandante sabia como vencer desde o começo.',
       falhaTexto: 'Sem a bênção do Comandante, a câmara permanece estratégica mas fechada.',
-      loreGanho: { titulo: 'A Estratégia Abandonada', texto: 'O Comandante viu como ganhar. Mas optou por perder. Aqui está documentado por quê — e a resposta é pior que qualquer derrota.' },
+      loreGanho: { titulo: 'A Estratégia Abandonada', texto: 'Dizem que o Comandante viu como vencer — e escolheu não vencer. Aqui está registrado por quê. E a resposta é pior que qualquer derrota.' },
     },
   },
   '15_1': {
@@ -154,7 +155,7 @@ export const CAMARAS_LORE: Record<string, {
     descricao: 'A pergunta que o Vigia recusou responder tem uma câmara própria — e ela continua fazendo perguntas.',
     resultado: {
       sucessoTexto: 'A pergunta abriu seus olhos. A resposta você já sabia.',
-      falhaTexto: 'Sem os incomuns, a pergunta permanece inaudível.',
+      falhaTexto: 'A pergunta só fala a ouvidos fora do comum — e permaneceu inaudível.',
       loreGanho: { titulo: 'A Imortalidade da Pergunta', texto: 'Uma pergunta bem feita nunca morre — apenas muda de quem a faz. O Vigia guardou-a aqui para que alguém mais a fizesse um dia.' },
     },
   },
@@ -179,11 +180,11 @@ export const CAMARAS_LORE: Record<string, {
     resultado: {
       sucessoTexto: 'O bastião abriu. Dentro, as evidências que ele não conseguiu destruir.',
       falhaTexto: 'Sem a bênção do Defensor, o bastião permanece intransponível.',
-      loreGanho: { titulo: 'O Que a Torre Tentou Apagar', texto: 'O Defensor não caiu em combate — foi deletado. Sua câmara é o último arquivo de que ele existiu.' },
+      loreGanho: { titulo: 'O Que a Torre Tentou Apagar', texto: 'O Defensor não caiu em combate — foi apagado da própria pedra. Sua câmara é o último registro de que ele existiu.' },
     },
   },
   '19_1': {
-    descricao: 'O Sussurro do Limiar vem de uma câmara que existe na respiração entre você e o que vem a seguir.',
+    descricao: 'O Susurro do Limiar vem de uma câmara que existe na respiração entre você e o que vem a seguir.',
     resultado: {
       sucessoTexto: 'Rastreou o sussurro. Dentro, um aviso que não é para você — é para depois.',
       falhaTexto: 'O sussurro desapareceu — você perdeu a pista.',
@@ -193,7 +194,7 @@ export const CAMARAS_LORE: Record<string, {
   '20_1': {
     descricao: 'A entidade do Andar 20 guarda uma câmara onde ela dorme enquanto não está observando ninguém.',
     resultado: {
-      sucessoTexto: 'Entraram enquanto dormia. Documentação de séculos de observação.',
+      sucessoTexto: 'Entraram enquanto ela dormia. Ali repousam os registros de séculos de vigília.',
       falhaTexto: 'Ela acordou — vocês recuaram antes de ser vistos.',
       loreGanho: { titulo: 'O Que Ela Observa', texto: 'A entidade documentou cada pessoa que chegou ao Andar 20. Seus apontamentos são precisos — ela sabe exatamente quem você é.' },
     },

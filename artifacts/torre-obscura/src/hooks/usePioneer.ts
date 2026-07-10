@@ -71,7 +71,7 @@ export function usePioneer(andarAtual: number): PioneerState {
   // Polling periódico
   useEffect(() => {
     void atualizar();
-    const t = setInterval(() => void atualizar(), POLL_MS);
+    const t = setInterval(() => { if (!document.hidden) void atualizar(); }, POLL_MS);
     const onVisible = () => { if (document.visibilityState === 'visible') void atualizar(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

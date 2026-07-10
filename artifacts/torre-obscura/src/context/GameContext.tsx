@@ -71,6 +71,8 @@ interface GameContextType {
   startTestGame: (testSave: GameState) => void;
   adicionarNpcLancamento: (npcConfig: NpcLancamento) => void;
   continueGame: () => void;
+  // Progresso do catch-up offline (dias simulados ao retomar); null fora dele.
+  catchUpProgress: { done: number; total: number } | null;
   advanceDay: () => void;
   setSpeed: (speed: 1 | 2 | 5) => void;
   buildEdificio: (tipo: EdificioTipo, t2Desbloqueado?: boolean) => void;
@@ -160,6 +162,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [hasSave, setHasSave] = useState(false);
   const [expeditionResult, setExpeditionResult] = useState<ExpeditionResult | null>(null);
   const [resultadoCamara, setResultadoCamara] = useState<ResultadoExploracaoCamara | null>(null);
+  const [catchUpProgress, setCatchUpProgress] = useState<{ done: number; total: number } | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -532,7 +535,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const advanceDay = () => {
     setState(prev => {
       if (!prev || prev.gameOver || prev.vitoria) return prev;
-      const next = processDay(JSON.parse(JSON.stringify(prev)));
+      const next = processDay(structuredClone(prev));
       next.lastTimestamp = Date.now();
       localStorage.setItem('torre_obscura_save', JSON.stringify(next));
       return next;
@@ -608,7 +611,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Chamado pelo GachaLancamento após o jogador confirmar o resultado.
   const adicionarNpcLancamento = (npcConfig: NpcLancamento) => {
     if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const npc: NPC = {
       id:           crypto.randomUUID(),
       nome:         npcConfig.nome,
@@ -640,14 +643,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     let parsed: GameState;
     try {
       parsed = JSON.parse(saved) as GameState;
-      console.log('[continueGame] Loaded from storage:', { dia: parsed.dia, andar: parsed.andarAtual });
-      setState(parsed);
     } catch {
       localStorage.removeItem('torre_obscura_save');
       setHasSave(false);
       startNewGame();
       return;
     }
+    // Todas as migrações e o catch-up acontecem ANTES de qualquer setState:
+    // publicar o objeto e mutá-lo depois deixava o React com uma referência
+    // idêntica (Object.is) e o re-render do catch-up dependia de timing.
     // Migração de saves antigos: garante o campo posto em todos os NPCs
     parsed.npcs.forEach(n => { if (n.posto === undefined) n.posto = null; });
     // Migração da guerra: defaults para saves anteriores ao sistema de guerra.
@@ -747,15 +751,39 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     // Normalize derived fields from buildings (keeps old saves' capacity in sync)
     parsed.recursos.capacidadeArmazem = getEfeitos(parsed.edificios, parsed.npcs).capacidadeArmazem;
     const msPerDay = getMsPerDay(parsed.velocidade);
-    let missed = Math.min(40, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
-    if (missed > 0) {
+    const missed = Math.min(40, Math.floor((Date.now() - parsed.lastTimestamp) / msPerDay));
+    const registrarCatchUp = (s: GameState) => {
+      s.log.unshift({ id: crypto.randomUUID(), tipo: 'info', mensagem: `O tempo passou... (${missed} dias)`, dia: s.dia });
+    };
+
+    // Poucos dias: síncrono, imperceptível.
+    if (missed <= 3) {
       for (let i = 0; i < missed; i++) {
         parsed = processDay(parsed);
         if (parsed.gameOver || parsed.vitoria) break;
       }
-      parsed.log.unshift({ id: crypto.randomUUID(), tipo: 'info', mensagem: `O tempo passou... (${missed} dias)`, dia: parsed.dia });
+      if (missed > 0) registrarCatchUp(parsed);
+      saveState(parsed);
+      return;
     }
-    saveState(parsed);
+
+    // Catch-up longo: processa em chunks cedendo o frame entre eles, para o
+    // toque em "Continuar" não congelar a UI. A TitleScreen mostra o progresso
+    // via catchUpProgress; o estado do jogo só é publicado no final.
+    void (async () => {
+      setCatchUpProgress({ done: 0, total: missed });
+      for (let i = 0; i < missed; i++) {
+        parsed = processDay(parsed);
+        if (parsed.gameOver || parsed.vitoria) break;
+        if ((i + 1) % 3 === 0) {
+          setCatchUpProgress({ done: i + 1, total: missed });
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+      registrarCatchUp(parsed);
+      setCatchUpProgress(null);
+      saveState(parsed);
+    })();
   };
 
   const setSpeed = (speed: 1 | 2 | 5) => {
@@ -769,7 +797,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (tipo === 'RetratoTorre' && !t2Desbloqueado) return;
     const def = BUILDINGS[tipo];
     if (!def) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const existente = s.edificios.find(e => e.tipo === tipo);
     const nivelAtual = existente?.nivel ?? 0;
     if (nivelAtual >= def.maxNivel) return;
@@ -794,7 +822,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const sendExpedition = (npcIds: string[], targetFloor?: number) => {
     if (!state || npcIds.length === 0) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
 
     // targetFloor permite explorar andares já conquistados (modo farm).
     // Sem targetFloor (ou igual a andarAtual) → modo avançar.
@@ -1088,7 +1116,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const invocarGacha = (): NPC[] => {
     if (!state) return [];
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const popViva = s.npcs.filter(n => n.vivo).length;
     const ef = getEfeitos(s.edificios, s.npcs);
     const slots = ef.capPopulacao - popViva;
@@ -1127,7 +1155,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const debitado = debitarArmazem(prev.recursos, r);
         if (!debitado) return prev; // saldo insuficiente no estado atual: nada muda
         ok = true;
-        const s = JSON.parse(JSON.stringify(prev)) as GameState;
+        const s = structuredClone(prev) as GameState;
         s.recursos = debitado;
         addLog(s, 'info', `ENVIO À ALIADA: ${resumoRecursos(r, '-')}.`);
         s.lastTimestamp = Date.now();
@@ -1143,7 +1171,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const estornarRecursos = (r: Recursos) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       const { recursos } = creditarArmazem(s.recursos, r);
       s.recursos = recursos;
       addLog(s, 'alerta', `ENVIO FALHOU - ${resumoRecursos(r, '+')} devolvidos ao armazém.`);
@@ -1158,7 +1186,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const creditarRecursos = (r: Recursos, remetente: string) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       const { recursos, perdeu } = creditarArmazem(s.recursos, r);
       s.recursos = recursos;
       addLog(s, 'descoberta', `RECEBIDO DE ${remetente.toUpperCase()}: ${resumoRecursos(r, '+')}.`);
@@ -1181,7 +1209,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         if (!prev) return prev;
         const alvo = prev.npcs.find(n => n.id === npcId);
         if (!alvo || !podeEmprestar(alvo)) return prev; // inelegível: nada muda
-        const s = JSON.parse(JSON.stringify(prev)) as GameState;
+        const s = structuredClone(prev) as GameState;
         removido = s.npcs.find(n => n.id === npcId) ?? null;
         s.npcs = s.npcs.filter(n => n.id !== npcId);
         addLog(s, 'info', `${alvo.nome.toUpperCase()} partiu emprestado para a aliada.`);
@@ -1198,7 +1226,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const restaurarMorador = (npc: NPC) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       if (s.npcs.some(n => n.id === npc.id)) return prev; // já presente: evita duplicar
       const limpo: NPC = { ...npc };
       delete limpo.emprestado; delete limpo.emprestadoAte;
@@ -1219,7 +1247,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       if (s.npcs.some(n => n.id === base.id)) return prev; // já recebido
       const morador: NPC = {
         ...base,
@@ -1245,7 +1273,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (!prev) return prev;
       const alvo = prev.npcs.find(n => n.id === npcId);
       if (!alvo || (!alvo.emprestado && !alvo.reforco)) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       s.npcs = s.npcs.filter(n => n.id !== npcId);
       const causa = alvo.vivo
         ? alvo.reforco ? 'retornou após a expedição' : 'retornou ao dono'
@@ -1264,7 +1292,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       if (s.npcs.some(n => n.id === base.id)) return prev; // já recebido
       const morador: NPC = {
         ...base,
@@ -1291,7 +1319,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       if (s.npcs.some(n => n.id === base.id)) return prev; // já recebido
       const emGuerraAgora = !!s.guerra;
       const morador: NPC = {
@@ -1325,7 +1353,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const reintegrarMorador = (base: MoradorBase, morreu: boolean) => {
     setState(prev => {
       if (!prev) return prev;
-      const s = JSON.parse(JSON.stringify(prev)) as GameState;
+      const s = structuredClone(prev) as GameState;
       if (morreu) {
         addLog(s, 'morte', `${base.nome.toUpperCase()} MORREU numa expedição da aliada e não retornará.`);
       } else if (s.npcs.some(n => n.id === base.id)) {
@@ -1352,7 +1380,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const declararGuerra = (rival: RivalCidadela, tropaIds: string[]): boolean => {
     if (!state || state.guerra) return false;
     if (tropaIds.length < GUERRA_MIN_TROPA) return false;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const tropa = s.npcs.filter(n => tropaIds.includes(n.id));
     if (tropa.length !== tropaIds.length) return false;
     if (!tropa.every(podeGuerrear)) return false;
@@ -1385,7 +1413,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const responderGuerra = (tropaIds: string[]): boolean => {
     if (!state || !state.guerraPendente || state.guerra) return false;
     if (tropaIds.length < GUERRA_MIN_TROPA) return false;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const rival = s.guerraPendente!.rival;
     const tropa = s.npcs.filter(n => tropaIds.includes(n.id) && podeGuerrear(n));
     if (tropa.length < GUERRA_MIN_TROPA) return false;
@@ -1413,7 +1441,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const treinarNpc = (npcId: string) => {
     if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const npc = s.npcs.find(n => n.id === npcId);
     if (!npc) return;
 
@@ -1472,7 +1500,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Prefere Arquivo (T2) quando disponível; cai para Templo (T1) caso contrário.
   const estudarNpc = (npcId: string) => {
     if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const npc = s.npcs.find(n => n.id === npcId);
     if (!npc) return;
 
@@ -1530,7 +1558,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!state) return;
     const hab = HABITANTES[floor];
     if (!hab) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const est = s.habitantesEstado[floor] ?? 'oculto';
 
     if (est === 'descoberto') {
@@ -1590,7 +1618,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!state) return;
     const hab = HABITANTES[floor];
     if (!hab?.quest.escolha) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     if (s.habitantesEstado[floor] !== 'aguardando_escolha') return;
     const opcao = hab.quest.escolha.opcoes.find(o => o.id === opcaoId);
     if (!opcao) return;
@@ -1647,7 +1675,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!state || npcIds.length === 0) return;
     const camara: CamaraSecreta | undefined = camarasDaTorre(state)[camaraId];
     if (!camara) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     if (!s.camarasSecretasEstado) s.camarasSecretasEstado = {};
     const est = s.camarasSecretasEstado[camaraId] ?? { descoberta: true, tentativas: 0, encontrada: false };
     if (!est.descoberta || est.encontrada) return;
@@ -1775,7 +1803,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const reconhecerCamaraDescoberta = () => {
     if (!state) return;
     if (!state.camarasNovasDescobertas || state.camarasNovasDescobertas.length === 0) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     s.camarasNovasDescobertas = (s.camarasNovasDescobertas ?? []).slice(1);
     saveState(s);
   };
@@ -1783,7 +1811,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Drena a fila de toasts pendentes (o host de feed já os ingeriu para exibir).
   const reconhecerToasts = () => {
     if (!state || !state.toastsPendentes || state.toastsPendentes.length === 0) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     s.toastsPendentes = [];
     saveState(s);
   };
@@ -1792,7 +1820,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const gerarMetasDiarias = (temAliada: boolean) => {
     if (!state) return;
     if (state.metasDiarias.data === hojeStrLocal()) return; // já geradas hoje
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     s.metasDiarias = {
       data: hojeStrLocal(),
       objetivos: gerarObjetivosDoDia(temAliada),
@@ -1807,7 +1835,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const md = state.metasDiarias;
     if (!md || md.data !== hojeStrLocal()) return;
     if (!md.objetivos.includes(id) || md.progresso.includes(id)) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     registrarProgressoMetaDiaria(s, id);
     saveState(s);
   };
@@ -1817,7 +1845,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const md = state.metasDiarias;
     if (!md || md.progresso.length < md.objetivos.length || md.objetivos.length === 0) return;
     if (md.recompensaColetada) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const ef = getEfeitos(s.edificios, s.npcs);
     const cap = ef.capacidadeArmazem;
     const sorte = Math.random() < 0.15;
@@ -1833,19 +1861,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const abrirCodex = () => {
-    if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
-    // Abrir o Codex cumpre a meta diária 'lore' (Ecos do Passado) — antes só limpava
-    // o badge e ainda saía cedo quando não havia fragmento novo, então a meta nunca
-    // marcava. registrarProgressoMetaDiaria é idempotente (no-op se não for meta de hoje).
-    registrarProgressoMetaDiaria(s, 'lore');
-    if (s.codexNovoFragmento) s.codexNovoFragmento = false;
+    if (!state || !state.codexNovoFragmento) return;
+    const s = structuredClone(state);
+    s.codexNovoFragmento = false;
     saveState(s);
   };
 
   const concluirQuestOculta = (id: string) => {
     if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const q = (s.questsOcultas ?? []).find(q => q.id === id);
     if (!q || q.estado !== 'ativa') return;
     if (!verificarQuestOculta(q, s)) return;
@@ -1879,7 +1903,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const assignPosto = (npcId: string, tipo: EdificioTipo | null) => {
     if (!state) return;
-    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    const s = structuredClone(state);
     const npc = s.npcs.find(n => n.id === npcId);
     if (!npc || !npc.vivo || npc.emExpedicao || npc.emGuerra) return;
     if (tipo === null) { npc.posto = null; saveState(s); return; }
@@ -1901,6 +1925,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       startTestGame,
       adicionarNpcLancamento,
       continueGame,
+      catchUpProgress,
       advanceDay,
       setSpeed,
       buildEdificio,

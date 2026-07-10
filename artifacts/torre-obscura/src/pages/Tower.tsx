@@ -185,7 +185,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               <div className="w-3 h-3 rotate-45 border border-primary shadow-[0_0_8px_rgba(212,175,55,0.6)] bg-primary/20" />
             </div>
             <div>
-              <div className="text-[11px] text-secondary tracking-[0.3em] mb-1">TEMPORADA I — A ASCENSÃO</div>
+              <div className="text-xs text-secondary tracking-[0.3em] mb-1">TEMPORADA I — A ASCENSÃO</div>
               <h2 className="font-cinzel font-bold text-primary tracking-[0.15em] text-lg">ASCENSÃO COMPLETA</h2>
             </div>
             <p className="text-[12px] text-white/55 leading-relaxed italic border-l border-primary/30 pl-3 text-left">
@@ -194,7 +194,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 : '"Você alcançou o limite do que a Torre revela por agora. Outros ainda percorrem os andares que você pisou. Quando dez ascenderem, o silêncio entre as temporadas será quebrado e o próximo capítulo se abrirá."'}
             </p>
             <div className="border border-primary/20 bg-black/40 rounded-sm px-4 py-4 space-y-3">
-              <div className="text-[11px] text-secondary tracking-[0.2em]">EXPLORADORES ASCENDIDOS</div>
+              <div className="text-xs text-secondary tracking-[0.2em]">EXPLORADORES ASCENDIDOS</div>
               <div className="flex gap-1.5 justify-center flex-wrap">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div
@@ -211,12 +211,12 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 {pioneersTotal} <span className="text-sm text-white/40">/ 10</span>
               </div>
               {pioneersTotal < 10 && (
-                <div className="text-[11px] text-secondary/50 tracking-wider">
+                <div className="text-xs text-secondary/50 tracking-wider">
                   {10 - pioneersTotal} explorador{10 - pioneersTotal !== 1 ? 'es' : ''} restante{10 - pioneersTotal !== 1 ? 's' : ''} para a Temporada 2
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-secondary/40 tracking-widest">
+            <p className="text-xs text-secondary/40 tracking-widest">
               Os andares conquistados permanecem acessíveis para exploração enquanto aguarda.
             </p>
           </div>
@@ -238,7 +238,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           )}
 
           {/* Capítulo */}
-          <div className="text-[11px] text-white/35 tracking-[0.25em] mb-0.5 font-inter uppercase relative z-10">
+          <div className="text-xs text-white/35 tracking-[0.25em] mb-0.5 font-inter uppercase relative z-10">
             {isFarming ? 'MODO EXPLORAÇÃO' : `CAPÍTULO ${floorData.tier} · ${CAPITULO_NOMES[floorData.tier]}`}
           </div>
 
@@ -252,8 +252,8 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             <div className="mt-1 flex items-center gap-1.5 relative z-10">
               <span className="text-base leading-none">{biomaInfo.icone}</span>
               <span className="text-[12px] text-white/60 tracking-wider">{biomaInfo.label.toUpperCase()}</span>
-              <span className="text-[11px] text-white/35 mx-1">·</span>
-              <span className="text-[11px] text-white/50 italic">{biomaInfo.dica}</span>
+              <span className="text-xs text-white/35 mx-1">·</span>
+              <span className="text-xs text-white/50 italic">{biomaInfo.dica}</span>
             </div>
           )}
 
@@ -267,9 +267,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           {/* Banner do Boss */}
           {floorData.boss && !isFarming && (
             <div className="mt-3 mb-0 px-3 py-2 rounded-sm bg-destructive/15 border border-destructive/50 relative z-10">
-              <div className="text-[11px] text-destructive/80 tracking-[0.3em] mb-0.5 font-cinzel">GUARDIÃO DO ANDAR</div>
+              <div className="text-xs text-destructive/80 tracking-[0.3em] mb-0.5 font-cinzel">GUARDIÃO DO ANDAR</div>
               <div className="text-sm font-cinzel font-bold text-destructive tracking-widest">{floorData.boss.nome}</div>
-              <div className="text-[11px] text-white/40 italic mt-0.5">{floorData.boss.epiteto}</div>
+              <div className="text-xs text-white/40 italic mt-0.5">{floorData.boss.epiteto}</div>
             </div>
           )}
 
@@ -298,7 +298,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 )}
               </div>
               {!isFarming && (
-                <div className="text-[11px] text-white/40 mt-2 tracking-wide">Em caso de falha: ~30% dos recursos são recuperados de qualquer forma.</div>
+                <div className="text-xs text-white/40 mt-2 tracking-wide">Em caso de falha: ~30% dos recursos são recuperados de qualquer forma.</div>
               )}
             </div>
           )}
@@ -323,7 +323,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-b border-primary/20 pb-2">
           HISTÓRICO DA ESCALADA
           {conquistados.length > 0 && (
-            <span className="text-[11px] text-secondary normal-case tracking-normal ml-auto font-inter">toque para explorar</span>
+            <span className="text-xs text-secondary normal-case tracking-normal ml-auto font-inter">toque para explorar</span>
           )}
         </h3>
         <div className="space-y-2">
@@ -356,13 +356,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
                       <span>{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
                       <span>{f.nome}</span>
-                      {bossEcoAtivo && <span className="text-[11px] text-primary ml-0.5" title="Eco do Capítulo desbloqueado">✦</span>}
-                      {ecoAtivo && <span className="text-[11px] text-success ml-0.5" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
+                      {bossEcoAtivo && <span className="text-xs text-primary ml-0.5" title="Eco do Capítulo desbloqueado">✦</span>}
+                      {ecoAtivo && <span className="text-xs text-success ml-0.5" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
+                      <span className="text-xs text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
                       {ecoAtivo && (
-                        <span className="text-[11px] text-success/80 font-bold">+{HABITANTES[f.floor]?.quest.ecoBonus}% LOOT</span>
+                        <span className="text-xs text-success/80 font-bold">+{HABITANTES[f.floor]?.quest.ecoBonus}% LOOT</span>
                       )}
                     </div>
                   </div>
@@ -448,7 +448,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   const total = totalFragmentosTemporada(t.numero);
                   const desbloqueados = state.codexFragmentos.filter(id => CODEX_FRAGMENTOS[id]?.temporada === t.numero).length;
                   return (
-                    <div key={t.numero} className="text-[11px] text-secondary/70 tracking-widest mt-0.5">
+                    <div key={t.numero} className="text-xs text-secondary/70 tracking-widest mt-0.5">
                       TEMPORADA {t.numero} · {t.nome.toUpperCase()} · {desbloqueados}/{total} FRAGMENTOS
                     </div>
                   );
@@ -499,7 +499,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
               {codexAbaAtiva === 'livro' ? (
               <div className="space-y-3">
-                <p className="text-[11px] text-white/40 italic leading-relaxed">
+                <p className="text-xs text-white/40 italic leading-relaxed">
                   A história principal, costurada das Verdades e do arco dos Habitantes. Reúna todas as páginas de uma temporada para montar seu volume.
                 </p>
                 {[1, 2, 3, 4, 5].map(tNum => {
@@ -514,13 +514,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         <div className="font-cinzel text-primary/80 tracking-[0.15em] text-[13px]">
                           VOL. {rom} — {selado ? 'SELADO' : (temp?.nome ?? '').toUpperCase()}
                         </div>
-                        {!selado && <span className="text-[11px] text-secondary/60">{prog.desbloqueadas}/{prog.total}</span>}
+                        {!selado && <span className="text-xs text-secondary/60">{prog.desbloqueadas}/{prog.total}</span>}
                       </div>
                       {selado ? (
-                        <p className="text-[11px] text-white/30 italic">Um volume ainda por vir. A Torre guarda o que ainda não pode ser lido.</p>
+                        <p className="text-xs text-white/30 italic">Um volume ainda por vir. A Torre guarda o que ainda não pode ser lido.</p>
                       ) : disponivel ? (
                         <>
-                          <p className="text-[11px] text-white/50 italic mb-3">O volume está completo — a história desta temporada pode ser lida.</p>
+                          <p className="text-xs text-white/50 italic mb-3">O volume está completo — a história desta temporada pode ser lida.</p>
                           <button
                             onClick={() => setLivroTemporada(tNum)}
                             className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.15em] rounded-sm text-sm touch-manipulation hover:brightness-110"
@@ -530,7 +530,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         </>
                       ) : (
                         <>
-                          <p className="text-[11px] text-white/40 italic mb-2">Reúna todas as páginas principais (Verdades e Habitantes) para montar este volume.</p>
+                          <p className="text-xs text-white/40 italic mb-2">Reúna todas as páginas principais (Verdades e Habitantes) para montar este volume.</p>
                           <div className="w-full h-1 bg-background rounded-sm overflow-hidden border border-white/5">
                             <div className="h-full bg-primary/50 transition-all" style={{ width: `${Math.round((prog.desbloqueadas / prog.total) * 100)}%` }} />
                           </div>
@@ -562,7 +562,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                       <div className="text-[12px] text-primary/60 tracking-widest font-cinzel">
                         TEMPORADA {temporada.numero} — {temporada.nome.toUpperCase()}
                       </div>
-                      <div className="text-[11px] text-secondary/60">{desbTemp}/{totalTemp}</div>
+                      <div className="text-xs text-secondary/60">{desbTemp}/{totalTemp}</div>
                     </div>
                     <div className="w-full h-1 bg-background rounded-sm overflow-hidden border border-white/5 mb-4">
                       <div className="h-full bg-primary/60 transition-all" style={{ width: `${Math.round((desbTemp / totalTemp) * 100)}%` }} />
@@ -591,12 +591,12 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             className="w-full flex items-center justify-between px-3 py-2 rounded-sm bg-black/30 border border-white/5 hover:border-primary/20 transition-colors touch-manipulation"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-secondary tracking-[0.2em] font-cinzel">
+                              <span className="text-xs text-secondary tracking-[0.2em] font-cinzel">
                                 CAP. {cap} — {(nomesCap[cap] ?? '').toUpperCase()}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-primary/50">{desbCap}/{fragsCapitulo.length}</span>
+                              <span className="text-xs text-primary/50">{desbCap}/{fragsCapitulo.length}</span>
                               <span className="text-[12px] text-secondary/50">{isExpanded ? '▲' : '▼'}</span>
                             </div>
                           </button>
@@ -617,7 +617,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                                   }`}>
                                     <div className="flex items-center gap-1.5 mb-1">
                                       <span className="text-[12px] leading-none">{tipoIcon[frag.tipo] ?? '·'}</span>
-                                      <span className={`text-[11px] tracking-wider font-cinzel ${desbloqueado ? 'text-primary/70' : 'text-white/30'}`}>
+                                      <span className={`text-xs tracking-wider font-cinzel ${desbloqueado ? 'text-primary/70' : 'text-white/30'}`}>
                                         {frag.titulo}
                                       </span>
                                       {frag.tipo === 'sussurro' && desbloqueado && (
@@ -662,7 +662,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                       <div key={l.id} className="rounded-sm border border-amber-300/20 bg-amber-300/5 p-3">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-[12px] leading-none">📖</span>
-                          <span className="text-[11px] tracking-wider font-cinzel text-primary/70">{l.titulo}</span>
+                          <span className="text-xs tracking-wider font-cinzel text-primary/70">{l.titulo}</span>
                           <span className="ml-auto text-[10px] text-secondary/50 whitespace-nowrap">Andar {l.floor}</span>
                         </div>
                         <p className="text-[12px] text-white/55 italic leading-relaxed">{l.texto}</p>
@@ -678,7 +678,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="text-4xl mb-3 opacity-30">◆</div>
                     <p className="text-[12px] text-secondary/60 tracking-widest">NENHUMA RELÍQUIA COLETADA AINDA</p>
-                    <p className="text-[11px] text-white/30 mt-2 max-w-xs">Ganhe relíquias fazendo escolhas em habitante (escolha B), descobrindo quests ocultas, ou explorando câmaras secretas.</p>
+                    <p className="text-xs text-white/30 mt-2 max-w-xs">Ganhe relíquias fazendo escolhas em habitante (escolha B), descobrindo quests ocultas, ou explorando câmaras secretas.</p>
                   </div>
                 ) : (
                   state.reliquias.map((reliquia, idx) => {
@@ -690,7 +690,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                           <div className="text-[12px] text-primary/80 font-cinzel tracking-widest">{dados.nome}</div>
                           <div className="text-[10px] text-secondary/50 whitespace-nowrap">◆ {dados.origem}</div>
                         </div>
-                        <p className="text-[11px] text-white/60 leading-relaxed">{dados.descricao}</p>
+                        <p className="text-xs text-white/60 leading-relaxed">{dados.descricao}</p>
                       </div>
                     );
                   })
@@ -701,7 +701,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
             {/* Footer */}
             <div className="p-4 border-t border-primary/10 shrink-0">
-              <p className="text-[11px] text-white/25 text-center tracking-wider italic">
+              <p className="text-xs text-white/25 text-center tracking-wider italic">
                 {codexAbaAtiva === 'livro'
                   ? 'O Livro reúne a história principal — Verdades e o arco dos Habitantes. Complete uma temporada para lê-la.'
                   : codexAbaAtiva === 'fragmentos'
@@ -758,7 +758,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
                           {hab.nome}
                         </Dialog.Title>
-                        <div className="text-[11px] text-secondary tracking-[0.2em] mt-0.5">{hab.papel.toUpperCase()} · ANDAR {hf}</div>
+                        <div className="text-xs text-secondary tracking-[0.2em] mt-0.5">{hab.papel.toUpperCase()} · ANDAR {hf}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -782,14 +782,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
                   {/* Fala do habitante */}
                   <div className="bg-black/30 rounded-sm p-4 border-l-2 border-primary/40 relative">
-                    <div className="text-[11px] text-primary/50 tracking-widest mb-1">{hab.nome.toUpperCase()}</div>
+                    <div className="text-xs text-primary/50 tracking-widest mb-1">{hab.nome.toUpperCase()}</div>
                     <p className="text-[12px] text-white/70 italic leading-relaxed">"{falaAtual}"</p>
                   </div>
 
                   {/* Cards de escolha (estado aguardando_escolha) */}
                   {est === 'aguardando_escolha' && q.escolha && (
                     <div className="space-y-2">
-                      <div className="text-[11px] text-success tracking-widest flex items-center gap-1">
+                      <div className="text-xs text-success tracking-widest flex items-center gap-1">
                         <Swords size={9} /> A ESCOLHA É SUA
                       </div>
                       {q.escolha.opcoes.map(op => (
@@ -808,7 +808,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   {/* Quest info */}
                   {est !== 'concluido' && est !== 'aguardando_escolha' && (
                     <div className={`rounded-sm p-4 border ${completavel && est === 'quest_ativa' ? 'border-success/50 bg-success/5' : 'border-white/10 bg-black/20'}`}>
-                      <div className="text-[11px] text-secondary tracking-widest mb-2 flex items-center gap-1">
+                      <div className="text-xs text-secondary tracking-widest mb-2 flex items-center gap-1">
                         <Swords size={9} /> MISSÃO
                         {completavel && est === 'quest_ativa' && (
                           <span className="ml-auto text-success font-bold animate-pulse">✓ PRONTO PARA CONCLUIR</span>
@@ -884,7 +884,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                       </div>
                       {/* Recompensa */}
                       <div className="flex items-center gap-2 border-t border-white/5 pt-2">
-                        <span className="text-[11px] text-primary/60 tracking-widest">RECOMPENSA</span>
+                        <span className="text-xs text-primary/60 tracking-widest">RECOMPENSA</span>
                         <span className="text-[12px] text-primary/90 font-medium">{q.recompensaDesc}</span>
                       </div>
                     </div>
@@ -893,12 +893,12 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   {/* Lore desbloqueado (pós-conclusão) */}
                   {est === 'concluido' && loreItem && (
                     <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
-                      <div className="text-[11px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
+                      <div className="text-xs text-primary/60 tracking-widest mb-2 flex items-center gap-1">
                         <BookOpen size={9} /> FRAGMENTO REVELADO
                       </div>
                       <div className="text-[12px] text-primary/50 mb-1 font-cinzel">{loreItem.titulo}</div>
                       <p className="text-[12px] text-white/60 italic leading-relaxed">{loreItem.texto}</p>
-                      <div className="mt-2 text-[11px] text-success/70 flex items-center gap-1">
+                      <div className="mt-2 text-xs text-success/70 flex items-center gap-1">
                         <Zap size={8} /> ECO ATIVO: +{q.ecoBonus}% loot neste andar ao explorar
                       </div>
                     </div>
@@ -1002,7 +1002,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                         <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-base leading-tight">
                           {cam.titulo}
                         </Dialog.Title>
-                        <div className="text-[11px] text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · {biomaCam.icone} {cEst.encontrada ? 'CÂMARA' : 'PISTA'}</div>
+                        <div className="text-xs text-secondary tracking-[0.2em] mt-0.5">ANDAR {cf} · {biomaCam.icone} {cEst.encontrada ? 'CÂMARA' : 'PISTA'}</div>
                       </div>
                     </div>
                     <Dialog.Close asChild>
@@ -1020,7 +1020,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   {cEst.encontrada ? (
                     <>
                       <div className="rounded-sm p-4 border border-primary/30 bg-primary/5">
-                        <div className="text-[11px] text-primary/60 tracking-widest mb-2 flex items-center gap-1">
+                        <div className="text-xs text-primary/60 tracking-widest mb-2 flex items-center gap-1">
                           <BookOpen size={9} /> FRAGMENTO REVELADO
                         </div>
                         {r.loreGanho && (
@@ -1030,7 +1030,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                           </>
                         )}
                         {recompStr && (
-                          <div className="mt-2 text-[11px] text-success/70 flex items-center gap-1">
+                          <div className="mt-2 text-xs text-success/70 flex items-center gap-1">
                             <Sparkles size={8} /> {recompStr}
                           </div>
                         )}
@@ -1154,7 +1154,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
             {/* Legenda do stat primário do bioma */}
             {biomaInfo && (
-              <div className="flex items-center gap-2 px-1 mb-2 text-[11px] text-white/40 tracking-wider">
+              <div className="flex items-center gap-2 px-1 mb-2 text-xs text-white/40 tracking-wider">
                 <span>{biomaInfo.icone}</span>
                 <span>Ordenado por <span className="text-white/60 font-bold">{statLabel[statPrimario]}</span> — stat primário de {biomaInfo.label}</span>
                 {profissaoIdeal && <span className="ml-auto text-white/30">★ = {profissaoIdeal} ideal</span>}
@@ -1196,7 +1196,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                             </div>
                             {/* Poder individual do morador */}
                             <span className="flex items-baseline gap-1 shrink-0">
-                              <span className="text-[11px] text-secondary tracking-wider">PODER</span>
+                              <span className="text-xs text-secondary tracking-wider">PODER</span>
                               <span className="text-primary font-bold text-base font-cinzel">{p.toFixed(1)}</span>
                             </span>
                           </div>
@@ -1286,7 +1286,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
         <section className="space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-white/10">
             <Eye size={11} className="text-primary/50" />
-            <span className="text-[11px] text-secondary tracking-[0.3em] font-cinzel">CÂMARAS OCULTAS</span>
+            <span className="text-xs text-secondary tracking-[0.3em] font-cinzel">CÂMARAS OCULTAS</span>
           </div>
           {(state.questsOcultas ?? []).filter(q => q.estado === 'ativa').map(q => {
             const podeConc = verificarQuestOculta(q, state);
@@ -1296,7 +1296,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
               }`}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-[11px] text-secondary/50 tracking-[0.2em] mb-0.5 font-cinzel">
+                    <div className="text-xs text-secondary/50 tracking-[0.2em] mb-0.5 font-cinzel">
                       {q.gatilho === 'exploracao' ? `CÂMARA · ANDAR ${q.andar}` : 'VISÃO DA TORRE'} · DIA {q.dia}
                     </div>
                     <div className="font-cinzel font-bold text-primary/85 tracking-wide text-sm">
@@ -1320,7 +1320,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   <span><span className="font-bold tracking-wide">REQUISITO:</span> {q.objetivo}</span>
                 </div>
                 {q.reliquia && (
-                  <div className="text-[11px] text-secondary/40 flex items-center gap-1.5 pt-1 border-t border-white/5">
+                  <div className="text-xs text-secondary/40 flex items-center gap-1.5 pt-1 border-t border-white/5">
                     <span>◆</span>
                     <span>RELÍQUIA: {q.reliquia}</span>
                   </div>
@@ -1432,7 +1432,7 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
             <span className="text-sm font-bold text-foreground">{resgatado.nome}</span>
             <span className="text-[12px] text-primary/70 ml-1">{resgatado.raridade}</span>
           </div>
-          <div className="text-[11px] text-secondary mt-1">Adicionado aos habitantes da cidadela.</div>
+          <div className="text-xs text-secondary mt-1">Adicionado aos habitantes da cidadela.</div>
         </div>
       )}
 
@@ -1443,14 +1443,14 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
             👁 HABITANTE DETECTADO
           </div>
           <div className="text-sm font-bold text-foreground font-cinzel">{habitanteDescoberto}</div>
-          <div className="text-[11px] text-secondary mt-1">Aguarda contato no histórico da Torre.</div>
+          <div className="text-xs text-secondary mt-1">Aguarda contato no histórico da Torre.</div>
         </div>
       )}
 
       {/* Eco do Capítulo (boss conquistado) */}
       {bossEco && (
         <div className="bg-primary/5 border border-primary/50 rounded-sm p-4">
-          <div className="text-[11px] text-primary tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
+          <div className="text-xs text-primary tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
             <BookOpen size={9} /> ECO DO CAPÍTULO DESBLOQUEADO
           </div>
           <div className="text-[12px] font-cinzel text-primary/80 mb-2">{bossEco.titulo}</div>
@@ -1461,10 +1461,10 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
       {/* Sussurro da Torre */}
       {sussurro && (
         <div className="bg-black/40 border border-white/15 rounded-sm p-4">
-          <div className="text-[11px] text-white/50 tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
+          <div className="text-xs text-white/50 tracking-[0.25em] mb-2 flex items-center gap-1 font-bold font-cinzel">
             🌀 SUSSURRO DA TORRE
           </div>
-          <div className="text-[11px] text-white/35 font-cinzel mb-1.5">{sussurro.titulo}</div>
+          <div className="text-xs text-white/35 font-cinzel mb-1.5">{sussurro.titulo}</div>
           <p className="text-[12px] text-white/55 italic leading-relaxed border-l border-white/10 pl-3">{sussurro.texto}</p>
           <div className="text-[10px] text-white/25 mt-2 tracking-widest">Registrado no Codex Obscuro.</div>
         </div>
@@ -1473,13 +1473,13 @@ function ExpeditionResultCard({ result, onClose }: { result: ExpeditionResult; o
       {/* Câmara Oculta descoberta */}
       {questOculta && (
         <div className="bg-[#0C0C18] border border-primary/20 rounded-sm p-4">
-          <div className="text-[11px] text-primary/55 tracking-[0.25em] mb-2 font-cinzel">
+          <div className="text-xs text-primary/55 tracking-[0.25em] mb-2 font-cinzel">
             🔍 CÂMARA OCULTA DETECTADA
           </div>
           <div className="font-cinzel font-bold text-primary/80 text-sm tracking-wide mb-1">
             {questOculta.icone} {questOculta.titulo}
           </div>
-          <div className="text-[11px] text-white/35 mt-1 leading-relaxed">
+          <div className="text-xs text-white/35 mt-1 leading-relaxed">
             Verifique a lista de andares conquistados para interagir com a câmara.
           </div>
         </div>

@@ -25,12 +25,44 @@ import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LAN
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
 
+// LOG e GUERRA não têm slot próprio na bottom nav (5 destinos): vivem como
+// sub-abas de OBS e ALIANÇA respectivamente.
+const GRUPO_DE: Record<string, string> = { log: 'obs', guerra: 'alianca' };
+const grupoDe = (tab: string) => GRUPO_DE[tab] ?? tab;
+
+const SUB_ABAS: Record<string, { id: string; label: string }[]> = {
+  obs:     [{ id: 'obs', label: 'OBSERVATÓRIO' }, { id: 'log', label: 'CRÔNICAS' }],
+  alianca: [{ id: 'alianca', label: 'ALIANÇA' }, { id: 'guerra', label: 'GUERRA' }],
+};
+
+function SubAbas({ tab, onChange }: { tab: string; onChange: (t: string) => void }) {
+  const abas = SUB_ABAS[grupoDe(tab)];
+  if (!abas) return null;
+  return (
+    <div className="flex border-b border-border bg-card/40 shrink-0">
+      {abas.map(a => (
+        <button
+          key={a.id}
+          onClick={() => onChange(a.id)}
+          className={`flex-1 min-h-[44px] text-[12px] font-bold tracking-widest touch-manipulation transition-colors border-b-2 -mb-px ${
+            tab === a.id
+              ? 'text-primary border-primary'
+              : 'text-muted-foreground border-transparent'
+          }`}
+        >
+          {a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
   const { state } = useGame();
   const gp = state?.guerraPendente;
   if (!gp) return null;
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[12px] animate-pulse">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[12px] animate-pulse-atencao">
       <span className="text-destructive font-bold tracking-wide flex items-center gap-1.5 min-w-0">
         ⚔ INVASÃO: <span className="font-normal truncate">{gp.rival.nome}</span>
         <span className="text-destructive/70 font-normal shrink-0">— {gp.prazoResposta} dia{gp.prazoResposta !== 1 ? 's' : ''} para responder</span>
@@ -51,7 +83,12 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
 function MainGameInner() {
   const { state } = useGame();
   const { caixa } = useAlliance();
-  const [tab, setTab] = useState('obs');
+  // Aba persistida na sessão: voltar do background não joga o jogador de volta em OBS.
+  const [tab, setTabState] = useState(() => sessionStorage.getItem('torre_tab') ?? 'obs');
+  const setTab = (t: string) => {
+    sessionStorage.setItem('torre_tab', t);
+    setTabState(t);
+  };
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
   const [gachaT2Open, setGachaT2Open] = useState(false);
@@ -149,6 +186,8 @@ function MainGameInner() {
       >
         <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />
 
+        <SubAbas tab={tab} onChange={setTab} />
+
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -171,7 +210,7 @@ function MainGameInner() {
         </div>
 
         <div className="relative z-50 flex-shrink-0">
-          <BottomNav currentTab={tab} onTabChange={setTab} badges={{ alianca: caixa.length }} />
+          <BottomNav currentTab={grupoDe(tab)} onTabChange={setTab} badges={{ alianca: caixa.length }} />
         </div>
       </div>
     </WarProvider>

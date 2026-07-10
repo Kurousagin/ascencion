@@ -32,7 +32,7 @@ export function PioneerPessoal({ posicao, visible, onDismiss }: PessoalProps) {
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] text-primary/60 tracking-[0.25em] font-cinzel mb-1">
+                  <div className="text-xs text-primary/60 tracking-[0.25em] font-cinzel mb-1">
                     {ePrimeiro ? '✦ PRIMEIRO PIONEER ✦' : `✦ PIONEER Nº ${posicao} ✦`}
                   </div>
                   <p className="text-[12px] text-white/80 leading-relaxed">
@@ -90,7 +90,7 @@ export function T2GlobalBanner({ nomes, visible, onDismiss }: GlobalProps) {
             <div className="relative px-6 pt-8 pb-6 text-center">
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5090D0]/70 to-transparent" />
 
-              <div className="text-[11px] text-[#5090D0]/70 tracking-[0.3em] font-cinzel mb-3">
+              <div className="text-xs text-[#5090D0]/70 tracking-[0.3em] font-cinzel mb-3">
                 ◆ EVENTO GLOBAL ◆
               </div>
 
@@ -115,7 +115,7 @@ export function T2GlobalBanner({ nomes, visible, onDismiss }: GlobalProps) {
                   <div className="text-[10px] text-[#5090D0]/50 tracking-widest mb-2">PIONEERS</div>
                   <div className="flex flex-wrap gap-1.5">
                     {nomes.map((n, i) => (
-                      <span key={i} className="text-[11px] text-[#7DB0E8]/70 bg-[#1A2840] px-2 py-0.5 rounded-sm border border-[#3A5080]/30">
+                      <span key={i} className="text-xs text-[#7DB0E8]/70 bg-[#1A2840] px-2 py-0.5 rounded-sm border border-[#3A5080]/30">
                         {n}
                       </span>
                     ))}

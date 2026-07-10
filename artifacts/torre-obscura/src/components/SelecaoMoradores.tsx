@@ -39,7 +39,7 @@ export function SelecaoMoradores({ npcs, selectedIds, onToggle, emptyLabel = 'Ne
               <div className="flex justify-between items-center gap-2 mb-1.5">
                 <span className="font-bold text-base text-foreground truncate">{n.nome}</span>
                 <span className="flex items-baseline gap-1 shrink-0">
-                  <span className="text-[11px] text-secondary tracking-wider">PODER</span>
+                  <span className="text-xs text-secondary tracking-wider">PODER</span>
                   <span className="text-primary font-bold text-base font-cinzel">{p.toFixed(1)}</span>
                 </span>
               </div>
