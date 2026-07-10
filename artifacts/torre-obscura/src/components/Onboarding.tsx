@@ -182,7 +182,7 @@ export function Onboarding({ open, onClose }: Props) {
                 <ChevronLeft size={13} /> VOLTAR
               </button>
 
-              <div className="text-[11px] text-white/25 tracking-widest">
+              <div className="text-xs text-white/25 tracking-widest">
                 {slide + 1} / {SLIDES.length}
               </div>
 

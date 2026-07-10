@@ -59,11 +59,11 @@ export function CamaraDescobertaModal() {
                 >
                   <KeyRound size={30} className="text-primary mx-auto mb-2 drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]" />
                 </motion.div>
-                <div className="text-[11px] text-primary/70 tracking-[0.35em] mb-1">PISTA ENCONTRADA</div>
+                <div className="text-xs text-primary/70 tracking-[0.35em] mb-1">PISTA ENCONTRADA</div>
                 <Dialog.Title className="font-cinzel font-bold text-primary tracking-[0.15em] text-base leading-tight drop-shadow-[0_0_6px_rgba(212,175,55,0.4)]">
                   {cam.titulo}
                 </Dialog.Title>
-                <div className="text-[11px] text-primary/50 tracking-[0.25em] mt-1">
+                <div className="text-xs text-primary/50 tracking-[0.25em] mt-1">
                   {cam.icone} ANDAR {cam.floor}
                 </div>
               </div>
