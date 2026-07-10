@@ -2482,6 +2482,30 @@ export function progressoLivroTemporada(
   return { desbloqueadas: paginas.filter(f => state.codexFragmentos.includes(f.id)).length, total: paginas.length };
 }
 
+export interface CapituloLivro {
+  capitulo: number;
+  nome: string;
+  paragrafos: string[]; // textos canônicos dos fragmentos principais, em ordem
+}
+
+// Capítulos do Livro: agrupa os fragmentos principais por capítulo e entrega os
+// textos canônicos como PARÁGRAFOS de prosa contínua — para o leitor apresentar um
+// capítulo por vez, como um livro (não passagens isoladas com título por fragmento).
+export function capitulosDoLivro(temporada: number): CapituloLivro[] {
+  const grupos = new Map<number, string[]>();
+  for (const f of paginasDoLivro(temporada)) {
+    if (!grupos.has(f.capitulo)) grupos.set(f.capitulo, []);
+    grupos.get(f.capitulo)!.push(f.texto);
+  }
+  return [...grupos.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([capitulo, paragrafos]) => ({
+      capitulo,
+      nome: CAPITULO_NOMES[capitulo] ?? `Capítulo ${capitulo}`,
+      paragrafos,
+    }));
+}
+
 // Livro liberado p/ leitura = todas as páginas principais desbloqueadas (e há conteúdo).
 export function livroDaTemporadaDisponivel(
   state: Pick<GameState, 'codexFragmentos'>, temporada: number,

@@ -167,3 +167,18 @@ A identidade do Fundador **nunca é confirmada nem negada** nos diálogos. Ele �
 | Evento "dois Primordiais no mesmo espaço" | Qualquer temporada | Sistema de detecção de anomalia no GameContext |
 | Explicação narrativa das Torres-Eco para o jogador | T2 (sutilmente) | Nenhuma — é apenas texto |
 | Resgate de Ardenas (presa no Intervalo, não afundada) | T3 | Depende do Andar 30 de T2 implementado |
+
+---
+
+## Livros Completos (O Livro do Codex)
+
+Cada temporada tem um **Livro** montável no Codex — a lore principal (as **Verdades** + o **arco dos Habitantes**) apresentada como **narrativa contínua de livro**, não como fragmentos soltos. O Livro de uma temporada só é liberado para leitura quando **todos os fragmentos principais** dela foram descobertos (`livroDaTemporadaDisponivel`).
+
+**Onde vive:** `src/lib/livros-content.ts` (`LIVROS_AUTORAIS`). Cada volume é uma lista de capítulos (um por tier/capítulo da temporada). A prosa **reaproveita os textos canônicos dos fragmentos** e adiciona **prosa de ligação** escrita à mão para costurá-los numa leitura fluida.
+
+**Regras de escrita do Livro:**
+- Fiel ao cânone: os fatos vêm dos fragmentos (`CODEX_FRAGMENTOS`); a prosa de ligação **não inventa lore nova**, só conecta.
+- Respeitar as travas: nunca dizer "100 andares" nem "Torre Original" em T1/T2 (usar "a centena", "cem câmaras", "algo além", "o Intervalo").
+- Um capítulo por tier, seguindo `CAPITULO_NOMES`.
+
+**Estender para novas temporadas:** adicionar o volume em `LIVROS_AUTORAIS[t]`. Temporadas sem versão autoral caem automaticamente no agrupamento cru dos fragmentos (`capitulosDoLivro`), então o Livro nunca fica vazio — só menos "costurado" até ser escrito. Escopo atual: **T1 e T2 escritos**; T3–T5 como fallback até serem redigidos.
