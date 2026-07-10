@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, ExpeditionResult } from '../context/GameContext';
-import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO } from '../lib/game-data';
+import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, getEfeitos, calcRecompensaAndar, calcCustoExpedicao, getProfissao, HABITANTES, BOSS_ECO_LORE, CODEX_FRAGMENTOS, TEMPORADAS, SUSSURROS_POR_CAPITULO, totalFragmentosTemporada, FragmentoCodex, capituloDoAndar, PROFISSOES, HABILIDADES, RELIQUIAS_CATALOGO, ehFragmentoPrincipal, progressoLivroTemporada, livroDaTemporadaDisponivel } from '../lib/game-data';
+import { LivroReader } from '../components/LivroReader';
 import { verificarQuestAndar, verificarQuestOculta } from '../quest-engine';
 import { camarasDaTorre, chanceAbrirCamara } from '../floor-engine';
 import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen, Dices, KeyRound } from 'lucide-react';
@@ -30,8 +31,10 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
   const [codexOpen, setCodexOpen] = useState(false);
   // Capítulo expandido no Codex (1-4); null = todos colapsados
   const [codexCapExpanded, setCodexCapExpanded] = useState<number | null>(1);
-  // Aba ativa no Codex: 'fragmentos' ou 'reliquias'
-  const [codexAbaAtiva, setCodexAbaAtiva] = useState<'fragmentos' | 'reliquias'>('fragmentos');
+  // Aba ativa no Codex: 'livro' (história principal), 'fragmentos' (dispersos) ou 'reliquias'
+  const [codexAbaAtiva, setCodexAbaAtiva] = useState<'livro' | 'fragmentos' | 'reliquias'>('livro');
+  // Temporada cujo Livro está aberto no leitor página-a-página (null = fechado)
+  const [livroTemporada, setLivroTemporada] = useState<number | null>(null);
 
   // Quando o andar avança, sai do modo farm automaticamente.
   useEffect(() => { setFarmAndar(null); }, [state.andarAtual]);
@@ -461,6 +464,16 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             {/* Abas */}
             <div className="flex border-b border-primary/10 shrink-0">
               <button
+                onClick={() => setCodexAbaAtiva('livro')}
+                className={`flex-1 px-4 py-3 text-[12px] font-cinzel tracking-widest transition-colors ${
+                  codexAbaAtiva === 'livro'
+                    ? 'bg-primary/20 text-primary border-b-2 border-primary'
+                    : 'text-secondary/60 hover:text-secondary'
+                }`}
+              >
+                O LIVRO
+              </button>
+              <button
                 onClick={() => setCodexAbaAtiva('fragmentos')}
                 className={`flex-1 px-4 py-3 text-[12px] font-cinzel tracking-widest transition-colors ${
                   codexAbaAtiva === 'fragmentos'
@@ -468,7 +481,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     : 'text-secondary/60 hover:text-secondary'
                 }`}
               >
-                FRAGMENTOS
+                DISPERSOS
               </button>
               <button
                 onClick={() => setCodexAbaAtiva('reliquias')}
@@ -484,7 +497,50 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
             {/* Conteúdo rolável */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-              {codexAbaAtiva === 'fragmentos' ? (
+              {codexAbaAtiva === 'livro' ? (
+              <div className="space-y-3">
+                <p className="text-[11px] text-white/40 italic leading-relaxed">
+                  A história principal, costurada das Verdades e do arco dos Habitantes. Reúna todas as páginas de uma temporada para montar seu volume.
+                </p>
+                {[1, 2, 3, 4, 5].map(tNum => {
+                  const temp = TEMPORADAS[tNum];
+                  const prog = progressoLivroTemporada(state, tNum);
+                  const disponivel = livroDaTemporadaDisponivel(state, tNum);
+                  const selado = prog.total === 0; // T3–5: sem conteúdo ainda
+                  const rom = ['', 'I', 'II', 'III', 'IV', 'V'][tNum] ?? String(tNum);
+                  return (
+                    <div key={tNum} className={`rounded-sm border p-4 ${disponivel ? 'border-primary/50 bg-primary/5 shadow-[0_0_12px_rgba(212,175,55,0.1)]' : 'border-white/10 bg-black/20'}`}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="font-cinzel text-primary/80 tracking-[0.15em] text-[13px]">
+                          VOL. {rom} — {selado ? 'SELADO' : (temp?.nome ?? '').toUpperCase()}
+                        </div>
+                        {!selado && <span className="text-[11px] text-secondary/60">{prog.desbloqueadas}/{prog.total}</span>}
+                      </div>
+                      {selado ? (
+                        <p className="text-[11px] text-white/30 italic">Um volume ainda por vir. A Torre guarda o que ainda não pode ser lido.</p>
+                      ) : disponivel ? (
+                        <>
+                          <p className="text-[11px] text-white/50 italic mb-3">O volume está completo — a história desta temporada pode ser lida.</p>
+                          <button
+                            onClick={() => setLivroTemporada(tNum)}
+                            className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.15em] rounded-sm text-sm touch-manipulation hover:brightness-110"
+                          >
+                            <BookOpen size={15} /> LER O LIVRO
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[11px] text-white/40 italic mb-2">Reúna todas as páginas principais (Verdades e Habitantes) para montar este volume.</p>
+                          <div className="w-full h-1 bg-background rounded-sm overflow-hidden border border-white/5">
+                            <div className="h-full bg-primary/50 transition-all" style={{ width: `${Math.round((prog.desbloqueadas / prog.total) * 100)}%` }} />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              ) : codexAbaAtiva === 'fragmentos' ? (
               <>
               {Object.values(TEMPORADAS).filter(t => t.numero <= (t2Desbloqueado ? 2 : 1)).map(temporada => {
                 const totalTemp = totalFragmentosTemporada(temporada.numero);
@@ -514,8 +570,10 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
                     {/* Capítulos */}
                     {capitulos.map(cap => {
+                      // Aba DISPERSOS: só fragmentos SECUNDÁRIOS (sussurro/eco/câmara);
+                      // os principais (Verdades/Habitantes) vivem na aba O LIVRO.
                       const fragsCapitulo = Object.values(CODEX_FRAGMENTOS)
-                        .filter(f => f.temporada === temporada.numero && f.capitulo === cap)
+                        .filter(f => f.temporada === temporada.numero && f.capitulo === cap && !ehFragmentoPrincipal(f))
                         .sort((a, b) => a.ordem - b.ordem);
                       if (fragsCapitulo.length === 0) return null;
                       const desbCap = fragsCapitulo.filter(f => state.codexFragmentos.includes(f.id)).length;
@@ -589,6 +647,25 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   </div>
                 );
               })}
+
+              {/* Páginas de Câmara — lore das câmaras exploradas (per-save, procedurais) */}
+              {(state.camaraLoresDescobertas?.length ?? 0) > 0 && (
+                <div>
+                  <div className="text-[12px] text-primary/60 tracking-widest font-cinzel mb-2">PÁGINAS DE CÂMARA</div>
+                  <div className="space-y-1.5">
+                    {state.camaraLoresDescobertas!.slice().sort((a, b) => a.floor - b.floor).map(l => (
+                      <div key={l.id} className="rounded-sm border border-amber-300/20 bg-amber-300/5 p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[12px] leading-none">📖</span>
+                          <span className="text-[11px] tracking-wider font-cinzel text-primary/70">{l.titulo}</span>
+                          <span className="ml-auto text-[10px] text-secondary/50 whitespace-nowrap">Andar {l.floor}</span>
+                        </div>
+                        <p className="text-[12px] text-white/55 italic leading-relaxed">{l.texto}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               </>
               ) : (
               <div className="space-y-3">
@@ -620,14 +697,21 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             {/* Footer */}
             <div className="p-4 border-t border-primary/10 shrink-0">
               <p className="text-[11px] text-white/25 text-center tracking-wider italic">
-                {codexAbaAtiva === 'fragmentos'
-                  ? 'Fragmentos desbloqueados ao conquistar andares, completar quests e durante expedições.'
+                {codexAbaAtiva === 'livro'
+                  ? 'O Livro reúne a história principal — Verdades e o arco dos Habitantes. Complete uma temporada para lê-la.'
+                  : codexAbaAtiva === 'fragmentos'
+                  ? 'Fragmentos dispersos: sussurros, ecos e páginas de câmara — pontas soltas do mundo, à parte do Livro.'
                   : 'Relíquias coletadas através de escolhas, quests ocultas e câmaras secretas. Úteis em Temporada III e além.'}
               </p>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* Leitor do Livro (história principal, página-a-página) */}
+      {livroTemporada !== null && (
+        <LivroReader temporada={livroTemporada} open={livroTemporada !== null} onClose={() => setLivroTemporada(null)} />
+      )}
 
       {/* ── Modal de diálogo com o Habitante ────────────────────────────────── */}
       <Dialog.Root
