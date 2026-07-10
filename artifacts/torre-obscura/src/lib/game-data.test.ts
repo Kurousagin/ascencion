@@ -4,6 +4,8 @@ import {
   getMsPerDay, MS_PER_GAME_DAY_BASE, calcNpcPower, gerarNomeNpc,
   temporadaDeAndar, temporadaAtiva, andarMaxTemporada,
   avancarGuerra, getEfeitos,
+  CODEX_FRAGMENTOS, ehFragmentoPrincipal, paginasDoLivro,
+  progressoLivroTemporada, livroDaTemporadaDisponivel,
   type NPC, type GameState, type GuerraAtiva,
 } from './game-data';
 
@@ -210,3 +212,40 @@ describe('avancarGuerra (mortos do dia + feitos de vitória)', () => {
   });
 });
 
+
+describe('Livro da temporada (Codex — história principal)', () => {
+  const porTipo = (t: string) => Object.values(CODEX_FRAGMENTOS).find(f => f.tipo === t)!;
+  const st = (frags: string[]) => ({ codexFragmentos: frags } as Pick<GameState, 'codexFragmentos'>);
+
+  it('ehFragmentoPrincipal: verdade e habitante são principais; sussurro/eco não', () => {
+    expect(ehFragmentoPrincipal(porTipo('verdade'))).toBe(true);
+    expect(ehFragmentoPrincipal(porTipo('habitante'))).toBe(true);
+    expect(ehFragmentoPrincipal(porTipo('sussurro'))).toBe(false);
+    expect(ehFragmentoPrincipal(porTipo('eco_capitulo'))).toBe(false);
+  });
+
+  it('paginasDoLivro(1) traz só principais, ordenadas por capítulo/ordem', () => {
+    const pgs = paginasDoLivro(1);
+    expect(pgs.length).toBeGreaterThan(0);
+    expect(pgs.every(ehFragmentoPrincipal)).toBe(true);
+    for (let i = 1; i < pgs.length; i++) {
+      const a = pgs[i - 1], b = pgs[i];
+      expect(a.capitulo < b.capitulo || (a.capitulo === b.capitulo && a.ordem <= b.ordem)).toBe(true);
+    }
+  });
+
+  it('livro disponível só quando TODAS as páginas principais estão desbloqueadas', () => {
+    const ids = paginasDoLivro(1).map(f => f.id);
+    expect(livroDaTemporadaDisponivel(st([]), 1)).toBe(false);
+    expect(livroDaTemporadaDisponivel(st(ids.slice(0, -1)), 1)).toBe(false); // falta 1
+    expect(livroDaTemporadaDisponivel(st(ids), 1)).toBe(true);
+    expect(progressoLivroTemporada(st(ids), 1)).toEqual({ desbloqueadas: ids.length, total: ids.length });
+  });
+
+  it('T1 e T2 têm conteúdo; temporada sem páginas (3) nunca fica disponível', () => {
+    expect(paginasDoLivro(1).length).toBeGreaterThan(0);
+    expect(paginasDoLivro(2).length).toBeGreaterThan(0);
+    expect(paginasDoLivro(3)).toEqual([]);
+    expect(livroDaTemporadaDisponivel(st([]), 3)).toBe(false);
+  });
+});

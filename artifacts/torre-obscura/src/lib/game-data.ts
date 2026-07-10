@@ -2458,6 +2458,38 @@ export function totalFragmentosTemporada(temporada: number): number {
   return Object.values(CODEX_FRAGMENTOS).filter(f => f.temporada === temporada).length;
 }
 
+// ─── LIVRO DA TEMPORADA (história principal montável) ─────────────────────────
+// Fragmento PRINCIPAL = espinha dorsal da história (Verdades + arco dos Habitantes).
+// Secundário = sussurro/eco/câmara (flavor, pontas soltas, "Fragmentos Dispersos").
+// Deriva do tipo — sem marcar entrada por entrada.
+export function ehFragmentoPrincipal(frag: FragmentoCodex): boolean {
+  return frag.tipo === 'verdade' || frag.tipo === 'habitante';
+}
+
+// Páginas do Livro de uma temporada: os fragmentos PRINCIPAIS em ordem narrativa
+// (capítulo, ordem). O "livro" reusa os textos canônicos dos fragmentos.
+export function paginasDoLivro(temporada: number): FragmentoCodex[] {
+  return Object.values(CODEX_FRAGMENTOS)
+    .filter(f => f.temporada === temporada && ehFragmentoPrincipal(f))
+    .sort((a, b) => a.capitulo - b.capitulo || a.ordem - b.ordem);
+}
+
+// Progresso do livro (páginas principais desbloqueadas / total).
+export function progressoLivroTemporada(
+  state: Pick<GameState, 'codexFragmentos'>, temporada: number,
+): { desbloqueadas: number; total: number } {
+  const paginas = paginasDoLivro(temporada);
+  return { desbloqueadas: paginas.filter(f => state.codexFragmentos.includes(f.id)).length, total: paginas.length };
+}
+
+// Livro liberado p/ leitura = todas as páginas principais desbloqueadas (e há conteúdo).
+export function livroDaTemporadaDisponivel(
+  state: Pick<GameState, 'codexFragmentos'>, temporada: number,
+): boolean {
+  const { desbloqueadas, total } = progressoLivroTemporada(state, temporada);
+  return total > 0 && desbloqueadas === total;
+}
+
 // Fragmento de habitante correspondente ao andar (null se boss ou sem entrada).
 export function idFragmentoHabitante(floor: number): string | null {
   const id = `hab_${floor}`;

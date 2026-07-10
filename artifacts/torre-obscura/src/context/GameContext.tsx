@@ -111,6 +111,7 @@ interface GameContextType {
   limparResultadoCamara: () => void;
   // Câmaras Secretas: reconhece (fecha) o modal de evento da câmara recém-descoberta.
   reconhecerCamaraDescoberta: () => void;
+  reconhecerToasts: () => void;
   // Metas Diárias: gera as metas do dia (no-op se já geradas hoje).
   gerarMetasDiarias: (temAliada: boolean) => void;
   // Metas Diárias: registra progresso de uma meta a partir de consumidores externos.
@@ -1779,6 +1780,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  // Drena a fila de toasts pendentes (o host de feed já os ingeriu para exibir).
+  const reconhecerToasts = () => {
+    if (!state || !state.toastsPendentes || state.toastsPendentes.length === 0) return;
+    const s = JSON.parse(JSON.stringify(state)) as GameState;
+    s.toastsPendentes = [];
+    saveState(s);
+  };
+
   // ─── METAS DIÁRIAS ───────────────────────────────────────────────────────
   const gerarMetasDiarias = (temAliada: boolean) => {
     if (!state) return;
@@ -1914,6 +1923,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       ultimoResultadoCamara: resultadoCamara,
       limparResultadoCamara,
       reconhecerCamaraDescoberta,
+      reconhecerToasts,
       gerarMetasDiarias,
       registrarMetaDiaria,
       reivindicarPresenteDaTorre,
