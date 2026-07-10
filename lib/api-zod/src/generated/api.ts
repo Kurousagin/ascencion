@@ -261,6 +261,54 @@ export const ReforcarMoradorResponse = zod.object({
 
 
 /**
+ * Remove o morador da cidadela da remetente (tratado pelo cliente) e cria uma troca do tipo "reforco_guerra" na caixa de entrada da aliada. O morador entra direto no front se a guerra já está ativa, ou fica ocioso até a próxima mobilização. Máximo de 2 reforços de guerra ativos simultâneos.
+ * @summary Enviar um morador para lutar na guerra da aliada
+ */
+export const ReforcarMoradorGuerraBody = zod.object({
+  "deviceId": zod.string(),
+  "aliadaDeviceId": zod.string(),
+  "morador": zod.object({
+  "id": zod.string(),
+  "nome": zod.string(),
+  "forca": zod.number(),
+  "agilidade": zod.number(),
+  "inteligencia": zod.number(),
+  "resistencia": zod.number(),
+  "sanidade": zod.number(),
+  "lealdade": zod.number(),
+  "fadiga": zod.number(),
+  "vivo": zod.boolean(),
+  "obscuro": zod.boolean(),
+  "emExpedicao": zod.boolean(),
+  "raridade": zod.string(),
+  "habilidade": zod.string(),
+  "posto": zod.string().nullable()
+})
+})
+
+export const ReforcarMoradorGuerraResponse = zod.object({
+  "id": zod.number(),
+  "reforcosAtivos": zod.number(),
+  "limiteReforcos": zod.number()
+})
+
+
+/**
+ * Cria um item do tipo "pedido_socorro" na caixa de entrada de todas as aliadas, sinalizando que você está em guerra e precisa de reforços. Dispara notificação push Tier 3 para cada aliada.
+ * @summary Notificar aliadas de que está em guerra
+ */
+export const PedirAjudaGuerraBody = zod.object({
+  "deviceId": zod.string(),
+  "rivalNome": zod.string(),
+  "diasRestantes": zod.number()
+})
+
+export const PedirAjudaGuerraResponse = zod.object({
+  "enviadoPara": zod.number()
+})
+
+
+/**
  * @summary Listar itens pendentes na caixa de entrada
  */
 export const ListarCaixaParams = zod.object({
@@ -383,6 +431,85 @@ export const ListarRivaisResponse = zod.object({
 }),
   "postura": zod.enum(['agressiva', 'defensiva', 'equilibrada'])
 }))
+})
+
+
+/**
+ * Idempotente por (deviceId, tipo). Retorna o estado global do marco e a posição do jogador entre os primeiros 10 (null se chegou depois).
+ * @summary Registrar que um jogador atingiu um marco global
+ */
+export const RegistrarPioneerBody = zod.object({
+  "deviceId": zod.string(),
+  "nome": zod.string(),
+  "tipo": zod.enum(['andar_20'])
+})
+
+export const RegistrarPioneerResponse = zod.object({
+  "novo": zod.boolean(),
+  "posicao": zod.number().nullable(),
+  "total": zod.number(),
+  "desbloqueado": zod.boolean(),
+  "nomes": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Consultar estado atual de um marco global
+ */
+export const ConsultarPioneerParams = zod.object({
+  "tipo": zod.enum(['andar_20'])
+})
+
+export const ConsultarPioneerResponse = zod.object({
+  "total": zod.number(),
+  "desbloqueado": zod.boolean(),
+  "nomes": zod.array(zod.string())
+})
+
+
+/**
+ * Cada primordial é único no mundo — apenas um jogador pode possuí-lo por temporada. claimedByMe indica se o claim existente pertence ao deviceId informado.
+ * @summary Verificar disponibilidade global de um primordial
+ */
+export const ConsultarPrimordialParams = zod.object({
+  "tipo": zod.enum(['primordial_t1', 'primordial_t2', 'primordial_t3'])
+})
+
+export const ConsultarPrimordialQueryParams = zod.object({
+  "deviceId": zod.coerce.string().optional()
+})
+
+export const ConsultarPrimordialResponse = zod.object({
+  "disponivel": zod.boolean(),
+  "claimedByMe": zod.boolean()
+})
+
+
+/**
+ * Idempotente para o mesmo deviceId. 409 se outro jogador já reivindicou.
+ * @summary Reivindicar um primordial para um deviceId
+ */
+export const ReivindicarPrimordialBody = zod.object({
+  "tipo": zod.enum(['primordial_t1', 'primordial_t2', 'primordial_t3']),
+  "deviceId": zod.string()
+})
+
+export const ReivindicarPrimordialResponse = zod.object({
+  "claimed": zod.boolean(),
+  "mine": zod.boolean()
+})
+
+
+/**
+ * Chamado ao iniciar um novo jogo. Idempotente.
+ * @summary Liberar todos os primordiais reivindicados por um device
+ */
+export const LiberarPrimordiaisQueryParams = zod.object({
+  "deviceId": zod.coerce.string()
+})
+
+export const LiberarPrimordiaisResponse = zod.object({
+  "released": zod.boolean()
 })
 
 

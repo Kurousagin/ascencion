@@ -24,6 +24,7 @@ import type {
   AliadasResposta,
   CaixaResposta,
   ChavePublicaVapid,
+  ConsultarPrimordialParams,
   DesfazerInput,
   DesfazerResultado,
   DesinscricaoInput,
@@ -36,12 +37,22 @@ import type {
   ErroResposta,
   HealthStatus,
   InscricaoPushInput,
+  LiberarPrimordiaisParams,
   OkResposta,
   PareamentoInput,
   PedirAjudaGuerra200,
   PedirAjudaGuerraBody,
   Perfil,
   PerfilInput,
+  PioneerRegistroInput,
+  PioneerRegistroResposta,
+  PioneerStatus,
+  PioneerTipo,
+  PrimordialClaimInput,
+  PrimordialClaimResposta,
+  PrimordialReleaseResposta,
+  PrimordialStatus,
+  PrimordialTipo,
   ProximoEventoInput,
   Recebimento,
   RecebimentoInput,
@@ -1086,6 +1097,393 @@ export const useListarRivais = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getListarRivaisMutationOptions(options));
+    }
+
+export const getRegistrarPioneerUrl = () => {
+
+
+
+
+  return `/api/pioneer`
+}
+
+/**
+ * Idempotente por (deviceId, tipo). Retorna o estado global do marco e a posição do jogador entre os primeiros 10 (null se chegou depois).
+ * @summary Registrar que um jogador atingiu um marco global
+ */
+export const registrarPioneer = async (pioneerRegistroInput: PioneerRegistroInput, options?: RequestInit): Promise<PioneerRegistroResposta> => {
+
+  return customFetch<PioneerRegistroResposta>(getRegistrarPioneerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pioneerRegistroInput)
+  }
+);}
+
+
+
+
+export const getRegistrarPioneerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registrarPioneer>>, TError,{data: BodyType<PioneerRegistroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registrarPioneer>>, TError,{data: BodyType<PioneerRegistroInput>}, TContext> => {
+
+const mutationKey = ['registrarPioneer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registrarPioneer>>, {data: BodyType<PioneerRegistroInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registrarPioneer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegistrarPioneerMutationResult = NonNullable<Awaited<ReturnType<typeof registrarPioneer>>>
+    export type RegistrarPioneerMutationBody = BodyType<PioneerRegistroInput>
+    export type RegistrarPioneerMutationError = ErrorType<void>
+
+    /**
+ * @summary Registrar que um jogador atingiu um marco global
+ */
+export const useRegistrarPioneer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registrarPioneer>>, TError,{data: BodyType<PioneerRegistroInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registrarPioneer>>,
+        TError,
+        {data: BodyType<PioneerRegistroInput>},
+        TContext
+      > => {
+      return useMutation(getRegistrarPioneerMutationOptions(options));
+    }
+
+export const getConsultarPioneerUrl = (tipo: PioneerTipo,) => {
+
+
+
+
+  return `/api/pioneer/${tipo}`
+}
+
+/**
+ * @summary Consultar estado atual de um marco global
+ */
+export const consultarPioneer = async (tipo: PioneerTipo, options?: RequestInit): Promise<PioneerStatus> => {
+
+  return customFetch<PioneerStatus>(getConsultarPioneerUrl(tipo),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getConsultarPioneerQueryKey = (tipo: PioneerTipo,) => {
+    return [
+    `/api/pioneer/${tipo}`
+    ] as const;
+    }
+
+
+export const getConsultarPioneerQueryOptions = <TData = Awaited<ReturnType<typeof consultarPioneer>>, TError = ErrorType<void>>(tipo: PioneerTipo, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof consultarPioneer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getConsultarPioneerQueryKey(tipo);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof consultarPioneer>>> = ({ signal }) => consultarPioneer(tipo, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tipo !== null && tipo !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof consultarPioneer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ConsultarPioneerQueryResult = NonNullable<Awaited<ReturnType<typeof consultarPioneer>>>
+export type ConsultarPioneerQueryError = ErrorType<void>
+
+
+/**
+ * @summary Consultar estado atual de um marco global
+ */
+
+export function useConsultarPioneer<TData = Awaited<ReturnType<typeof consultarPioneer>>, TError = ErrorType<void>>(
+ tipo: PioneerTipo, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof consultarPioneer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getConsultarPioneerQueryOptions(tipo,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getConsultarPrimordialUrl = (tipo: PrimordialTipo,
+    params?: ConsultarPrimordialParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/primordial/${tipo}?${stringifiedParams}` : `/api/primordial/${tipo}`
+}
+
+/**
+ * Cada primordial é único no mundo — apenas um jogador pode possuí-lo por temporada. claimedByMe indica se o claim existente pertence ao deviceId informado.
+ * @summary Verificar disponibilidade global de um primordial
+ */
+export const consultarPrimordial = async (tipo: PrimordialTipo,
+    params?: ConsultarPrimordialParams, options?: RequestInit): Promise<PrimordialStatus> => {
+
+  return customFetch<PrimordialStatus>(getConsultarPrimordialUrl(tipo,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getConsultarPrimordialQueryKey = (tipo: PrimordialTipo,
+    params?: ConsultarPrimordialParams,) => {
+    return [
+    `/api/primordial/${tipo}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getConsultarPrimordialQueryOptions = <TData = Awaited<ReturnType<typeof consultarPrimordial>>, TError = ErrorType<void>>(tipo: PrimordialTipo,
+    params?: ConsultarPrimordialParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof consultarPrimordial>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getConsultarPrimordialQueryKey(tipo,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof consultarPrimordial>>> = ({ signal }) => consultarPrimordial(tipo,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tipo !== null && tipo !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof consultarPrimordial>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ConsultarPrimordialQueryResult = NonNullable<Awaited<ReturnType<typeof consultarPrimordial>>>
+export type ConsultarPrimordialQueryError = ErrorType<void>
+
+
+/**
+ * @summary Verificar disponibilidade global de um primordial
+ */
+
+export function useConsultarPrimordial<TData = Awaited<ReturnType<typeof consultarPrimordial>>, TError = ErrorType<void>>(
+ tipo: PrimordialTipo,
+    params?: ConsultarPrimordialParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof consultarPrimordial>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getConsultarPrimordialQueryOptions(tipo,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReivindicarPrimordialUrl = () => {
+
+
+
+
+  return `/api/primordial/claim`
+}
+
+/**
+ * Idempotente para o mesmo deviceId. 409 se outro jogador já reivindicou.
+ * @summary Reivindicar um primordial para um deviceId
+ */
+export const reivindicarPrimordial = async (primordialClaimInput: PrimordialClaimInput, options?: RequestInit): Promise<PrimordialClaimResposta> => {
+
+  return customFetch<PrimordialClaimResposta>(getReivindicarPrimordialUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(primordialClaimInput)
+  }
+);}
+
+
+
+
+export const getReivindicarPrimordialMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reivindicarPrimordial>>, TError,{data: BodyType<PrimordialClaimInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reivindicarPrimordial>>, TError,{data: BodyType<PrimordialClaimInput>}, TContext> => {
+
+const mutationKey = ['reivindicarPrimordial'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reivindicarPrimordial>>, {data: BodyType<PrimordialClaimInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reivindicarPrimordial(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReivindicarPrimordialMutationResult = NonNullable<Awaited<ReturnType<typeof reivindicarPrimordial>>>
+    export type ReivindicarPrimordialMutationBody = BodyType<PrimordialClaimInput>
+    export type ReivindicarPrimordialMutationError = ErrorType<void>
+
+    /**
+ * @summary Reivindicar um primordial para um deviceId
+ */
+export const useReivindicarPrimordial = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reivindicarPrimordial>>, TError,{data: BodyType<PrimordialClaimInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reivindicarPrimordial>>,
+        TError,
+        {data: BodyType<PrimordialClaimInput>},
+        TContext
+      > => {
+      return useMutation(getReivindicarPrimordialMutationOptions(options));
+    }
+
+export const getLiberarPrimordiaisUrl = (params: LiberarPrimordiaisParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/primordial/claims/mine?${stringifiedParams}` : `/api/primordial/claims/mine`
+}
+
+/**
+ * Chamado ao iniciar um novo jogo. Idempotente.
+ * @summary Liberar todos os primordiais reivindicados por um device
+ */
+export const liberarPrimordiais = async (params: LiberarPrimordiaisParams, options?: RequestInit): Promise<PrimordialReleaseResposta> => {
+
+  return customFetch<PrimordialReleaseResposta>(getLiberarPrimordiaisUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getLiberarPrimordiaisMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof liberarPrimordiais>>, TError,{params: LiberarPrimordiaisParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof liberarPrimordiais>>, TError,{params: LiberarPrimordiaisParams}, TContext> => {
+
+const mutationKey = ['liberarPrimordiais'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof liberarPrimordiais>>, {params: LiberarPrimordiaisParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  liberarPrimordiais(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LiberarPrimordiaisMutationResult = NonNullable<Awaited<ReturnType<typeof liberarPrimordiais>>>
+
+    export type LiberarPrimordiaisMutationError = ErrorType<void>
+
+    /**
+ * @summary Liberar todos os primordiais reivindicados por um device
+ */
+export const useLiberarPrimordiais = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof liberarPrimordiais>>, TError,{params: LiberarPrimordiaisParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof liberarPrimordiais>>,
+        TError,
+        {params: LiberarPrimordiaisParams},
+        TContext
+      > => {
+      return useMutation(getLiberarPrimordiaisMutationOptions(options));
     }
 
 export const getObterChavePublicaVapidUrl = () => {

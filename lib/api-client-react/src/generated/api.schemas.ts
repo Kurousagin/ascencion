@@ -5,6 +5,62 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type PioneerTipo = typeof PioneerTipo[keyof typeof PioneerTipo];
+
+
+export const PioneerTipo = {
+  andar_20: 'andar_20',
+} as const;
+
+export interface PioneerRegistroInput {
+  deviceId: string;
+  nome: string;
+  tipo: PioneerTipo;
+}
+
+export interface PioneerStatus {
+  total: number;
+  desbloqueado: boolean;
+  nomes: string[];
+}
+
+export interface PioneerRegistroResposta {
+  novo: boolean;
+  /** @nullable */
+  posicao: number | null;
+  total: number;
+  desbloqueado: boolean;
+  nomes: string[];
+}
+
+export type PrimordialTipo = typeof PrimordialTipo[keyof typeof PrimordialTipo];
+
+
+export const PrimordialTipo = {
+  primordial_t1: 'primordial_t1',
+  primordial_t2: 'primordial_t2',
+  primordial_t3: 'primordial_t3',
+} as const;
+
+export interface PrimordialStatus {
+  disponivel: boolean;
+  claimedByMe: boolean;
+}
+
+export interface PrimordialClaimInput {
+  tipo: PrimordialTipo;
+  deviceId: string;
+}
+
+export interface PrimordialClaimResposta {
+  claimed: boolean;
+  mine: boolean;
+}
+
+export interface PrimordialReleaseResposta {
+  released: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -274,5 +330,13 @@ export type PedirAjudaGuerraBody = {
 
 export type PedirAjudaGuerra200 = {
   enviadoPara: number;
+};
+
+export type ConsultarPrimordialParams = {
+deviceId?: string;
+};
+
+export type LiberarPrimordiaisParams = {
+deviceId: string;
 };
 
