@@ -3,6 +3,7 @@ import { useAlliance } from '../context/AllianceContext';
 import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
 import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM, TEMPORADAS, temporadaAtiva } from '../lib/game-data';
 import { METAS_DIARIAS_META } from '../quest-engine';
+import { MuralAcontecimentos } from '../components/MuralAcontecimentos';
 import {
   isPushSupported,
   getPermissionState,
@@ -116,6 +117,9 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         </span>
         {vivos !== proprios && <span className="text-muted-foreground text-[11px]">+{vivos - proprios} hóspedes</span>}
       </div>
+
+      {/* ── MURAL DA CIDADELA (feed de vida) ───────────────────────────────── */}
+      <MuralAcontecimentos />
 
       {/* ── METAS DE HOJE ──────────────────────────────────────────────────── */}
       <div className="space-y-1">

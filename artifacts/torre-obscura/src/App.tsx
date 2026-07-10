@@ -15,6 +15,7 @@ import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
 import { CamaraDescobertaModal } from './components/CamaraDescobertaModal';
 import { ResultadoCamaraModal } from './components/ResultadoCamaraModal';
+import { FeedToastHost } from './components/FeedToastHost';
 import { GachaLancamento } from './components/GachaLancamento';
 import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
@@ -178,6 +179,9 @@ function MainGameInner() {
     {/* Câmaras secretas: evento de descoberta + resultado da exploração (globais) */}
     <CamaraDescobertaModal />
     <ResultadoCamaraModal />
+
+    {/* Feed de vida: toasts sutis dos acontecimentos de alta importância (global) */}
+    <FeedToastHost />
 
     {/* Gacha de lançamento T1 — abre ao iniciar novo jogo na temporada ativa */}
     {LANCAMENTO_ATIVO && (
