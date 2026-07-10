@@ -3,6 +3,8 @@ import { CAMARAS_SECRETAS, type GameState, type NPC, type ProfissaoId, type Cama
 import { mulberry32, rngPara } from './rng';
 import { camarasDaTorre, gerarCamarasDoAndar, ecossistemaDoAndar } from './generate';
 import { dificuldadeCamara, calcAfinidadeCamara, verificarRequisitoCamara, chanceAbrirCamara } from './rules';
+import { montarRequisito } from './pools/requisitos';
+import { mulberry32 as _mb } from './rng';
 
 const stateComSeed = (seed: number) => ({ camaraSeed: seed } as Pick<GameState, 'camaraSeed'>);
 
@@ -202,5 +204,24 @@ describe('chanceAbrirCamara (rolagem: nunca 0/100%, cresce com over-level)', () 
     // nunca 0 nem 1
     expect(menos).toBeGreaterThan(0);
     expect(mais).toBeLessThan(1);
+  });
+});
+
+describe('gating de sussurro — nunca destrava com 1 (regressão)', () => {
+  it('montarRequisito(sussurros_capitulo) nunca gera quantidade < 2', () => {
+    for (let floor = 1; floor <= 40; floor++) {
+      const req = montarRequisito(floor, 'sussurros_capitulo', _mb(floor)) as any;
+      expect(req.tipo).toBe('sussurros_capitulo');
+      expect(req.quantidade).toBeGreaterThanOrEqual(2);
+    }
+  });
+  it('nenhuma câmara gerada por seed tem sussurro cap×1', () => {
+    for (const seed of [987654321, 111, 42, 7, 2024]) {
+      for (const c of Object.values(camarasDaTorre({ camaraSeed: seed }))) {
+        if (c.requisito.tipo === 'sussurros_capitulo') {
+          expect(c.requisito.quantidade).toBeGreaterThanOrEqual(2);
+        }
+      }
+    }
   });
 });

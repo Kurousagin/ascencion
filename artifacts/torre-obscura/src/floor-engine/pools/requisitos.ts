@@ -19,8 +19,8 @@ export type RequisitoArquetipo =
 export const REQUISITOS_POOL: ReadonlyArray<{ item: RequisitoArquetipo; peso: number }> = [
   { item: 'npc_atributo_alto', peso: 3 },
   { item: 'classe_desenvolvida', peso: 3 },
-  { item: 'sussurros_capitulo', peso: 2 },
   { item: 'npc_raridade', peso: 2 },
+  { item: 'sussurros_capitulo', peso: 1 },  // via não-squad: rara, reforça o gate por esquadrão
   { item: 'farms_andar', peso: 1 },
 ];
 
@@ -50,9 +50,12 @@ export function montarRequisito(floor: number, arq: RequisitoArquetipo, rng: Rng
         textoRequisito: `${quantidade} ${nome}${quantidade > 1 ? 's' : ''} de talento apurado (≥ ${minStat}) fazem a passagem se insinuar.` };
     }
     case 'sussurros_capitulo': {
-      const quantidade = Math.min(3, 1 + Math.floor(cap / 2));
+      // Escala com o ANDAR (não só o capítulo) e NUNCA é 1 — um único sussurro não
+      // pode destravar o ciclo inteiro (era o bug: cap×1 disparava em quase todo
+      // andar). Cada capítulo tem 5 sussurros, então até 4 é colecionável com esforço.
+      const quantidade = Math.min(4, 2 + Math.floor(floor / 8));
       return { tipo: 'sussurros_capitulo', capitulo: cap, quantidade,
-        textoRequisito: `Só depois de ouvir ${quantidade} Sussurro${quantidade > 1 ? 's' : ''} deste ciclo o caminho se desenha.` };
+        textoRequisito: `Só depois de ouvir ${quantidade} Sussurros deste ciclo o caminho se desenha.` };
     }
     case 'npc_raridade': {
       const quantidade = 2 + Math.floor(floor / 12);
