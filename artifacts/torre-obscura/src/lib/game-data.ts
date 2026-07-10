@@ -1436,7 +1436,7 @@ export const METAS_DIARIAS_POOL_BASE: MetaDiariaId[] = ['explorar', 'construir',
 export const METAS_DIARIAS_META: Record<MetaDiariaId, { titulo: string; descricao: string; icone: string }> = {
   explorar:  { titulo: 'Expedição do Dia', descricao: 'Envie uma expedição a qualquer andar.', icone: '🧭' },
   construir: { titulo: 'Obra em Curso',    descricao: 'Construa ou melhore um edifício.',        icone: '🏗️' },
-  lore:      { titulo: 'Ecos do Passado',  descricao: 'Abra o Codex Obscuro.',                    icone: '📖' },
+  lore:      { titulo: 'Ecos do Passado',  descricao: 'Abra o Codex Obscuro (ícone do livro, na aba Torre).', icone: '📖' },
   aliar:     { titulo: 'Mão Estendida',    descricao: 'Ajude uma aliada (recurso, empréstimo ou reforço).', icone: '🤝' },
 };
 

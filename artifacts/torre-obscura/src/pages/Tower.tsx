@@ -481,7 +481,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                     : 'text-secondary/60 hover:text-secondary'
                 }`}
               >
-                DISPERSOS
+                FRAGMENTOS
               </button>
               <button
                 onClick={() => setCodexAbaAtiva('reliquias')}
@@ -570,10 +570,12 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
                     {/* Capítulos */}
                     {capitulos.map(cap => {
-                      // Aba DISPERSOS: só fragmentos SECUNDÁRIOS (sussurro/eco/câmara);
-                      // os principais (Verdades/Habitantes) vivem na aba O LIVRO.
+                      // Aba FRAGMENTOS: lista TODOS os fragmentos conforme descobertos
+                      // (principais e secundários) — o jogador precisa consultar tudo,
+                      // inclusive as side-stories. O Livro (outra aba) só monta os
+                      // principais; aqui eles ganham o selo ★ LIVRO.
                       const fragsCapitulo = Object.values(CODEX_FRAGMENTOS)
-                        .filter(f => f.temporada === temporada.numero && f.capitulo === cap && !ehFragmentoPrincipal(f))
+                        .filter(f => f.temporada === temporada.numero && f.capitulo === cap)
                         .sort((a, b) => a.ordem - b.ordem);
                       if (fragsCapitulo.length === 0) return null;
                       const desbCap = fragsCapitulo.filter(f => state.codexFragmentos.includes(f.id)).length;
@@ -626,6 +628,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                                       )}
                                       {frag.tipo === 'camara' && desbloqueado && (
                                         <span className="ml-auto text-[7px] text-amber-300/70 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-amber-300/30 bg-amber-300/5">📖 PÁGINA</span>
+                                      )}
+                                      {ehFragmentoPrincipal(frag) && desbloqueado && (
+                                        <span className="ml-auto text-[7px] text-primary/70 tracking-widest font-cinzel px-1.5 py-0.5 rounded border border-primary/30 bg-primary/5">★ LIVRO</span>
                                       )}
                                       {!desbloqueado && frag.tipo !== 'sussurro' && (
                                         <span className="ml-auto text-[10px] text-white/20 tracking-widest">{frag.tipo === 'camara' ? 'PÁGINA RASGADA' : 'BLOQUEADO'}</span>
@@ -700,7 +705,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 {codexAbaAtiva === 'livro'
                   ? 'O Livro reúne a história principal — Verdades e o arco dos Habitantes. Complete uma temporada para lê-la.'
                   : codexAbaAtiva === 'fragmentos'
-                  ? 'Fragmentos dispersos: sussurros, ecos e páginas de câmara — pontas soltas do mundo, à parte do Livro.'
+                  ? 'Todos os fragmentos descobertos — Verdades, Habitantes, sussurros, ecos e páginas de câmara. Os marcados ★ LIVRO compõem a história principal.'
                   : 'Relíquias coletadas através de escolhas, quests ocultas e câmaras secretas. Úteis em Temporada III e além.'}
               </p>
             </div>

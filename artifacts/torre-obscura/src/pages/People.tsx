@@ -285,15 +285,28 @@ export function People() {
                     <div className="text-xs text-secondary tracking-widest mb-1">VÍNCULOS</div>
                     <div className="flex flex-wrap gap-1">
                       {vinculosMostrar.map(v => {
-                        const icone = v.tipo === 'romance' ? '❤' : v.tipo === 'mentoria' ? '★' : v.afinidade >= 0 ? '♥' : '⚔';
-                        const rotulo = v.tipo === 'romance' ? 'Romance' : v.tipo === 'mentoria' ? 'Mentoria' : v.tipo === 'amizade' ? 'Amizade' : v.tipo === 'rivalidade' ? 'Rivalidade' : undefined;
+                        // Ícone e rótulo SEMPRE explícitos (antes um '♥' sem rótulo era
+                        // confundido com romance). Romance = par romântico (não há
+                        // casamento no jogo); afinidade fraca sem arco = "Afinidade"/"Tensão".
+                        const meta: Record<string, { icone: string; rotulo: string }> = {
+                          romance:    { icone: '❤️', rotulo: 'Romance' },
+                          mentoria:   { icone: '🎓', rotulo: 'Mentoria' },
+                          amizade:    { icone: '🤝', rotulo: 'Amizade' },
+                          rivalidade: { icone: '⚔️', rotulo: 'Rivalidade' },
+                        };
+                        const info = v.tipo
+                          ? meta[v.tipo]
+                          : v.afinidade >= 0
+                            ? { icone: '🔗', rotulo: 'Afinidade' }
+                            : { icone: '⚡', rotulo: 'Tensão' };
                         return (
                           <span
                             key={v.id}
                             title={rotulo}
                             className={`text-xs px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
                           >
-                            {icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>{rotulo && <span className="opacity-70">· {rotulo}</span>}
+                            {info.icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
+                            <span className="opacity-70">· {info.rotulo}</span>
                           </span>
                         );
                       })}
