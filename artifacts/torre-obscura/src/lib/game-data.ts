@@ -2112,7 +2112,7 @@ export function hojeStrLocal(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const METAS_DIARIAS_POOL_BASE: MetaDiariaId[] = ['explorar', 'construir', 'lore'];
+export const METAS_DIARIAS_POOL_BASE: MetaDiariaId[] = ['explorar', 'construir', 'lore'];
 
 export const METAS_DIARIAS_META: Record<MetaDiariaId, { titulo: string; descricao: string; icone: string }> = {
   explorar:  { titulo: 'Expedição do Dia', descricao: 'Envie uma expedição a qualquer andar.', icone: '🧭' },
@@ -2121,13 +2121,10 @@ export const METAS_DIARIAS_META: Record<MetaDiariaId, { titulo: string; descrica
   aliar:     { titulo: 'Mão Estendida',    descricao: 'Ajude uma aliada (recurso, empréstimo ou reforço).', icone: '🤝' },
 };
 
-// `temAliada` decide se "aliar" entra no sorteio — evita gerar meta impossível
-// pra quem nunca formou aliança.
-export function gerarObjetivosDoDia(temAliada: boolean): MetaDiariaId[] {
-  const pool: MetaDiariaId[] = temAliada ? [...METAS_DIARIAS_POOL_BASE, 'aliar'] : [...METAS_DIARIAS_POOL_BASE];
-  if (pool.length <= 3) return pool;
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
-}
+// `gerarObjetivosDoDia`, `verificarQuestAndar`, `verificarQuestOculta` e
+// `gerarQuestOculta` vivem agora em `quest-engine/rules.ts` (regras puras). Os
+// DADOS que elas consomem (METAS_DIARIAS_POOL_BASE, POOL_EXPLORACAO/VELOCIDADE,
+// HABITANTES) permanecem aqui. Consumidores usam a façade `../quest-engine`.
 
 // ─── CODEX OBSCURO — SISTEMA DE TEMPORADAS ───────────────────────────────────
 // Fragmentos coletáveis organizados por Temporada → Capítulo.
@@ -2516,66 +2513,7 @@ export function floorsHabitantesTemporada(temporada: number): number[] {
   return floors;
 }
 
-// Verifica se a quest de um habitante está concluída no GameState atual.
-export function verificarQuestAndar(state: GameState, floor: number): boolean {
-  const hab = HABITANTES[floor];
-  if (!hab) return false;
-  if (state.habitantesEstado[floor] !== 'quest_ativa') return false;
-
-  const q = hab.quest;
-  switch (q.tipo) {
-    case 'recurso': {
-      if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
-      if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;
-      if (q.farmsMin && (state.farmsPerFloor?.[q.farmsMin.andar] ?? 0) < q.farmsMin.vezes) return false;
-      return !!(q.recurso || q.recurso2);
-    }
-    case 'expedicao': {
-      // andarMin: player deve ter avançado além deste andar
-      if (q.andarMin && state.andarAtual <= q.andarMin) return false;
-      // farmsMin: mínimo de farms vitoriosos no andar indicado
-      if (q.farmsMin && (state.farmsPerFloor?.[q.farmsMin.andar] ?? 0) < q.farmsMin.vezes) return false;
-      // recurso misto (expedicao + recurso obrigatório)
-      if (q.recurso && state.recursos[q.recurso.tipo] < q.recurso.qtd) return false;
-      if (q.recurso2 && state.recursos[q.recurso2.tipo] < q.recurso2.qtd) return false;
-      const vivosAtivos = state.npcs.filter(n => n.vivo);
-      if (q.npcsMinCombate) {
-        const combate = vivosAtivos.filter(n =>
-          getProfissao(n) === 'combatente' || getProfissao(n) === 'batedor' || getProfissao(n) === 'sentinela'
-        );
-        if (combate.length < q.npcsMinCombate) return false;
-      }
-      if (q.profissoes) {
-        // Multiset: conta quantas de cada profissão são exigidas e verifica se há vivos suficientes.
-        // Ex: ['combatente','combatente','batedor'] exige 2 combatentes distintos.
-        const needed: Partial<Record<ProfissaoId, number>> = {};
-        for (const p of q.profissoes) needed[p] = (needed[p] ?? 0) + 1;
-        const available: Partial<Record<ProfissaoId, number>> = {};
-        for (const n of vivosAtivos) {
-          const p = getProfissao(n);
-          available[p] = (available[p] ?? 0) + 1;
-        }
-        for (const [prof, cnt] of Object.entries(needed) as [ProfissaoId, number][]) {
-          if ((available[prof] ?? 0) < cnt) return false;
-        }
-      }
-      return true;
-    }
-    case 'temporal': {
-      // Para quests com semGuerra: o contador reseta quando guerra ocorre durante o intervalo.
-      // habitantesQuestResetDia[floor] guarda o último dia em que a guerra invalidou o progresso.
-      const baseDate = q.semGuerra
-        ? Math.max(
-            state.habitantesDiaDescoberta[floor] ?? state.dia,
-            state.habitantesQuestResetDia?.[floor] ?? 0
-          )
-        : (state.habitantesDiaDescoberta[floor] ?? state.dia);
-      return (state.dia - baseDate) >= (q.dias ?? 1);
-    }
-    case 'sacrificio':
-      return true; // custo pago ao aceitar; conclusão sempre disponível
-  }
-}
+// `verificarQuestAndar` foi movida para `quest-engine/rules.ts` (regra pura).
 
 // ─── RELÍQUIAS CENTRALIZADAS ─────────────────────────────────────────────────
 
@@ -2742,7 +2680,7 @@ export interface QuestOculta {
 
 type QuestOcultaTemplate = Omit<QuestOculta, 'id' | 'dia' | 'andar' | 'estado' | 'gatilho'>;
 
-const POOL_EXPLORACAO: QuestOcultaTemplate[] = [
+export const POOL_EXPLORACAO: QuestOcultaTemplate[] = [
   {
     titulo: 'Câmara Lacrada',
     icone: '🔒',
@@ -2811,7 +2749,7 @@ const POOL_EXPLORACAO: QuestOcultaTemplate[] = [
   },
 ];
 
-const POOL_VELOCIDADE: QuestOcultaTemplate[] = [
+export const POOL_VELOCIDADE: QuestOcultaTemplate[] = [
   {
     titulo: 'Visitante da Terceira Hora',
     icone: '🌑',
@@ -2847,32 +2785,9 @@ const POOL_VELOCIDADE: QuestOcultaTemplate[] = [
   },
 ];
 
-export function verificarQuestOculta(q: QuestOculta, state: GameState): boolean {
-  const req = q.req;
-  switch (req.tipo) {
-    case 'recurso':   return state.recursos[req.recurso] >= req.qtd;
-    case 'profissao': return state.npcs.some(n => n.vivo && !n.emExpedicao && !n.emGuerra && getProfissao(n) === req.profissao);
-    case 'temporal':  return (state.dia - q.dia) >= req.dias;
-    case 'moral':     return state.moral >= req.moral;
-  }
-}
-
-export function gerarQuestOculta(
-  gatilho: 'exploracao' | 'velocidade',
-  andar: number | undefined,
-  state: GameState,
-): QuestOculta | null {
-  const ativas = (state.questsOcultas ?? []).filter(q => q.estado === 'ativa');
-  if (ativas.length >= 3) return null;
-  if (ativas.some(q => q.gatilho === gatilho)) return null;
-  const pool = gatilho === 'exploracao' ? POOL_EXPLORACAO : POOL_VELOCIDADE;
-  const vistos = new Set((state.questsOcultas ?? []).map(q => q.titulo));
-  const disponiveis = pool.filter(t => !vistos.has(t.titulo));
-  if (disponiveis.length === 0) return null;
-  const template = disponiveis[Math.floor(Math.random() * disponiveis.length)];
-  const id = `${gatilho}_${state.dia}_${Math.random().toString(36).slice(2, 6)}`;
-  return { ...template, id, gatilho, andar, estado: 'ativa', dia: state.dia };
-}
+// `verificarQuestOculta` e `gerarQuestOculta` foram movidas para
+// `quest-engine/rules.ts` (regras puras). Os pools (POOL_EXPLORACAO/VELOCIDADE)
+// permanecem aqui como dados.
 
 export interface GameState {
   dia: number;
