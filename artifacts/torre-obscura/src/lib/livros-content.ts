@@ -16,8 +16,8 @@ const VOLUME_1: CapituloLivro[] = [
     capitulo: 1,
     nome: 'O Que Foi Selado',
     paragrafos: [
-      'Toda torre começa com uma pedra. Esta começou com uma ordem — e com a mão que a traiu. Antes de haver andares para subir, havia um selo para guardar, e alguém decidiu, contra tudo o que fora instruído, que guardar era mais seguro do que abrir.',
-      'No primeiro andar, um arauto ainda aguarda a entrega de uma mensagem que nunca chegou. Nela vinha a ordem verdadeira: abrir o selo, não mantê-lo. Alguém a interceptou antes que o destinatário a recebesse e trocou uma única palavra. Esse alguém, diz o arauto, ainda está aqui.',
+      'Toda torre começa com uma pedra. Esta começou com uma ordem — e com a mão que a traiu. Antes de haver andares para subir, havia um selo, e uma instrução: abri-lo. Alguém decidiu, contra tudo o que fora ordenado, que guardar era mais seguro do que abrir — e o selo permaneceu.',
+      'No primeiro andar, um arauto ainda carrega uma mensagem que nunca alcançou seu destino. Nela vinha a ordem verdadeira: abrir o selo, não mantê-lo. Alguém a interceptou antes que o destinatário a recebesse e trocou uma única palavra. Esse alguém, diz o arauto, ainda está aqui.',
       'Os que ergueram a Torre sabiam que seriam selados junto com ela. Aceitaram porque a criatura dentro prometeu libertá-los quando a obra terminasse. A obra terminou. Ninguém foi libertado. O Eco dos Construtores guarda essa promessa quebrada e aguarda alguém capaz de cumpri-la em seu lugar.',
       'Mais acima, as raízes crescem para dentro, contra a própria natureza, porque algo no núcleo as chama. A Tecelã chama esse chamado de fome, por não ter palavra melhor. Talvez seja fome. Talvez seja apenas solidão antiga o bastante para dobrar a madeira em direção a si.',
       'Um cristal gravou cada palavra já dita entre estas paredes. A mais repetida de todas não é "ajuda": é "espera". O cristal ainda espera que alguém entenda por quê — e será no seu eco, o único que a Torre não conseguiu reescrever, que a verdade mais tarde se recusará a desaparecer.',
@@ -33,7 +33,7 @@ const VOLUME_1: CapituloLivro[] = [
       'No sétimo andar, uma jardineira esquecida ainda cura — mas tudo o que toca renasce diferente, mais parecido com a Torre do que com o que era antes. Ela luta contra isso todos os dias. Até agora, está vencendo.',
       'O estudioso do oitavo andar leu tudo, exceto um livro: um escrito em ferro que não era idioma, e sim uma lista de nomes — os de todos que um dia chegariam ao ápice. O seu nome estava lá antes de você nascer.',
       'Um ferreiro espectral forjou aquilo que lhe disseram prender a entidade. O que segura ainda segura — mas encolhe um pouco a cada andar conquistado. O Ferreiro sabe. E forja assim mesmo, porque forjar é tudo o que lhe restou saber.',
-      'O décimo andar foi o mais difícil de erguer: a pedra recusava-se a assentar, não por falha do terreno, mas por resistência da própria estrutura. O Fundador não usou força — repetiu o propósito original em voz alta por quarenta dias seguidos, até a Torre ceder. A Memória guarda essas palavras exatas. Alguém as copiou sem ainda saber o que são, nem quando precisará delas. O momento de entender está mais adiante.',
+      'O décimo andar foi o mais difícil de erguer: a pedra recusava-se a assentar, não por falha do terreno, mas por resistência da própria estrutura. Contam que o Fundador não usou força — que repetiu o propósito original em voz alta por quarenta dias seguidos, até a Torre ceder. A Memória guarda essas palavras exatas. Alguém as copiou sem ainda saber o que são, nem quando precisará delas. O momento de entender está mais adiante.',
     ],
   },
   {
@@ -44,7 +44,7 @@ const VOLUME_1: CapituloLivro[] = [
       'O afogado lúcido do décimo primeiro andar não está morrendo. Está sendo preenchido, devagar, e permanece consciente do começo ao fim. Há diferença entre transformação e morte; ele é a prova viva de que a Torre prefere a primeira.',
       'O que se ouve batendo nas paredes não é máquina nem tambor. É a Percussão Profunda — o coração da Torre, vivo desde antes de o tempo ser um conceito. O ritmo é ela respirando.',
       'Um oráculo invertido lê o passado porque a Torre já devorou todos os futuros possíveis deste lugar. Não sobra o que virá; sobra o registro do que foi, e ele o percorre como outros percorrem mapas.',
-      'O comandante de mármore ainda protege uma posição acima de uma cidadela que afundou milhares de andares abaixo do primeiro quando a Torre cresceu. Guarda, com perfeição, algo que não existe mais.',
+      'O comandante de mármore ainda protege uma posição acima de uma cidadela que ele viu afundar — milhares de andares abaixo do primeiro, diz ele, quando a Torre cresceu. Guarda, com perfeição, algo que já não responde.',
       'E o vigia do penúltimo ciclo guarda o que aguarda no alto: uma pergunta que, contam, o Fundador formulou antes de partir — não de velhice, mas por escolha deliberada. Dizem que entrou no vigésimo andar sabendo que não sairia, porque a pergunta que deixou lá só pode ser respondida por quem ainda não fez a escolha que ele fez. A resposta errada não mata. A certa transforma — e o vigia nunca disse em quê.',
     ],
   },
