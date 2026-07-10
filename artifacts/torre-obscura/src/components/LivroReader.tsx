@@ -93,7 +93,7 @@ export function LivroReader({ temporada, open, onClose }: { temporada: number; o
               >
                 <ChevronLeft size={18} />
               </button>
-              <span className="text-xs text-secondary/70 tracking-[0.2em] font-cinzel">
+              <span className="text-[11px] text-secondary/70 tracking-[0.2em] font-cinzel">
                 CAP. {idx + 1} / {capitulos.length}
               </span>
               <button

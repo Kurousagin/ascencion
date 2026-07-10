@@ -231,10 +231,8 @@ export const AllianceProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!ativo) return;
     refresh();
-    // Polls pausam com o app em background (economia de bateria/dados);
-    // o visibilitychange abaixo faz o refresh imediato ao voltar.
-    const t1 = setInterval(() => { if (!document.hidden) void sincronizarPerfil(); }, SYNC_MS);
-    const t2 = setInterval(() => { if (!document.hidden) void puxarAliadasECaixa(); }, POLL_MS);
+    const t1 = setInterval(() => { void sincronizarPerfil(); }, SYNC_MS);
+    const t2 = setInterval(() => { void puxarAliadasECaixa(); }, POLL_MS);
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

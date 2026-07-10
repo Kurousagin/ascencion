@@ -67,7 +67,7 @@ export function LancamentoModal({ open, lancamento, onIniciarRitual, onClose }: 
 
             {/* Bônus de recursos */}
             <div className="mx-5 mb-5">
-              <div className="text-xs text-secondary/50 tracking-[0.2em] mb-2 text-center">BÔNUS DE LANÇAMENTO</div>
+              <div className="text-[11px] text-secondary/50 tracking-[0.2em] mb-2 text-center">BÔNUS DE LANÇAMENTO</div>
               <div className="flex flex-wrap justify-center gap-2">
                 {recursos.map(r => (
                   <div key={r.label} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/40 border border-white/10 rounded-sm">

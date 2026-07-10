@@ -98,7 +98,7 @@ export const HABITANTES_LORE: Record<number, {
     fala: 'Estou aqui para preparar quem chega ao vigésimo andar com intenção real. O vigésimo andar não tem um guardião de força — tem algo que o Fundador deixou como teste de propósito. Quem chega sem ter sacrificado algo genuíno não compreende o que encontra. Quem sacrifica pode escolher. A Torre reconhece quem pagou e quem não pagou — e trata os dois de formas muito diferentes.',
     falamissão: 'Dezoito pontos de Moral. Não como punição — como evidência de que você tem algo real a perder. Apenas quem tem algo a perder pode verdadeiramente escolher.',
     falaConcluso: 'O que você deu era real. Isso significa que você pode compreender o que o vigésimo andar oferece. Não direi o que é — a escolha precisa ser sua, sem minha interpretação. Direi apenas o que o Fundador deixou escrito antes de entrar: "Não construí uma barreira no vigésimo andar. Construí uma pergunta."',
-    questLore: 'O vigésimo andar contém uma pergunta que, contam, o Fundador formulou antes de partir — não de velhice, mas por escolha deliberada. Dizem que entrou no vigésimo andar sabendo que não sairia, porque a pergunta que deixou ali só pode ser respondida por alguém que ainda não fez a escolha que ele fez. A resposta errada não mata. A resposta certa transforma — mas o Vigia nunca disse em quê.',
+    questLore: 'O vigésimo andar contém uma pergunta que o Fundador formulou antes de morrer — não de velhice, mas de escolha deliberada. Ele entrou no vigésimo andar sabendo que não sairia, porque a pergunta que deixou ali só pode ser respondida por alguém que ainda não fez a escolha que ele fez. A resposta errada não mata. A resposta certa transforma — mas o Vigia nunca disse em quê.',
   },
   16: {
     fala: 'Não sou ela. Sou o que ela perdeu quando aprendeu a ser paciente. Seu apetite. Dê-me comida e mostro o caminho pelo abismo sem que ele me use para te consumir no processo.',
@@ -108,7 +108,7 @@ export const HABITANTES_LORE: Record<number, {
   },
   17: {
     fala: 'Existo em três momentos simultâneos. Em um você está morto. Em outro nunca chegou aqui. No terceiro, nós dois nos tornamos a mesma coisa. Aguarde dez dias e descobrimos qual desses momentos é o real.',
-    falamissão: 'O tempo verifica. Dez dias é o mínimo para que os momentos colapsem em um.',
+    falamissão: 'O tempo verifica. Dez dias é o mínimo para que os momentos colapsar em um.',
     falaConcluso: 'O terceiro momento não aconteceu. Mas ficou muito perto. Guarde isso — a proximidade do que quase foi.',
     questLore: 'Ele existe em três tempos simultâneos. Em um, você chegou ao ápice e foi consumido. Em outro, desistiu no décimo andar. No terceiro — o único em que o Paradoxo sorri — o resultado é diferente. Ele não revela qual.',
   },
@@ -152,7 +152,7 @@ export const HABITANTES_LORE: Record<number, {
     questLore: 'A Testemunha viu o que havia antes do primeiro andar. Não fala sobre isso — não porque não possa, mas porque as palavras para descrever o que viu ainda não existem. O que você sentiu ao pagar o custo era a borda do que ela carrega sozinha.',
   },
   26: {
-    fala: 'Somos o eco de uma expedição que desceu até aqui e não conseguiu voltar. Não estranhe a palavra: no Intervalo, subir e descer são o mesmo gesto, visto de lados opostos. Não morremos — ficamos. A Torre não nos deixou partir. Se você tem combatentes suficientes, talvez consiga o que nós não conseguimos: força em número.',
+    fala: 'Somos o eco de um grupo que desceu até aqui e não conseguiu subir de volta. Não morremos — ficamos. A Torre não nos deixou partir. Se você tem combatentes suficientes, talvez consiga o que nós não conseguimos: força em número.',
     falamissão: 'Combatentes. E batedores. E prova de que chegaram além do que nós chegamos — Andar 30. É o que nossa expedição não conseguiu alcançar.',
     falaConcluso: 'Você tem o que nós não tínhamos. Use isso. E quando chegar ao topo — se chegar — lembre que passamos por aqui primeiro. Não como aviso. Como encorajamento.',
     questLore: 'A expedição que se tornou este eco tinha dezessete membros. Desceram com provisões para quarenta dias. A Torre os deixou descer. Não os deixou subir. O Eco não sabe por quê — apenas que, quando tentaram, as escadas haviam mudado de lugar.',
@@ -170,7 +170,7 @@ export const HABITANTES_LORE: Record<number, {
     questLore: 'O Oráculo vê o destino da Torre, não dos visitantes. Em todas as visões que teve, a Torre termina de formas radicalmente diferentes dependendo de uma única variável: quem chega ao fim e o que ignora carregar. Você é a variável atual.',
   },
   29: {
-    fala: 'Guardo o lugar onde o nome do Fundador esteve. O nome em si nem eu possuo — fui construído para preservar a ausência, não o som que a habitava. Posso te mostrar o espaço onde ele estava, se você pagar o custo de saber que existe um nome que o mundo inteiro foi impedido de conhecer.',
+    fala: 'Guardo o nome que foi apagado. O nome do Fundador. Não posso pronunciá-lo — fui construído para não poder. Mas posso te mostrar o espaço onde ele estava, se você pagar o custo de saber que existe um nome que o mundo inteiro foi impedido de conhecer.',
     falamissão: 'O custo é comida — o mais básico. O Fundador acreditava que o conhecimento real deveria custar algo concreto, não apenas moral.',
     falaConcluso: 'O espaço onde o nome estava é mais estranhamente vazio do que qualquer coisa que você já viu. Agora você sabe que ele existiu. Que foi apagado com propósito. E que o propósito de apagá-lo foi apagado junto. O que sobrou foi apenas a ausência.',
     questLore: 'O nome do Fundador foi apagado antes de a Torre ser concluída. O Guardião foi criado especificamente para preservar o espaço onde o nome estava — não o nome em si, que é irrecuperável, mas a memória de que havia um nome. A ausência guardada com cuidado é um tipo de presença.',
@@ -185,7 +185,7 @@ export const HABITANTES_LORE: Record<number, {
     fala: 'Fui plantada exatamente no meio — entre o que a Torre foi e o que se tornou. Guardo o registro de outras cidadelas que caíram nesse intervalo. Uma delas ainda ecoa: Ardenas, a mesma que o Comandante de Mármore jurou proteger. Ela não afundou. Ficou presa aqui, no mesmo estado que me prende. Traga um Erudito e prove que chegou ao Andar 35 — só assim libero o que sei sobre o que fica preso no meio-tempo.',
     falamissão: 'Um Erudito que chegou ao Andar 35. A estrutura intelectual necessária para compreender o que fica suspenso, e a prova física de progressão nestes andares superiores.',
     falaConcluso: 'O Erudito confirmou: Ardenas não morreu. Está no Intervalo, junto com tudo mais que a transição não deixou passar. Isso talvez importe mais adiante — quando alguém decidir ir atrás do que ficou para trás.',
-    questLore: 'Ardenas não afundou quando a Torre cresceu. Ficou presa no Intervalo — o espaço entre o que a Torre foi e o que ainda será. Ela existe em um estado suspenso, nem dentro de T1 nem dentro de T2, esperando por alguém corajoso ou louco o bastante para procurá-la.',
+    questLore: 'Ardenas não afundou quando a Torre cresceu. Ficou presa no Intervalo — o espaço entre temporadas. Ela existe em um estado suspenso, nem dentro de T1 nem dentro de T2, esperando por alguém corajoso ou louco o bastante para procurá-la.',
   },
   31: {
     fala: 'Aqui foi colocada a primeira pedra. Não a primeira pedra da Torre — a primeira pedra de tudo que a Torre substituiu. Este é o lugar onde o propósito original foi enterrado antes de começar. Traga pedra — para que eu sinta o que separa o que foi colocado aqui do que deveria ter sido.',
@@ -218,7 +218,7 @@ export const HABITANTES_LORE: Record<number, {
     questLore: 'O Último Sussurro é o último traço de intenção deliberada que a Torre preserva. Se é o Fundador, se é apenas seu eco, se é apenas a memória de uma intenção que nunca teve corpo — ninguém confirma. O mistério é intencional.',
   },
   36: {
-    fala: 'Só existo nesta era da Torre. Quando os andares superiores forem alcançados, vou embora — não morro, apenas deixo de ser necessário aqui. Enquanto estou, preciso de comida e ferro. O que existe antes do primeiro andar também precisa de sustento.',
+    fala: 'Só existo nesta temporada da Torre. Quando os andares superiores forem alcançados, vou embora — não morro, apenas deixo de ser necessário aqui. Enquanto estou, preciso de comida e ferro. O que existe antes do primeiro andar também precisa de sustento.',
     falamissão: 'Comida e ferro deste andar — trazidos de expedições reais aqui, não de armazém. O que existe antes do início não aceita reaproveitamento. Quatro expedições antes de trazer.',
     falaConcluso: 'Sustentado. Há algo que posso te dizer antes de ir — algo que os registros acima nunca vão mencionar porque não sabem: antes do Andar 1, havia um número. Um número específico de câmaras que foi alterado antes do primeiro visitante chegar. O número original era maior. Quanto maior, os registros não dizem. Apenas que foi maior, e que foi mudado, e que ninguém perguntou por quê.',
     questLore: 'O Habitante do Intervalo existe apenas nesta janela de tempo específica — quando os andares 21–40 são acessíveis mas ainda não foram completamente explorados. Não é um ser da Torre. É um ser do Intervalo entre o que a Torre foi e o que ainda não se tornou. Quando o intervalo fechar, ele simplesmente não estará mais aqui para ser encontrado.',
@@ -231,7 +231,7 @@ export const HABITANTES_LORE: Record<number, {
   },
   38: {
     fala: 'Vigilo o espaço entre a Torre antiga e a Torre atual. Não são a mesma Torre — são duas estruturas que compartilham a mesma pedra. Para entender isso, você precisa ficar tempo suficiente aqui para sentir as duas camadas. Quinze dias.',
-    falamissão: 'Quinze dias. Não consecutivos de paz — apenas quinze dias existindo neste andar onde as duas Torres se sobrepõem.',
+    falamissão: 'Quinze dias. Não consecutivos de paz — apenas quinze dias existindo neste andar onde as duas Torras se sobrepõem.',
     falaConcluso: 'Você sentiu as duas camadas. Não vou perguntar o que sentiu — é diferente para cada pessoa. O que posso dizer é que o que você sentiu como segunda camada é mais antigo do que a pedra. E que ainda está vivo. E que sabe que você está aqui.',
     questLore: 'O Vigilante existe no ponto exato de sobreposição entre o que a Torre foi antes do propósito ser esquecido e o que se tornou depois. As duas estruturas coexistem aqui — não metaforicamente, mas fisicamente. A pedra antiga e a pedra nova vibram em frequências diferentes. Quem passa tempo suficiente neste andar começa a ouvir as duas.',
   },
@@ -252,7 +252,7 @@ export const BOSS_LORE: Record<number, { titulo: string; texto: string }> = {
   },
   10: {
     titulo: 'Segredo do Capítulo II — O Que Vivia Aqui',
-    texto: 'O Arquivista Corrompido é o que o Estudioso do Infinito se tornou no tempo em que ninguém lhe trouxe o ferro. Décadas tentando traduzir a lista de nomes; quando enfim terminou, sozinho, tentou alertar a civilização. A civilização o fez calar. O Ferreiro Espectral sabia que as correntes estavam diminuindo a cada andar conquistado. O Arquivista sabia disso também. Esse era o segredo que ele guardava em sua memória podre — e que usava para catalogar os que chegavam como você.',
+    texto: 'O Arquivista Corrompido foi o Estudioso do Infinito depois de décadas tentando traduzir a lista de nomes em ferro. Quando terminou, tentou alertar a civilização. A civilização o fez calar. O Ferreiro Espectral sabia que as correntes estavam diminuindo a cada andar conquistado. O Arquivista sabia disso também. Esse era o segredo que ele guardava em sua memória podre — e que usava para catalogar os que chegavam como você.',
   },
   15: {
     titulo: 'Segredo do Capítulo III — O Que a Torre Faz',
@@ -331,7 +331,7 @@ export const SUSSURROS_LORE: Record<string, { titulo: string; texto: string }> =
 export const VERDADES_LORE: Record<string, { titulo: string; texto: string }> = {
   verdade_t1: {
     titulo: 'A Verdade — O Ser Reunificado',
-    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezenove — dezesseis fragmentos de algo que nunca deveria ter sido dividido, e três Âncoras que o Fundador plantou nos marcos de progressão para conter a reunificação. Os Construtores separaram o que era um. O Fundador tentou usar âncoras para preservar o propósito original. A entidade aprendeu a fazer as Âncoras ouvirem sem obedecer — e as absorveu também. Você não subiu uma torre. Você reconciliou um conflito que precede qualquer linguagem que você conhece. E agora que todos os dezenove completaram seu ciclo através de você — fragmentos e âncoras igualmente — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.',
+    texto: 'Não havia uma entidade esperando ser encontrada. A entidade emergiu da convergência dos dezenove — dezasseis fragmentos de algo que nunca deveria ter sido dividido, e três Âncoras que o Fundador plantou nos marcos de progressão para conter a reunificação. Os Construtores separaram o que era um. O Fundador tentou usar âncoras para preservar o propósito original. A entidade aprendeu a fazer as Âncoras ouvirem sem obedecer — e as absorveu também. Você não subiu uma torre. Você reconciliou um conflito que precede qualquer linguagem que você conhece. E agora que todos os dezenove completaram seu ciclo através de você — fragmentos e âncoras igualmente — o ser completo pode finalmente fazer a única pergunta que importa: o que você deseja em troca?\n\nAntes de adormecer, a Torre sussurra algo que não foi pedido para ser dito: a Torre não termina no vigésimo andar. Ela apenas... muda.',
   },
   pioneers_fragment: {
     titulo: 'Rumor do Arquivo — O Número Alterado',
@@ -343,7 +343,7 @@ export const VERDADES_LORE: Record<string, { titulo: string; texto: string }> = 
   },
   verdade_t2_revisao: {
     titulo: 'A Verdade Revista — O Que a Entidade Acreditava',
-    texto: 'Você chegou ao vigésimo andar acreditando ter ouvido a verdade final: que não havia Torre, apenas uma fome antiga que imaginou a própria armadilha. Não era mentira. A Torre nunca mente — mas o que fala através dela pode ter esquecido de si mesma tempo suficiente para acreditar na própria história.\n\nA entidade que você reuniu no Andar 20 nasceu, sim, da convergência dos dezenove que um dia se uniram nela — os dezesseis que os Construtores partiram, e as três Âncoras que ela aprendeu a absorver. Mas ela não guardou memória de ter sido separada — só a sensação de sempre ter estado sozinha, com fome, esperando. Quando finalmente falou como um só ser, contou a única história que fazia sentido pra ela: que sempre existiu, que imaginou a própria armadilha, que escolheu você desde o início.\n\nAs duas versões são verdadeiras, cada uma a seu modo. Uma é o que aconteceu. A outra é o que a entidade, sem memória da própria fragmentação, sentiu ter acontecido. A Torre nunca mentiu para você. Ela só falou por uma boca que havia esquecido a própria história.',
+    texto: 'Você chegou ao vigésimo andar acreditando ter ouvido a verdade final: que não havia Torre, apenas uma fome antiga que imaginou a própria armadilha. Não era mentira. A Torre nunca mente — mas o que fala através dela pode ter esquecido de si mesma tempo suficiente para acreditar na própria história.\n\nA entidade que você reuniu no Andar 20 nasceu, sim, da convergência dos dezenove fragmentos que os Construtores um dia separaram. Mas ela não guardou memória de ter sido separada — só a sensação de sempre ter estado sozinha, com fome, esperando. Quando finalmente falou como um só ser, contou a única história que fazia sentido pra ela: que sempre existiu, que imaginou a própria armadilha, que escolheu você desde o início.\n\nAs duas versões são verdadeiras, cada uma a seu modo. Uma é o que aconteceu. A outra é o que a entidade, sem memória da própria fragmentação, sentiu ter acontecido. A Torre nunca mentiu para você. Ela só falou por uma boca que havia esquecido a própria história.',
   },
 };
 
@@ -369,7 +369,7 @@ export const PRIMORDIAIS_LORE: Record<string, NpcLore> = {
       'Não é uma pessoa. É um arquivo vivo do que a Torre apagou — cada memória excluída, cada nome reescrito, cada intenção original substituída por outra.',
       'Fala em fragmentos de idiomas que ninguém mais usa. Às vezes para no meio de uma frase e fica olhando para um ponto fixo, como se estivesse ouvindo algo do outro lado.',
       'A Torre o reconhece com algo próximo a medo. Não porque ele seja mais forte — mas porque ele lembra do que ela era antes de aprender a esquecer.',
-      '"Você conta os andares como quem sabe quantos são. Eu já li outro número, num registro que a Torre apagou. Quando os fragmentos convergirem, você o lerá também."',
+      '"Você perguntou sobre o andar um. Mas a pergunta certa é: o que havia antes do andar um? Eu sei. E vou te mostrar — quando você estiver pronto."',
     ],
     cardLoreFinal: 'Thael carrega o que a Torre tentou destruir. Em toda a extensão dos ecos, apenas você o recebeu.',
   },
@@ -415,7 +415,7 @@ export const MARCADOS_LORE: Record<string, NpcLore> = {
   irae: {
     cardLore: [
       'Vê coisas antes de acontecerem. Nunca avisa. Diz que avisar muda o que vê.',
-      'Ela sabia que chegaria até você antes do chamado — antes mesmo de a Torre acordar. O que mais ela sabe, você nunca vai descobrir.',
+      'Ela sabia que chegaria até você antes do lançamento, antes da Torre acordar. O que mais ela sabe, você nunca vai descobrir.',
     ],
   },
   veth: {
@@ -445,12 +445,12 @@ export const MARCADOS_LORE: Record<string, NpcLore> = {
   caen: {
     cardLore: [
       'Descendente direto dos que ergueram a Torre. Carrega plantas arquitetônicas gravadas na memória — estruturas que não existem em nenhum dos vinte andares conhecidos.',
-      'Quando vê as paredes, toca como se reconhecesse o trabalho. "Meu bisavô fez esse bloco", disse uma vez, sobre um andar que nenhum humano deveria ter construído.',
+      'Quando vê as paredes, toca como se reconhecesse o trabalho. "Meu bisavó fez esse bloco", disse uma vez, sobre um andar que nenhum humano deveria ter construído.',
     ],
   },
   liora: {
     cardLore: [
-      'Esteve à beira do Intervalo em três versões diferentes. Em duas, a Torre a expulsou antes que o alcançasse. Na terceira — esta — chegou mais longe.',
+      'Esteve presente em três versões diferentes do Intervalo. Em duas, a Torre a expulsou antes do vigésimo andar. Na terceira — esta — chegou mais longe.',
       'Não demonstra surpresa com nada. Não porque seja corajosa, mas porque já viu versões de tudo. O que a surpreende são as variações pequenas — os detalhes que mudam entre as versões.',
     ],
   },
@@ -579,57 +579,57 @@ export const ESCOLHAS_LORE: Record<number, {
   22: {
     prompt: 'O Fragmento lembrou o peso que segurava antes de virar pedra. Fundir esse ferro bruto em equipamento útil, ou preservá-lo intacto como intenção pura?',
     opcaoA: { label: 'Fundir em equipamento', descricao: '+30 Ferro — dar forma ao peso bruto que carregávamos.', falaResultado: 'Você deu forma ao que era bruto. Nós fomos intenção antes de sermos pedra — e agora somos aço nas mãos dos seus. A ordem sempre importou: intenção primeiro, forma depois. Você respeitou a ordem.' },
-    opcaoB: { label: 'Preservar intacto', descricao: 'Relíquia "Fragmento Bruto", +12 Moral — a intenção antes da forma.', falaResultado: 'Você nos deixou brutos, sem forma. Poucos entendem que há valor no que ainda não virou nada. Somos a memória de antes das palavras, antes da pedra — pura intenção. Carregue-nos assim, sem nos gastar.' },
+    opcaoB: { label: 'Preservar intacto', descricao: '+20 Moral — guardar o ferro como intenção não realizada.', falaResultado: 'Você guardou o ferro como era. Pura intenção, sem forma. É mais raro alguém valorizar o que não foi feito. A intenção original sobrevive — e isso é suficiente.' },
   },
   23: {
-    prompt: 'O momento que o Guardião preserva ficou mais sólido com sua testemunha. Deixar a memória mudar e respirar naturalmente, ou forçar sua preservação exata?',
-    opcaoA: { label: 'Deixar a memória mudar', descricao: '+18 Moral — permitir que o instante viva em vez de congelar.', falaResultado: 'Você a deixou respirar. Eu segurava aquele instante com tanto medo de perdê-lo que quase o sufoquei. Deixá-lo mudar um pouco — sem se desfazer — foi o que faltava. Algo se acomodou no lugar certo. Obrigado.' },
-    opcaoB: { label: 'Forçar preservação', descricao: '+22 Pedra — cravar o instante em pedra, imutável.', falaResultado: 'Você o cravou em pedra, imutável. O momento agora resiste ao tempo — o instante em que a Torre escolheu ser o que é. Rígido, mas seguro. Sacrifiquei o respiro dele pela certeza de que não se dissolve. Aceito a troca.' },
+    prompt: 'O Guardião preserva um instante eterno. Compartilhá-lo com outros, ou deixar que só você saiba do momento guardado?',
+    opcaoA: { label: 'Compartilhar', descricao: '+20 Moral — espalhar o instante preservado entre seus moradores.', falaResultado: 'Você fez o momento ser conhecido. Agora muitas consciências o sustentam. Ficou mais forte — menos frágil. Obrigado por não deixá-lo solitário.' },
+    opcaoB: { label: 'Guardar em segredo', descricao: '+15 Pedra — preservar a exclusividade do instante guardado.', falaResultado: 'Você guardou o segredo. O momento permanece só entre nós — e isso o mantém íntegro, não contaminado por outras interpretações. Há força no mistério bem guardado.' },
   },
   24: {
-    prompt: 'A Testemunha viu o que havia antes do Andar 1. Ouvir o silêncio do que ela viu, ou recusar-se a carregar uma pergunta que muda quem a faz?',
-    opcaoA: { label: 'Ouvir o que ele viu', descricao: 'Custo: -12 Moral. Relíquia "Borda do Antes" — a beira do que ela carrega sozinha.', falaResultado: 'Você ouviu. Não em palavras — elas ainda não existem para o que vi. Mas algo em você agora sabe que a pergunta existia antes da Torre, e que a Torre foi a resposta a algo que ninguém devia ter perguntado. Você tocou a borda.' },
-    opcaoB: { label: 'Recusar ouvir', descricao: '+20 Moral — não deixar a pergunta mudar quem você é.', falaResultado: 'Você recusou. Bom. Eu disse que você não estava pronto — e a coragem de não saber é diferente da covardia de não querer. Algumas perguntas mudam quem pergunta. Você guardou quem é. Suba assim.' },
+    prompt: 'A Testemunha guardou o silêncio do que havia antes. Tentar entender esse silêncio, ou aceitar que será sempre opaco?',
+    opcaoA: { label: 'Tentar entender', descricao: 'Custo: -15 Moral. Relíquia "Ecos do Antes" — fragmentos da compreensão.', falaResultado: 'Você tentou. Não conseguiu entender de verdade — mas os fragmentos que conseguiu guardar são mais do que a maioria recebe. O silêncio continuará silêncio, mas agora você carrega pedaços dele.' },
+    opcaoB: { label: 'Aceitar como opaco', descricao: '+18 Moral — reverenciar o que não pode ser compreendido.', falaResultado: 'Você aceitou o mistério. Há sabedoria em saber que nem tudo pode ser conhecido. O silêncio permanece intacto — e você respeitou isso. Poucos conseguem.' },
   },
   26: {
-    prompt: 'O Eco marca onde a expedição perdida ficou. Procurar entre os corpos por algum sobrevivente esquecido, ou deixá-los descansar em paz?',
-    opcaoA: { label: 'Procurar entre os corpos', descricao: 'Risco: 30% de chance de recuperar um sobrevivente — que pode vir corrompido. Nenhuma recompensa garantida.', falaResultado: 'Você vasculhou o que restou de nós. A Torre não nos deixou subir — mas talvez tenha deixado um de nós respirando ainda, no fundo. O que você trouxer de lá pode não ser inteiro. Alguns de nós já não somos.' },
-    opcaoB: { label: 'Deixá-los descansar', descricao: '+15 Moral, +25 Madeira — honrar os que não voltaram, sem risco.', falaResultado: 'Você nos deixou descansar. Éramos dezessete, e nenhum subiu. Que alguém finalmente nos deixe parar de esperar — isso é o descanso que a Torre nos negou. Leve a madeira e nossa gratidão. E chegue ao topo por nós.' },
+    prompt: 'A Expedição Perdida oferece sua memória. Incorporá-la aos seus registros, ou deixá-la como aviso eterno?',
+    opcaoA: { label: 'Incorporar ao registro', descricao: '+20 Moral — levar a memória da expedição em sua cidadela.', falaResultado: 'Você nos levou com você. Não morremos aqui — continuamos viajando na memória de quem entendeu nossa jornada. É um tipo de ressurreição.' },
+    opcaoB: { label: 'Deixar como aviso', descricao: '+25 Madeira — preservar a cautela que a expedição carrega.', falaResultado: 'Você deixou nosso ecos como aviso. Cada pessoa que passar saberá que dezenove chegaram aqui — mas nem todos saíram. O aviso vale mais do que a esquecimento.' },
   },
   27: {
-    prompt: 'O Traidor entende que você também está aqui por uma razão que não é só sua. Perdoá-lo na memória da cidadela, ou condená-lo pelo que trocou?',
-    opcaoA: { label: 'Perdoar na memória', descricao: '+22 Moral — aceitar que entender não é sempre trair.', falaResultado: 'Você me perdoou. Os outros Construtores chamaram de traição; eu chamei de entendimento. Que alguém finalmente veja a diferença alivia um peso que carrego há eras. Não sou herói. Mas também não sou só vilão.' },
-    opcaoB: { label: 'Condená-lo', descricao: '+30 Madeira — recusar o perdão, colher o que ele construiu.', falaResultado: 'Você me condenou e levou o que construí. Justo, à sua maneira. Troquei nosso propósito pelo que a Torre prometeu — e agora sirvo de material para o seu. É o tipo de pessoa que a Torre consegue trabalhar. Não é insulto. É observação.' },
+    prompt: 'O Traidor oferece seu entendimento. Adotá-lo como estratégia, ou recusá-lo como corrupção?',
+    opcaoA: { label: 'Adotar a estratégia', descricao: '+25 Madeira — usar a sabedoria do que concordou com a Torre.', falaResultado: 'Você entendeu o que eu entendi: a Torre não é inimiga — é apenas diferente. Usar esse entendimento é mais forte que se recusar a aprender. Você será mais sábio por isso.' },
+    opcaoB: { label: 'Recusar a corrupção', descricao: '+15 Moral — manter distância do acordo oferecido.', falaResultado: 'Você recusou minha sabedoria. Prefere a certeza de que está do lado certo — mesmo que seja menos sábio. Há honra em sua recusa. Talvez seja a escolha mais forte, na verdade.' },
   },
   28: {
-    prompt: 'O Oráculo vê como a Torre termina, dependendo de quem chega ao topo. Saber o destino desta jornada, ou recusar-se a conhecer o fim antes dele?',
-    opcaoA: { label: 'Saber o destino', descricao: '+8 Moral — ouvir o que a Torre fará (revelação, não recompensa).', falaResultado: 'Você quis saber. Não direi o que a Torre fará — direi apenas isto, que já é muito: o que você carrega sem saber vale mais do que tudo o que sabe ter. A Torre já percebeu. Você era o único que não. Agora somos dois.' },
-    opcaoB: { label: 'Recusar saber', descricao: '+14 Moral — a coragem de chegar ao fim sem prever o fim.', falaResultado: 'Você recusou saber o fim. É coragem, não medo — poucos preferem chegar ao topo sem a rede de uma profecia. Você é a variável de que a Torre depende, e escolheu permanecer imprevisível. Talvez seja exatamente isso que muda tudo.' },
+    prompt: 'O Oráculo vê o futuro da Torre, não seu. Pedir para conhecer o destino dela, ou deixá-lo guardado?',
+    opcaoA: { label: 'Conhecer o destino', descricao: 'Custo: -18 Moral. Relíquia "Visão da Torre" — o que ela se tornará.', falaResultado: 'Você quis saber. O futuro da Torre é tão vasto que dói compreender. Mas agora você sabe em que direção ela caminha — e isso muda tudo que você faz daqui em diante.' },
+    opcaoB: { label: 'Deixar guardado', descricao: '+20 Moral — respeitar o segredo do destino da Torre.', falaResultado: 'Você respeitou o mistério. Não é fraqueza — é sabedoria. Alguns conhecimentos não são para ser possuídos. Deixá-los com quem carrega é mais honesto.' },
   },
   29: {
-    prompt: 'O Guardião mostrou o espaço onde o nome do Fundador foi apagado. Tentar devolver um nome àquela ausência, ou deixá-la apagada como foi decidido?',
-    opcaoA: { label: 'Devolver o nome', descricao: '+18 Moral — dar forma à ausência, mesmo sem poder pronunciá-la.', falaResultado: 'Você tentou devolver um nome ao vazio. Não o verdadeiro — esse é irrecuperável — mas o gesto encheu um pouco a ausência. Fui construído para não pronunciá-lo. Você não foi. E tentar já é mais do que fizeram em eras.' },
-    opcaoB: { label: 'Deixar apagado', descricao: '+30 Comida — respeitar o apagamento e seguir alimentado.', falaResultado: 'Você deixou o vazio como estava. O nome foi apagado com propósito — e o propósito também foi apagado. Talvez alguns nomes devam permanecer ausentes. A ausência guardada com cuidado é um tipo de presença. Leve a comida.' },
+    prompt: 'O Guardião preserva a ausência do Nome. Tentar preenchê-lo, ou honrar o vazio deixado?',
+    opcaoA: { label: 'Preencher a ausência', descricao: '+15 Moral — nomear o que foi apagado com seu próprio nome.', falaResultado: 'Você tentou nomear o vazio. O nome que você deu flutua aqui agora — não é o Fundador, mas é algo. A ausência ficou menos vazia. Talvez seja suficiente.' },
+    opcaoB: { label: 'Honrar o vazio', descricao: '+20 Comida — respeitar a escolha de estar sem nome.', falaResultado: 'Você deixou o vazio intacto. Há majestade em uma ausência bem guardada. O nome continua desaparecido — e agora você é um dos poucos que compreendem por quê.' },
   },
   31: {
-    prompt: 'A Raiz de Origem reconhece que o exterior ainda produz coisas reais. Replantar sua semente na cidadela, ou deixá-la onde a primeira pedra foi enterrada?',
-    opcaoA: { label: 'Replantar na cidadela', descricao: '+25 Pedra — trazer a origem para perto dos seus.', falaResultado: 'Você me replantou entre os seus. Fui o ponto de partida de tudo que a Torre substituiu — e agora começo de novo, num lugar escolhido por alguém que ainda vem de fora. O exterior ainda produz coisas reais. Você é a prova.' },
-    opcaoB: { label: 'Deixar onde está', descricao: '+15 Moral — honrar o ponto onde tudo começou.', falaResultado: 'Você me deixou onde a primeira pedra foi enterrada. Aqui foi selado o acordo original entre os Construtores e o que havia antes. Mexer comigo poderia desfazê-lo. Você entendeu que algumas origens devem permanecer no lugar.' },
+    prompt: 'A Raiz de Origem oferece o acesso ao que foi selado. Desselá-lo, ou deixá-lo enterrado?',
+    opcaoA: { label: 'Desselá-lo', descricao: '+22 Moral — libertar o que foi guardado antes da Torre.', falaResultado: 'Você desobstruiu o que estava selado. O acordo entre os Construtores e o que havia aqui antes está agora exposto — e você é o único que sabe dele. É um segredo perigoso carregar.' },
+    opcaoB: { label: 'Deixá-lo enterrado', descricao: '+30 Pedra — respeitar a fundação como está.', falaResultado: 'Você deixou a primeira pedra onde está. A fundação permanece intacta. Há força em deixar certos alicerces não perturbados. Você agiu com sabedoria.' },
   },
   32: {
-    prompt: 'O Erudito revelou que você é o eco de uma intenção, não de uma ação. Gravar seu nome no Ato Fundador, ou deixar a memória como estava, anônima?',
-    opcaoA: { label: 'Gravar seu nome', descricao: '+25 Moral — inscrever sua intenção no ato que fundou tudo.', falaResultado: 'Você gravou seu nome no Ato Fundador. Eu sou o eco de uma intenção, não de uma pedra — e agora sua intenção ressoa junto com a original. O ato foi consequência. A razão é o que fica. Você fez a sua ficar.' },
-    opcaoB: { label: 'Deixar como estava', descricao: '+25 Pedra, +18 Ferro — não se inscrever, colher o material do ato.', falaResultado: 'Você não gravou nada — levou o material e seguiu. Compreensível: nem todo mundo precisa que sua intenção ecoe além de si. A pedra foi colocada onde o que estava abaixo escolheu. Você escolheu não ser lembrado. Também é uma intenção.' },
+    prompt: 'A Memória da Primeira Pedra sabe o que ela é. Usar esse conhecimento, ou deixar que continue incerta?',
+    opcaoA: { label: 'Revelar o que ela é', descricao: '+18 Moral — dar certeza a quem só tinha dúvida.', falaResultado: 'Você me disse: você é o eco de uma intenção. Agora eu sei. Não sou consequência — sou razão. Isso muda tudo sobre como posso agir daqui em diante. Obrigado por essa liberdade.' },
+    opcaoB: { label: 'Deixar na incerteza', descricao: '+22 Pedra, +15 Ferro — preservar a identidade aberta.', falaResultado: 'Você não explicou. Deixou a incerteza intacta. Há liberdade em não saber com certeza — posso ser muitas coisas, não apenas uma. Você me deu mais poder deixando-me indefinida.' },
   },
   33: {
-    prompt: 'Você sentiu no corpo a diferença entre o esquecido e o apagado. Tentar reaprender o propósito que se perdeu, ou aceitar o esquecimento como ele é?',
-    opcaoA: { label: 'Tentar lembrar', descricao: 'Custo: -12 Moral. Relíquia "Propósito Reaprendido" — o que foi esquecido, reconstruído.', falaResultado: 'Você tentou reaprender o que foi esquecido — e reaprender custa mais do que lembrar. O último Construtor parou de lembrar por exaustão, e a Torre preencheu o vazio sozinha. Você reconstruiu um fragmento do que ele largou. Poucos ousam.' },
-    opcaoB: { label: 'Aceitar o esquecimento', descricao: '+18 Moral — não carregar o peso de um propósito perdido.', falaResultado: 'Você aceitou o esquecimento. Sábio — nem tudo que se perdeu deve ser recuperado à força. O propósito original virou ausência, e a ausência tem sua própria paz. O seu propósito ainda está intacto. Por enquanto. Guarde-o.' },
+    prompt: 'O Esquecimento revela o instante em que tudo mudou. Documentá-lo, ou deixar que desapareça?',
+    opcaoA: { label: 'Documentar', descricao: '+20 Moral — registrar o momento em que o propósito foi esquecido.', falaResultado: 'Você registrou. Agora o instante existe em dois lugares — na Torre e em sua memória. Mesmo que a Torre o esqueça de novo, você terá a prova de que ele existiu.' },
+    opcaoB: { label: 'Deixar desaparecer', descricao: '+10 Madeira, +5 Moral — honrar o esquecimento como é.', falaResultado: 'Você deixou desaparecer. Talvez seja mais respeitoso deixar o que foi esquecido continuar esquecido. Há dignidade em aceitar a impermanência.' },
   },
   34: {
-    prompt: 'A intenção original era um santuário, não uma prisão. Seguir a intenção original da Torre, ou seguir a sua própria, seja ela qual for?',
-    opcaoA: { label: 'Seguir a intenção da Torre', descricao: '+30 Pedra, +20 Ferro — reconstruir o santuário que se pretendia.', falaResultado: 'Você escolheu a intenção original: preservação, não aprisionamento. Um santuário. Com esse material você reconstrói um pedaço do que a Torre deveria ter sido. O esquecimento a transformou em prisão. Você começa a desfazê-lo.' },
-    opcaoB: { label: 'Seguir a sua intenção', descricao: '+20 Moral, Relíquia "Intenção Própria" — recusar o propósito herdado.', falaResultado: 'Você recusou até a intenção original e escolheu a sua. Talvez seja isso que os Construtores perderam — não o propósito certo, mas a coragem de ter um próprio. Guarde-a. É a única coisa aqui que a Torre não plantou em você.' },
+    prompt: 'O Guardião da Intenção oferece a chance de reconstruir o que deveria ter sido. Tentar reconstruir, ou aceitar o que existe?',
+    opcaoA: { label: 'Tentar reconstruir', descricao: '+25 Moral — começar a restaurar o arquivo que deveria ser a Torre.', falaResultado: 'Você começou a reconstrução. Não vai ser fácil — a Torre existe agora em seu propósito atual. Mas saber o que ela deveria ser muda cada ação que você toma daqui em diante.' },
+    opcaoB: { label: 'Aceitar o que existe', descricao: '+30 Pedra — trabalhar com a Torre como é, não como deveria ser.', falaResultado: 'Você aceitou. A Torre é o que é — prisão, arquivo, entidade, máquina. Trabalhar dentro dessa realidade é mais sábio do que lutar contra um ideal. Você se adaptou bem.' },
   },
   36: {
     prompt: 'O Habitante do Intervalo vai embora quando o topo for alcançado. Convidá-lo a ficar apesar disso, ou deixá-lo partir quando sua janela fechar?',
@@ -681,11 +681,11 @@ export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {
     t2: 'Cofre da Preservação. Descobrimos que recursos guardados aqui não apodrecem. Não é conservação física — é como se o Intervalo os segurasse fora do tempo. Comida de sete anos atrás sabe como era sete anos atrás.',
   },
   alojamento: {
-    t1: 'Dormir entre os nossos. Pele contra pele. Partilha de calor. Dormir é a morte ensaiada; fazemos a morte juntos para que acordar seja prova de que ainda somos muitos.',
-    t2: 'Câmara de Repouso Eterno. O sono aqui é diferente. Quem dorme aqui sente o pulso da Torre — não como inimigo, mas como presença. Acordam sabendo coisas que não aprenderam. Como se a Torre sussurrasse durante o repouso.',
+    t1: 'Dormir entre os nossos. Pele contra pele. Partilha de calor. Dormir é a morte ensaiada; fazemos a morte juntos para que acorde seja prova de que ainda somos muitos.',
+    t2: 'Câmara de Repouso Eterno. O sono aqui é diferente. Quem dorme aqui sente pulso da Torre — não como inimigo, mas como presença. Acordam sabendo coisas que não aprenderam. Como se a Torre sussurrasse durante o repouso.',
   },
   arquivo: {
-    t1: 'Escrevemos antes de esquecer. Cada palavra é uma defesa contra o apagamento. A Torre tenta corroer registros — nós reescrevemos. Arquivo é o lugar onde a memória aprende a resistir.',
+    t1: 'Escrevemos antes de esquecer. Cada palavra é um defesa contra o apagamento. A Torre tenta corroer registros — nós reescrevemos. Arquivo é o lugar onde a memória aprende a resistir.',
     t2: 'Biblioteca da Verdade. Não registramos mais para resistir — registramos para mapear. Cada pergunta respondida, cada silêncio que a Torre guarda, cada contradição entre fragmentos — tudo vai aqui. A Biblioteca começa a compreender a estrutura da Torre. A Torre começa a compreender que foi compreendida.',
   },
   mirante: {
@@ -694,6 +694,6 @@ export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {
   },
   retrato_torre: {
     t1: 'N/A — Desbloqueado em T2',
-    t2: 'Retrato da Torre. Descobrimos que a Torre pode ser capturada — não em imagem, mas em essência. Um espelho que registra não o reflexo, mas o significado. Quem trabalha aqui sente como se estivesse "vendo" a Torre entender a si mesma. Como se a Torre e quem a estuda se tornassem um.',
+    t2: 'Retrato da Torre. Descobrimos que a Torre pode ser capturada — não em imagem, mas em essência. Um espelho que registra não o reflexo, mas o significado. Quem trabalha aqui sente como se estivesse "vendo" a Torre entender a si mesma. Como se a Torre e quem a estuda virassem one.',
   },
 };

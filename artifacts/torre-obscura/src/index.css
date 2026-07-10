@@ -224,15 +224,3 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
-
-/* Pulso de atenção FINITO: chama o olho e assenta, em vez de repintar para
-   sempre (bateria) — e respeita prefers-reduced-motion. */
-@keyframes pulse-atencao {
-  50% { opacity: 0.55; }
-}
-.animate-pulse-atencao {
-  animation: pulse-atencao 1.6s cubic-bezier(0.4, 0, 0.6, 1) 4;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-pulse-atencao { animation: none; }
-}

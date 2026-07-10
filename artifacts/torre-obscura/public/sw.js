@@ -1,6 +1,4 @@
-// v6: purga respostas de /api-server/* (path antigo de dev) que ficaram presas
-// no cache-first como HTML do SPA fallback.
-const CACHE_NAME = 'torre-obscura-v6';
+const CACHE_NAME = 'torre-obscura-v5';
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_URLS = ['/'];
@@ -35,9 +33,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return res;
         })
-        .catch(() =>
-          caches.match(event.request).then((cached) => cached || caches.match('/'))
-        )
+        .catch(() => caches.match('/') || caches.match(event.request))
     );
     return;
   }
@@ -55,9 +51,6 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(event.request).then((res) => {
         if (!res || res.status !== 200 || res.type === 'opaque') return res;
-        // Nunca cachear HTML fora de navigation: uma rota de API errada que caia
-        // no SPA fallback (200 + index.html) ficaria presa no cache para sempre.
-        if ((res.headers.get('content-type') ?? '').includes('text/html')) return res;
         const clone = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return res;
@@ -76,9 +69,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title ?? 'Torre Obscura', {
       body: data.body ?? 'Sua cidadela precisa de você.',
       icon: data.icon ?? '/icon-192.png',
-      // Badge Android exige ícone monocromático (alpha-only) — um PNG colorido
-      // vira um quadrado branco na status bar.
-      badge: data.badge ?? '/badge-96.png',
+      badge: data.badge ?? '/icon-192.png',
       tag: data.tag ?? 'torre-obscura-reminder',
       data: { url: data.url ?? '/' },
     })

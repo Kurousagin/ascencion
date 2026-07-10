@@ -194,7 +194,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                 </div>
 
                 {fase === 'ritual' && (
-                  <p className="text-xs text-white/20 tracking-widest text-center">
+                  <p className="text-[11px] text-white/20 tracking-widest text-center">
                     TOQUE EM UMA CARTA
                   </p>
                 )}
@@ -227,17 +227,17 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                     {/* Badge de raridade */}
                     {isPrimordial ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                        className="text-xs text-primary/70 tracking-[0.3em] font-cinzel mb-2">
+                        className="text-[11px] text-primary/70 tracking-[0.3em] font-cinzel mb-2">
                         ✦ ÚNICO · PRIMORDIAL ✦
                       </motion.div>
                     ) : isVestigio ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                        className="text-xs text-[#FF8C00]/70 tracking-[0.3em] font-cinzel mb-2">
+                        className="text-[11px] text-[#FF8C00]/70 tracking-[0.3em] font-cinzel mb-2">
                         ◈ VESTÍGIO · SOBREVIVENTE EXCEPCIONAL ◈
                       </motion.div>
                     ) : (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                        className="text-xs text-[#5090D0]/70 tracking-[0.3em] font-cinzel mb-2">
+                        className="text-[11px] text-[#5090D0]/70 tracking-[0.3em] font-cinzel mb-2">
                         ◆ RARO · SOBREVIVENTE MARCADO ◆
                       </motion.div>
                     )}
@@ -247,7 +247,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                     }`}>
                       {npcResultado.nome}
                     </h2>
-                    <p className={`text-xs tracking-widest ${
+                    <p className={`text-[11px] tracking-widest ${
                       isPrimordial ? 'text-secondary/50' : isVestigio ? 'text-[#FF8C00]/50' : 'text-[#5090D0]/50'
                     }`}>
                       {npcResultado.titulo}
@@ -324,7 +324,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                       }`}>
                         {npcResultado.nome}
                       </div>
-                      <div className={`text-xs tracking-widest mt-0.5 ${
+                      <div className={`text-[11px] tracking-widest mt-0.5 ${
                         isPrimordial ? 'text-secondary/50' : isVestigio ? 'text-[#FF8C00]/50' : 'text-[#5090D0]/50'
                       }`}>
                         {npcResultado.titulo}
@@ -333,15 +333,15 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
 
                     {/* Badge de raridade */}
                     {isPrimordial ? (
-                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-xs font-bold font-cinzel tracking-widest border bg-primary/20 border-primary/60 text-primary">
+                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-[11px] font-bold font-cinzel tracking-widest border bg-primary/20 border-primary/60 text-primary">
                         ÚNICO
                       </div>
                     ) : isVestigio ? (
-                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-xs font-bold font-cinzel tracking-widest border bg-[#7A3D00]/40 border-[#CC6B00]/60 text-[#FF8C00]">
+                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-[11px] font-bold font-cinzel tracking-widest border bg-[#7A3D00]/40 border-[#CC6B00]/60 text-[#FF8C00]">
                         VESTÍGIO
                       </div>
                     ) : (
-                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-xs font-bold font-cinzel tracking-widest border bg-[#1A2840] border-[#3A5080]/60 text-[#7DB0E8]">
+                      <div className="shrink-0 px-2 py-0.5 rounded-sm text-[11px] font-bold font-cinzel tracking-widest border bg-[#1A2840] border-[#3A5080]/60 text-[#7DB0E8]">
                         RARO
                       </div>
                     )}
@@ -368,7 +368,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
 
                   {/* Habilidade + flags */}
                   <div className="px-5 py-3 flex flex-wrap gap-2 border-b border-white/5">
-                    <div className={`flex items-center gap-1.5 text-xs ${
+                    <div className={`flex items-center gap-1.5 text-[11px] ${
                       isPrimordial ? 'text-secondary/60' : isVestigio ? 'text-[#FF8C00]/60' : 'text-[#5090D0]/60'
                     }`}>
                       <div className={`w-[5px] h-[5px] rotate-45 shrink-0 ${
@@ -377,7 +377,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                       {npcResultado.habilidade.toUpperCase()}
                     </div>
                     {isPrimordial && (
-                      <div className="flex items-center gap-1.5 text-xs text-primary/60">
+                      <div className="flex items-center gap-1.5 text-[11px] text-primary/60">
                         <div className="w-[5px] h-[5px] rotate-45 bg-primary/40 shrink-0" />
                         IMORTAL — resistência à morte elevada
                       </div>
@@ -389,7 +389,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                     const p = PASSIVAS[npcResultado.passivaId as PassivaId];
                     return (
                       <div className="px-5 py-3 border-b border-[#7A3D00]/20 bg-[#7A3D00]/5">
-                        <div className="text-xs text-[#FF8C00]/60 tracking-widest mb-1 font-bold">
+                        <div className="text-[11px] text-[#FF8C00]/60 tracking-widest mb-1 font-bold">
                           ◈ PASSIVA — {p.nome.toUpperCase()}
                         </div>
                         <div className="text-[12px] text-white/50 leading-relaxed">{p.descricao}</div>
@@ -398,7 +398,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                   })()}
 
                   {/* Nota de unicidade */}
-                  <div className={`px-5 py-2.5 border-b text-xs leading-relaxed ${
+                  <div className={`px-5 py-2.5 border-b text-[11px] leading-relaxed ${
                     isPrimordial
                       ? 'border-primary/10 text-primary/40 bg-primary/5'
                       : isVestigio

@@ -14,11 +14,11 @@ export function MuralAcontecimentos() {
     <div className="bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/20 rounded-sm p-3">
       <div className="flex items-center gap-2 mb-3">
         <ScrollText size={12} className="text-primary/70" />
-        <h3 className="text-xs font-cinzel text-primary tracking-[0.25em]">MURAL DA CIDADELA</h3>
+        <h3 className="text-[11px] font-cinzel text-primary tracking-[0.25em]">MURAL DA CIDADELA</h3>
       </div>
 
       {feed.length === 0 ? (
-        <p className="text-xs text-muted-foreground/70 italic py-3 text-center">
+        <p className="text-[11px] text-muted-foreground/70 italic py-3 text-center">
           A Torre está quieta. Os acontecimentos aparecerão aqui.
         </p>
       ) : (
