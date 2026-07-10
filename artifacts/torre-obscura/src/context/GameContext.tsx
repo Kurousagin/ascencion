@@ -1833,9 +1833,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const abrirCodex = () => {
-    if (!state || !state.codexNovoFragmento) return;
+    if (!state) return;
     const s = JSON.parse(JSON.stringify(state)) as GameState;
-    s.codexNovoFragmento = false;
+    // Abrir o Codex cumpre a meta diária 'lore' (Ecos do Passado) — antes só limpava
+    // o badge e ainda saía cedo quando não havia fragmento novo, então a meta nunca
+    // marcava. registrarProgressoMetaDiaria é idempotente (no-op se não for meta de hoje).
+    registrarProgressoMetaDiaria(s, 'lore');
+    if (s.codexNovoFragmento) s.codexNovoFragmento = false;
     saveState(s);
   };
 
