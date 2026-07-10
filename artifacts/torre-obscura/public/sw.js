@@ -76,7 +76,9 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title ?? 'Torre Obscura', {
       body: data.body ?? 'Sua cidadela precisa de você.',
       icon: data.icon ?? '/icon-192.png',
-      badge: data.badge ?? '/icon-192.png',
+      // Badge Android exige ícone monocromático (alpha-only) — um PNG colorido
+      // vira um quadrado branco na status bar.
+      badge: data.badge ?? '/badge-96.png',
       tag: data.tag ?? 'torre-obscura-reminder',
       data: { url: data.url ?? '/' },
     })
