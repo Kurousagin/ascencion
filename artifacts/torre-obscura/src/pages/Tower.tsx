@@ -4,12 +4,16 @@ import { FLOORS, BIOMA_META, CAPITULO_NOMES, calcNpcPower, calcBiomaMultiplier, 
 import { LivroReader } from '../components/LivroReader';
 import { verificarQuestAndar, verificarQuestOculta } from '../quest-engine';
 import { camarasDaTorre, chanceAbrirCamara } from '../floor-engine';
-import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen, Dices, KeyRound } from 'lucide-react';
+import { Skull, ChevronUp, ChevronRight, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield, RotateCcw, Sparkles, UserPlus, BookOpen, Eye, DoorClosed, DoorOpen, Dices, KeyRound } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { SelecaoMoradores } from '../components/SelecaoMoradores';
 import { ClimaBanner } from '../components/ClimaBanner';
 import { AtlasAndar } from '../components/AtlasAndar';
+import { climaDoDia } from '../lib/clima';
+import { estacaoDoDia, multEstacao } from '../lib/estacao';
+import { eventoDoDia, multEventoParaAndar } from '../lib/eventos-andar';
+import { multFolego, multCadeia } from '../lib/folego';
 
 interface TowerProps {
   t2Desbloqueado: boolean;
@@ -170,8 +174,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
       {/* ── O tempo da Torre: como ela amanheceu hoje ─────────────────────── */}
       <ClimaBanner seed={state.camaraSeed ?? 0} dia={state.dia} andarAtual={state.andarAtual} />
 
-      {/* Atlas da Torre — ficha do andar (portal; fica aqui por proximidade) */}
-      <AtlasAndar floor={atlasFloor} onClose={() => setAtlasFloor(null)} />
+      {/* Atlas da Torre — ficha do andar: hub de explorar/habitante/câmara */}
+      <AtlasAndar
+        floor={atlasFloor}
+        onClose={() => setAtlasFloor(null)}
+        onExplorar={fl => { setFarmAndar(fl); setModalOpen(true); }}
+        onHabitante={fl => setHabitanteModalFloor(fl)}
+        onCamara={id => { setCamaraGrupo([]); setCamaraSecretaModalId(id); }}
+      />
 
       {/* Banner de modo exploração */}
       {isFarming && (
@@ -336,7 +346,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-b border-primary/20 pb-2">
           HISTÓRICO DA ESCALADA
           {conquistados.length > 0 && (
-            <span className="text-xs text-secondary normal-case tracking-normal ml-auto font-inter">toque para explorar</span>
+            <span className="text-xs text-secondary normal-case tracking-normal ml-auto font-inter">toque para abrir a ficha</span>
           )}
         </h3>
         <div className="space-y-2">
@@ -350,94 +360,54 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
             const ecoAtivo = state.ecos.includes(f.floor);
             const habCompletavel = habData && verificarQuestAndar(state, f.floor);
             const habEstIcon = habEst === 'descoberto' ? '👁' : habEst === 'quest_ativa' ? '⚡' : habEst === 'concluido' ? '✦' : null;
+            // Glifos de status embutidos na linha — as ações vivem na ficha do andar.
+            const camaraInvestigavel = Object.entries(camarasDaTorre(state)).some(([id, cam]) => {
+              if (!id.startsWith(`${f.floor}_`)) return false;
+              const cEst = state.camarasSecretasEstado?.[id];
+              return !!cEst?.descoberta && !cEst.encontrada && cEst.tentativas < cam.maxTentativas;
+            });
+            const temAtencao = habCompletavel || camaraInvestigavel;
             return (
-              <div key={f.floor} className="flex gap-1 items-stretch">
-                <button
-                  onClick={() => {
-                    setFarmAndar(f.floor);
-                    setModalOpen(true);
-                  }}
-                  className={`flex-1 flex justify-between items-center p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
-                    isSelected
-                      ? 'bg-secondary/10 border-secondary text-foreground'
-                      : habCompletavel
-                        ? 'bg-gradient-to-r from-[#161B22] to-transparent border-success animate-pulse hover:border-success'
-                        : 'bg-gradient-to-r from-[#161B22] to-transparent border-card-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5">
-                      <span>{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
-                      <span>{f.nome}</span>
-                      {bossEcoAtivo && <span className="text-xs text-primary ml-0.5" title="Eco do Capítulo desbloqueado">✦</span>}
-                      {ecoAtivo && <span className="text-xs text-success ml-0.5" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-secondary tracking-widest">ANDAR {f.floor} · {f.tierName.toUpperCase()}</span>
-                      {ecoAtivo && (
-                        <span className="text-xs text-success/80 font-bold">+{HABITANTES[f.floor]?.quest.ecoBonus}% LOOT</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className={`text-[12px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
-                    {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}
+              <button
+                key={f.floor}
+                onClick={() => setAtlasFloor(f.floor)}
+                className={`w-full flex justify-between items-center gap-2 p-3 rounded-sm border-l-2 text-sm transition-all touch-manipulation text-left ${
+                  isSelected
+                    ? 'bg-secondary/10 border-secondary text-foreground'
+                    : temAtencao
+                      ? 'bg-gradient-to-r from-[#161B22] to-transparent border-success hover:border-success'
+                      : 'bg-gradient-to-r from-[#161B22] to-transparent border-card-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="font-bold font-cinzel text-foreground flex items-center gap-1.5 min-w-0">
+                    <span className="shrink-0">{isBossFloor ? '💀' : BIOMA_META[f.bioma].icone}</span>
+                    <span className="truncate">{f.nome}</span>
+                    {bossEcoAtivo && <span className="text-xs text-primary shrink-0" title="Eco do Capítulo desbloqueado">✦</span>}
+                    {ecoAtivo && <span className="text-xs text-success shrink-0" title={`Eco +${HABITANTES[f.floor]?.quest.ecoBonus}% loot`}>⚡</span>}
                   </span>
-                </button>
-                {/* Atlas da Torre: a ficha deste lugar */}
-                <button
-                  onClick={() => setAtlasFloor(f.floor)}
-                  title={`Atlas — ${f.nome}`}
-                  className="w-10 flex items-center justify-center rounded-sm border border-card-border text-white/50 hover:text-primary hover:border-primary/40 transition-all touch-manipulation flex-shrink-0 text-base"
-                >
-                  🗺
-                </button>
-                {/* Botão do habitante (andares não-boss com habitante descoberto) */}
-                {habData && habEst && habEst !== 'oculto' && (
-                  <button
-                    onClick={() => setHabitanteModalFloor(f.floor)}
-                    title={`${habData.nome} — ${habEst === 'concluido' ? 'Concluído' : habEst === 'quest_ativa' ? 'Quest Ativa' : 'Descoberto'}`}
-                    className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
-                      habCompletavel
-                        ? 'bg-success/10 border-success text-success animate-pulse'
-                        : habEst === 'concluido'
-                          ? 'bg-primary/10 border-primary/40 text-primary'
-                          : habEst === 'quest_ativa'
-                            ? 'bg-warning/10 border-warning/40 text-warning'
-                            : 'bg-card-border/20 border-card-border text-white/50'
-                    }`}
-                  >
-                    {habEstIcon}
-                  </button>
-                )}
-                {/* Botão de Câmara Secreta — só aparece quando DESCOBERTA (requisito
-                    atingido no processDay). Chave sempre por camaraId. */}
-                {(() => {
-                  const camarasDoAndar = Object.entries(camarasDaTorre(state)).filter(([id]) => id.startsWith(`${f.floor}_`));
-                  if (camarasDoAndar.length === 0) return null;
-                  return camarasDoAndar.map(([camId, cam]) => {
-                    const cEst = state.camarasSecretasEstado?.[camId];
-                    if (!cEst?.descoberta) return null; // câmara ainda secreta
-                    const esgotada = cEst.encontrada || cEst.tentativas >= cam.maxTentativas;
-                    const restantes = cam.maxTentativas - cEst.tentativas;
-                    return (
-                      <button
-                        key={camId}
-                        onClick={() => { setCamaraGrupo([]); setCamaraSecretaModalId(camId); }}
-                        title={cEst.encontrada ? `${cam.titulo} — explorada` : esgotada ? `${cam.titulo} — esgotada` : `${cam.titulo} — ${restantes} incursão(ões)`}
-                        className={`w-10 flex items-center justify-center rounded-sm border text-base transition-all touch-manipulation flex-shrink-0 ${
-                          cEst.encontrada
-                            ? 'bg-primary/10 border-primary/40 text-primary'
-                            : esgotada
-                              ? 'bg-card-border/20 border-card-border text-white/30'
-                              : 'bg-secondary/10 border-secondary/50 text-secondary animate-pulse'
-                        }`}
-                      >
-                        {cEst.encontrada ? cam.icone : <DoorClosed size={15} />}
-                      </button>
-                    );
-                  });
-                })()}
-              </div>
+                  <span className="text-xs text-secondary tracking-widest">
+                    ANDAR {f.floor} · {f.tierName.toUpperCase()}
+                    {ecoAtivo && <span className="text-success/80 font-bold"> · +{HABITANTES[f.floor]?.quest.ecoBonus}%</span>}
+                  </span>
+                </div>
+                <span className="flex items-center gap-2 shrink-0">
+                  {/* Estado do habitante e segredos — informação, não botão */}
+                  {habEstIcon && (
+                    <span
+                      className={`text-sm ${habCompletavel ? 'text-success' : habEst === 'quest_ativa' ? 'text-warning' : habEst === 'concluido' ? 'text-primary/70' : 'text-white/40'}`}
+                      title={habData ? habData.nome : undefined}
+                    >
+                      {habEstIcon}
+                    </span>
+                  )}
+                  {camaraInvestigavel && (
+                    <span title="Pista de câmara em aberto"><DoorClosed size={14} className="text-secondary" /></span>
+                  )}
+                  {temAtencao && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-atencao" />}
+                  <ChevronRight size={16} className="text-white/30" />
+                </span>
+              </button>
             );
           })}
           {/* Botão "ver mais / recolher" quando há andares ocultos */}
@@ -1283,6 +1253,56 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   {biomaMultiplier === 1 && ef.poderBonus === 0 && <> (sem bônus de terreno ou edifícios)</>}
                 </div>
               )}
+
+              {/* O dia e o risco: contexto para decidir quem vai — e se vai */}
+              {(() => {
+                const climaHj = climaDoDia(state.camaraSeed ?? 0, state.dia)[floorData.bioma];
+                const estacaoHj = estacaoDoDia(state.dia);
+                const estacaoM = multEstacao(estacaoHj, floorData.bioma);
+                const eventoHj = eventoDoDia(state.camaraSeed ?? 0, state.dia);
+                const eventoM = multEventoParaAndar(eventoHj, floorData.floor);
+                const folegoM = isFarming ? multFolego(state, floorData.floor) : 1;
+                const cadeiaM = multCadeia(state, floorData.floor, floorData.bioma);
+                const chips: Array<{ txt: string; bom: boolean }> = [];
+                if (climaHj.estado !== 'neutro') chips.push({ txt: `${climaHj.icone} ${climaHj.nome} ${climaHj.estado === 'favoravel' ? '+10%' : '−10%'}`, bom: climaHj.estado === 'favoravel' });
+                if (estacaoM !== 1) chips.push({ txt: `${estacaoHj.icone} ${estacaoHj.nome} ${estacaoM > 1 ? '+8%' : '−8%'}`, bom: estacaoM > 1 });
+                if (eventoM !== 1 && eventoHj) chips.push({ txt: `${eventoHj.icone} ${eventoHj.nome} ${eventoM > 1 ? '+15%' : '−15%'}`, bom: eventoM > 1 });
+                if (folegoM < 1) chips.push({ txt: folegoM <= 0.7 ? '💨 Andar exaurido −30%' : '💨 Andar cansado −15%', bom: false });
+                if (cadeiaM > 1) chips.push({ txt: '🦌 Caça migrada +10%', bom: true });
+
+                const vitoria = group.length > 0 && groupPower >= floorData.difficulty;
+                const reducao = vitoria ? Math.min(((groupPower - floorData.difficulty) / floorData.difficulty) * 50, 80) : 0;
+                const risco = floorData.mortality * (1 - reducao / 100);
+                const riscoCor = risco < 8 ? 'text-success' : risco < 18 ? 'text-warning' : 'text-destructive';
+                return (
+                  <>
+                    {chips.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 -mt-1">
+                        {chips.map((c, i) => (
+                          <span key={i} className={`text-[12px] px-2 py-0.5 rounded-sm border tracking-wide ${c.bom ? 'border-success/40 text-success/90 bg-success/5' : 'border-warning/40 text-warning/90 bg-warning/5'}`}>
+                            {c.txt}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {group.length > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-secondary font-cinzel tracking-widest text-[12px]">RISCO POR MEMBRO</span>
+                        {vitoria ? (
+                          <span className={`font-bold text-xs ${riscoCor}`}>
+                            ~{risco.toFixed(0)}%{groupPower > floorData.difficulty ? ` (margem reduz ${Math.round(reducao)}%)` : ''}
+                          </span>
+                        ) : (
+                          <span className="font-bold text-xs text-destructive">
+                            derrota provável · risco cheio ~{floorData.mortality.toFixed(0)}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
               <div className="flex justify-between items-center text-sm">
                 <span className="text-secondary font-cinzel tracking-widest text-[12px]">CUSTO DE SUPRIMENTOS</span>
                 <span className={`font-bold font-inter text-base flex items-center gap-2 ${canAfford ? 'text-foreground' : 'text-destructive'}`}>

@@ -1,7 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { X, ChevronRight, Compass } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { FLOORS, BIOMA_META, HABITANTES } from '../lib/game-data';
+import { verificarQuestAndar } from '../quest-engine';
 import { camarasDaTorre } from '../floor-engine';
 import { climaDoDia } from '../lib/clima';
 import { descricaoVivaDoAndar } from '../lib/lugar';
@@ -17,6 +18,11 @@ import { eventoDoDia, multEventoParaAndar } from '../lib/eventos-andar';
 interface Props {
   floor: number | null;
   onClose: () => void;
+  // Ações do andar (a ficha é o hub): explorar, falar com o habitante,
+  // investigar uma câmara. A ficha fecha antes de abrir o fluxo seguinte.
+  onExplorar?: (floor: number) => void;
+  onHabitante?: (floor: number) => void;
+  onCamara?: (camaraId: string) => void;
 }
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -28,7 +34,7 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
   );
 }
 
-export function AtlasAndar({ floor, onClose }: Props) {
+export function AtlasAndar({ floor, onClose, onExplorar, onHabitante, onCamara }: Props) {
   const { state } = useGame();
   if (floor === null || !state) return null;
   const f = FLOORS[floor - 1];
@@ -61,6 +67,8 @@ export function AtlasAndar({ floor, onClose }: Props) {
     habEst === 'concluido' ? 'em paz com a cidadela' :
     habEst === 'quest_ativa' || habEst === 'aguardando_escolha' ? 'aguarda o que pediu' :
     habEst === 'descoberto' ? 'aguarda contato' : 'ainda não se mostrou';
+  const habInterativo = !!(habData && habEst && habEst !== 'oculto' && onHabitante);
+  const habCompletavel = !!(habData && verificarQuestAndar(state, floor));
 
   return (
     <Dialog.Root open onOpenChange={o => { if (!o) onClose(); }}>
@@ -159,15 +167,34 @@ export function AtlasAndar({ floor, onClose }: Props) {
                 )}
               </Secao>
 
-              {/* Habitante e ecos */}
+              {/* Habitante e ecos — a linha do habitante É a porta para falar com ele */}
               {(habData || bossEcoAtivo) && (
                 <Secao titulo="PRESENÇAS">
                   {habData && (
-                    <p className="text-xs text-white/65">
-                      ✦ <span className="font-bold">{habData.nome}</span>
-                      <span className="text-white/40"> ({habData.papel})</span> — {habEstLabel}.
-                      {ecoAtivo && <span className="text-success"> Eco ativo: +{habData.quest.ecoBonus}% de saque.</span>}
-                    </p>
+                    habInterativo ? (
+                      <button
+                        onClick={() => { onClose(); onHabitante!(floor); }}
+                        className={`w-full flex items-center justify-between gap-2 text-left px-2.5 py-2 rounded-sm border transition-all touch-manipulation ${
+                          habCompletavel
+                            ? 'border-success/50 bg-success/5'
+                            : 'border-primary/20 bg-black/20 hover:border-primary/40'
+                        }`}
+                      >
+                        <span className="text-xs text-white/70 min-w-0">
+                          ✦ <span className="font-bold">{habData.nome}</span>
+                          <span className="text-white/40"> — {habEstLabel}</span>
+                          {habCompletavel && <span className="text-success font-bold"> · pronto para concluir</span>}
+                          {ecoAtivo && <span className="text-success"> · eco +{habData.quest.ecoBonus}%</span>}
+                        </span>
+                        <ChevronRight size={14} className={`shrink-0 ${habCompletavel ? 'text-success' : 'text-primary/50'}`} />
+                      </button>
+                    ) : (
+                      <p className="text-xs text-white/65">
+                        ✦ <span className="font-bold">{habData.nome}</span>
+                        <span className="text-white/40"> ({habData.papel})</span> — {habEstLabel}.
+                        {ecoAtivo && <span className="text-success"> Eco ativo: +{habData.quest.ecoBonus}% de saque.</span>}
+                      </p>
+                    )
                   )}
                   {bossEcoAtivo && (
                     <p className="text-xs text-white/65">💀 O Guardião caiu. O Eco do Capítulo {f.tier} ressoa nestes andares.</p>
@@ -181,12 +208,26 @@ export function AtlasAndar({ floor, onClose }: Props) {
                   {encontradas.map(([id, c]) => (
                     <p key={id} className="text-xs text-white/65">🚪 <span className="font-bold">{c.titulo}</span> — explorada.</p>
                   ))}
-                  {comPista.map(([id, c]) => (
-                    <div key={id} className="text-xs text-white/65">
-                      <p>🔍 <span className="font-bold">{c.titulo}</span> — pista encontrada:</p>
-                      <p className="text-white/40 italic pl-4">{c.requisito.textoRequisito}</p>
-                    </div>
-                  ))}
+                  {comPista.map(([id, c]) => {
+                    const est = estadoDe(id);
+                    const esgotada = (est?.tentativas ?? 0) >= c.maxTentativas;
+                    return (
+                      <div key={id} className="text-xs text-white/65 space-y-1">
+                        <p>🔍 <span className="font-bold">{c.titulo}</span> — pista encontrada:</p>
+                        <p className="text-white/40 italic pl-4">{c.requisito.textoRequisito}</p>
+                        {esgotada ? (
+                          <p className="text-white/35 pl-4">As incursões se esgotaram. Ela guarda seus segredos.</p>
+                        ) : onCamara && (
+                          <button
+                            onClick={() => { onClose(); onCamara(id); }}
+                            className="ml-4 px-3 py-1.5 border border-secondary/50 text-secondary text-[12px] font-cinzel font-bold tracking-widest rounded-sm hover:bg-secondary/10 active:scale-95 transition-all touch-manipulation"
+                          >
+                            INVESTIGAR ({c.maxTentativas - (est?.tentativas ?? 0)} restantes)
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                   {ocultas > 0 && (
                     <p className="text-xs text-white/40 italic">
                       {ocultas === 1 ? 'Há rumores de algo que ainda não se revelou.' : `Há rumores de ${ocultas} segredos que ainda não se revelaram.`}
@@ -196,6 +237,18 @@ export function AtlasAndar({ floor, onClose }: Props) {
               )}
 
             </div>
+
+            {/* Ação principal: explorar este território */}
+            {onExplorar && (
+              <div className="px-5 py-4 border-t border-primary/20 shrink-0">
+                <button
+                  onClick={() => { onClose(); onExplorar(floor); }}
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-cinzel font-bold tracking-[0.2em] text-sm rounded-sm shadow-[0_0_12px_rgba(212,175,55,0.25)] active:scale-[0.99] transition-all touch-manipulation"
+                >
+                  <Compass size={16} /> EXPLORAR ESTE ANDAR
+                </button>
+              </div>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>
