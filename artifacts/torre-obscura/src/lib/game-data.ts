@@ -2213,6 +2213,9 @@ export interface GameState {
   memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
   ultimoSussurroLugarDia?: number;                                   // fôlego dos sussurros de lugar (anti-spam)
   fadigaAndar?: Record<number, { usos: number; dia: number }>;       // fôlego dos andares (decaimento lazy, ver folego.ts)
+  // Vocação declarada pelo Cabeça de cada casa nobre: membros com juramento
+  // alinhado à vocação rendem +5% (poder na Escalada, posto no Ofício).
+  casasVocacao?: Record<string, 'escalada' | 'oficio'>;
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
@@ -2324,6 +2327,21 @@ export function decidirJuramento(vivos: NPC[], npc: NPC): 'escalada' | 'oficio' 
   if (npc.obscuro || npc.lealdade < 40 || npc.sanidade < 50) tendencia -= 2;
 
   return tendencia >= 1 ? 'escalada' : 'oficio';
+}
+
+// Título civil de quem jurou ao Ofício — camada de exibição derivada do stat
+// dominante (o ProfissaoId de combate não muda: contrato de rede e quests intactos).
+export const OFICIO_LABEL: Record<'forca' | 'agilidade' | 'inteligencia' | 'resistencia', string> = {
+  forca: 'Lavrador',
+  agilidade: 'Vigia do Alto',
+  inteligencia: 'Escriba',
+  resistencia: 'Zelador da Chama',
+};
+
+export function oficioDe(npc: NPC): string {
+  const stats = { forca: npc.forca, agilidade: npc.agilidade, inteligencia: npc.inteligencia, resistencia: npc.resistencia };
+  const dominante = (Object.entries(stats) as [keyof typeof stats, number][]).sort((a, b) => b[1] - a[1])[0][0];
+  return OFICIO_LABEL[dominante];
 }
 
 // Berço: fama inicial concedida pela raridade de nascença. Raridade é potencial
@@ -2888,8 +2906,8 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
       { custo: { madeira: 20, pedra: 8 },             resumo: 'Limite de 9 moradores',  efeito: { capPopulacao: 9 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Limite de 12 moradores', efeito: { capPopulacao: 12 } },
       { custo: { madeira: 70, pedra: 45, ferro: 15 }, resumo: 'Limite de 16 moradores', efeito: { capPopulacao: 16 } },
-      { custo: { madeira: 100, pedra: 65, ferro: 30 }, resumo: 'Limite de 18 moradores', efeito: { capPopulacao: 18 } },
-      { custo: { madeira: 140, pedra: 90, ferro: 50 }, resumo: 'Limite de 20 moradores', efeito: { capPopulacao: 20 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 40 }, resumo: 'Limite de 24 moradores', efeito: { capPopulacao: 24 } },
+      { custo: { madeira: 180, pedra: 120, ferro: 70 }, resumo: 'Limite de 32 moradores', efeito: { capPopulacao: 32 } },
     ],
   },
   Arquivo: {

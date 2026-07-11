@@ -110,6 +110,7 @@ interface GameContextType {
   // Juramentos: destina o morador à Escalada ou ao Ofício (cooldown 10 dias).
   jurarNpc: (npcId: string, juramento: 'escalada' | 'oficio') => void;
   sugerirJuramentos: () => void;
+  declararVocacaoCasa: (casa: string, vocacao: 'escalada' | 'oficio') => void;
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
@@ -273,6 +274,22 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
+  // Vocação de Casa: membro com juramento alinhado à vocação declarada rende +5%.
+  const fatorCasa = (s: GameState) => (n: NPC) => {
+    const voc = n.sobrenome ? s.casasVocacao?.[n.sobrenome] : undefined;
+    return voc && voc === n.juramento ? 1.05 : 1;
+  };
+
+  // O Cabeça da Casa declara a vocação (Escalada ou Ofício) da linhagem.
+  const declararVocacaoCasa = (casa: string, vocacao: 'escalada' | 'oficio') => {
+    if (!state) return;
+    const s = structuredClone(state);
+    if (s.casasVocacao?.[casa] === vocacao) return;
+    s.casasVocacao = { ...(s.casasVocacao ?? {}), [casa]: vocacao };
+    addLog(s, 'evento', `A CASA ${casa.toUpperCase()} declarou sua vocação: ${vocacao === 'escalada' ? 'a Escalada — seus nomes subirão a Torre' : 'o Ofício — suas mãos sustentarão a cidadela'}.`);
+    saveState(s);
+  };
+
   // Registra progresso de uma meta diária no draft (idempotente por dia).
   // Só marca metas que estão nos objetivos de hoje e ainda não concluídas.
   const registrarProgressoMetaDiaria = (draft: GameState, id: MetaDiariaId) => {
@@ -327,7 +344,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // Aggregate building effects (levels + workers) once per day.
     // O humor escala a contribuição de cada trabalhador (motor de vida).
-    const ef = getEfeitos(draft.edificios, draft.npcs, fatorHumor);
+    const ef = getEfeitos(draft.edificios, draft.npcs, n => fatorHumor(n) * fatorCasa(draft)(n));
     draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
 
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
@@ -755,6 +772,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.andarConquistadoDia)     parsed.andarConquistadoDia = {};
     if (!parsed.memoriais)               parsed.memoriais = {};
     if (!parsed.fadigaAndar)             parsed.fadigaAndar = {};
+    if (!parsed.casasVocacao)            parsed.casasVocacao = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
@@ -909,11 +927,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     registrarProgressoMetaDiaria(s, 'explorar');
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
-    const ef = getEfeitos(s.edificios, s.npcs, fatorHumor);
+    const ef = getEfeitos(s.edificios, s.npcs, n => fatorHumor(n) * fatorCasa(s)(n));
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
     // Humor pesa no poder individual: gente abalada luta pior.
-    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n), 0);
+    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n) * fatorCasa(s)(n), 0);
     // O bioma afeta o poder efetivo do grupo: profissão certa = +30%, errada = -20%.
     const biomaMultiplier = calcBiomaMultiplier(group, floorData.bioma);
     const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
@@ -2065,6 +2083,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       estudarNpc,
       jurarNpc,
       sugerirJuramentos,
+      declararVocacaoCasa,
       interagirHabitante,
       resolverEscolhaHabitante,
       explorarCamaraSecreta,

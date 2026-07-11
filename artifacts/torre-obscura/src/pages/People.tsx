@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, nomeEdificio, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, nomeEdificio, oficioDe, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
 import { humorDe, vinculosDe, tipoVinculo, type TipoVinculo } from '../npc-engine';
 import { FAMA_CASA, tituloNobreza, TITULO_LABEL } from '../npc-engine/fama';
 import * as Dialog from '@radix-ui/react-dialog';
 export function People() {
-  const { state, assignPosto, treinarNpc, estudarNpc, jurarNpc, sugerirJuramentos } = useGame();
+  const { state, assignPosto, treinarNpc, estudarNpc, jurarNpc, sugerirJuramentos, declararVocacaoCasa } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [mostrarMortos, setMostrarMortos] = useState(false);
   // Censo: filtro de triagem ativo (null = todos) e critério de ordenação.
@@ -259,7 +259,7 @@ export function People() {
                 <div className="flex items-center justify-between gap-2 mb-3 text-xs" onClick={e => e.stopPropagation()}>
                   <span className="text-white/50 min-w-0 truncate">
                     {npc.juramento === 'escalada' ? '🗡 Jurou à Escalada — descansa 25% mais rápido'
-                      : npc.juramento === 'oficio' ? '⚒ Jurou ao Ofício — +15% no posto'
+                      : npc.juramento === 'oficio' ? `⚒ ${oficioDe(npc)} — jurou ao Ofício, +15% no posto`
                       : 'Ainda não jurou diante da Fogueira'}
                   </span>
                   {(() => {
@@ -282,6 +282,27 @@ export function People() {
                       </button>
                     );
                   })()}
+                </div>
+              )}
+              {/* Vocação da Casa — só o Cabeça declara; alinhados rendem +5% */}
+              {npc.sobrenome && tituloNobreza(state.npcs, npc) === 'cabeca' && (
+                <div className="flex items-center justify-between gap-2 mb-3 text-xs" onClick={e => e.stopPropagation()}>
+                  <span className="text-white/50 min-w-0 truncate">
+                    ⚜ Vocação da Casa: {state.casasVocacao?.[npc.sobrenome]
+                      ? (state.casasVocacao[npc.sobrenome] === 'escalada' ? '🗡 Escalada' : '⚒ Ofício') + ' (+5% aos alinhados)'
+                      : 'não declarada'}
+                  </span>
+                  <span className="flex gap-1 shrink-0">
+                    {(['escalada', 'oficio'] as const).map(v => (
+                      <button
+                        key={v}
+                        onClick={() => declararVocacaoCasa(npc.sobrenome!, v)}
+                        className={`px-2 py-1 rounded-sm border touch-manipulation ${state.casasVocacao?.[npc.sobrenome!] === v ? 'border-primary text-primary bg-primary/10' : 'border-card-border text-white/40 hover:border-primary/40'}`}
+                      >
+                        {v === 'escalada' ? '🗡' : '⚒'}
+                      </button>
+                    ))}
+                  </span>
                 </div>
               )}
               <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
