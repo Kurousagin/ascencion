@@ -53,6 +53,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Separa vendors estáveis do código do jogo: o chunk do app muda a cada
+        // deploy, mas react/motion/radix ficam cacheados no device (PWA mobile).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) return 'vendor-react';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'vendor-ui';
+          return 'vendor';
+        },
+      },
+    },
   },
   server: {
     port,
