@@ -33,10 +33,10 @@ export async function releaseAllPrimordialClaims(deviceId: string): Promise<void
   }
 }
 
-// Distinguir o conflito real (409 = outro jogador levou) de falha de rede é
-// essencial: só o conflito deve re-sortear o gacha. Offline/erro concede
-// otimista — a unicidade é best-effort e duplicatas viram anomalia narrativa
-// (LORE_BIBLE §6), nunca bloqueio de jogo.
+// A unicidade de primordial é regra DURA (um por mundo, por temporada): o NPC
+// só é concedido com 'ok' confirmado pelo servidor. Distinguir o conflito real
+// (409 = outro jogador levou → re-sortear) de falha de rede ('erro' → manter o
+// resultado e tentar de novo) evita tanto duplicatas quanto roubar o sorteio.
 export type ClaimResultado = 'ok' | 'conflito' | 'erro';
 
 export async function claimPrimordial(
