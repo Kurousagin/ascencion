@@ -207,7 +207,7 @@ function MainGameInner() {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} onAjuda={() => setOnboardingOpen(true)} />}
+              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} onAjuda={() => setOnboardingOpen(true)} onRefazerTour={() => setTourAtivo(true)} />}
               {tab === 'torre'    && <Tower t2Desbloqueado={t2Desbloqueado} pioneerPosicao={pioneer.posicao} pioneersTotal={pioneer.status?.total ?? 0} />}
               {tab === 'cidadela' && <Citadel t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'povo'     && <People />}
