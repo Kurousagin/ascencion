@@ -13,6 +13,7 @@ import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
+import { GuidedTour } from './components/GuidedTour';
 import { CamaraDescobertaModal } from './components/CamaraDescobertaModal';
 import { ResultadoCamaraModal } from './components/ResultadoCamaraModal';
 import { FeedToastHost } from './components/FeedToastHost';
@@ -21,16 +22,49 @@ import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
 import { useNotificationsHeartbeat } from './hooks/useNotificationsHeartbeat';
 import { useTier2EventUpdate } from './hooks/useTier2EventUpdate';
-import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_PENDING, GACHA_T2_DONE, GACHA_T2_RESULT } from './lib/onboarding-keys';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, TOUR_DONE, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_PENDING, GACHA_T2_DONE, GACHA_T2_RESULT } from './lib/onboarding-keys';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
+
+// LOG e GUERRA não têm slot próprio na bottom nav (5 destinos): vivem como
+// sub-abas de OBS e ALIANÇA respectivamente.
+const GRUPO_DE: Record<string, string> = { log: 'obs', guerra: 'alianca' };
+const grupoDe = (tab: string) => GRUPO_DE[tab] ?? tab;
+
+const SUB_ABAS: Record<string, { id: string; label: string }[]> = {
+  obs:     [{ id: 'obs', label: 'OBSERVATÓRIO' }, { id: 'log', label: 'CRÔNICAS' }],
+  alianca: [{ id: 'alianca', label: 'ALIANÇA' }, { id: 'guerra', label: 'GUERRA' }],
+};
+
+function SubAbas({ tab, onChange }: { tab: string; onChange: (t: string) => void }) {
+  const abas = SUB_ABAS[grupoDe(tab)];
+  if (!abas) return null;
+  return (
+    <div className="flex border-b border-border bg-card/40 shrink-0">
+      {abas.map(a => (
+        <button
+          key={a.id}
+          onClick={() => onChange(a.id)}
+          data-tour={a.id === 'guerra' ? 'subaba-guerra' : undefined}
+          className={`flex-1 min-h-[44px] text-[12px] font-bold tracking-widest touch-manipulation transition-colors border-b-2 -mb-px ${
+            tab === a.id
+              ? 'text-primary border-primary'
+              : 'text-muted-foreground border-transparent'
+          }`}
+        >
+          {a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
   const { state } = useGame();
   const gp = state?.guerraPendente;
   if (!gp) return null;
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[12px] animate-pulse">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/50 text-[12px] animate-pulse-atencao">
       <span className="text-destructive font-bold tracking-wide flex items-center gap-1.5 min-w-0">
         ⚔ INVASÃO: <span className="font-normal truncate">{gp.rival.nome}</span>
         <span className="text-destructive/70 font-normal shrink-0">— {gp.prazoResposta} dia{gp.prazoResposta !== 1 ? 's' : ''} para responder</span>
@@ -51,8 +85,14 @@ function GuerraPendenteAlert({ onGoToWar }: { onGoToWar: () => void }) {
 function MainGameInner() {
   const { state } = useGame();
   const { caixa } = useAlliance();
-  const [tab, setTab] = useState('obs');
+  // Aba persistida na sessão: voltar do background não joga o jogador de volta em OBS.
+  const [tab, setTabState] = useState(() => sessionStorage.getItem('torre_tab') ?? 'obs');
+  const setTab = (t: string) => {
+    sessionStorage.setItem('torre_tab', t);
+    setTabState(t);
+  };
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [tourAtivo, setTourAtivo] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
   const [gachaT2Open, setGachaT2Open] = useState(false);
 
@@ -114,6 +154,12 @@ function MainGameInner() {
     if (sessionStorage.getItem(ONBOARDING_PENDING)) {
       sessionStorage.removeItem(ONBOARDING_PENDING);
       setOnboardingOpen(true);
+      return;
+    }
+    // 6. Tour guiado para quem já conhecia o jogo: o onboarding não reabre para
+    // veteranos, mas o tour (novo) apresenta a navegação atual uma única vez.
+    if (localStorage.getItem(ONBOARDING_KEY) && !localStorage.getItem(TOUR_DONE)) {
+      setTourAtivo(true);
     }
   }, [state]);
 
@@ -149,6 +195,8 @@ function MainGameInner() {
       >
         <GuerraPendenteAlert onGoToWar={() => setTab('guerra')} />
 
+        <SubAbas tab={tab} onChange={setTab} />
+
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -159,7 +207,7 @@ function MainGameInner() {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} />}
+              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} onAjuda={() => setOnboardingOpen(true)} onRefazerTour={() => setTourAtivo(true)} />}
               {tab === 'torre'    && <Tower t2Desbloqueado={t2Desbloqueado} pioneerPosicao={pioneer.posicao} pioneersTotal={pioneer.status?.total ?? 0} />}
               {tab === 'cidadela' && <Citadel t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'povo'     && <People />}
@@ -171,7 +219,7 @@ function MainGameInner() {
         </div>
 
         <div className="relative z-50 flex-shrink-0">
-          <BottomNav currentTab={tab} onTabChange={setTab} badges={{ alianca: caixa.length }} />
+          <BottomNav currentTab={grupoDe(tab)} onTabChange={setTab} badges={{ alianca: caixa.length }} />
         </div>
       </div>
     </WarProvider>
@@ -211,12 +259,27 @@ function MainGameInner() {
       />
     )}
 
-    {/* Onboarding — tutorial da primeira vez */}
+    {/* Onboarding — tutorial da primeira vez. Ao fechar, emenda no tour guiado
+        interativo (spotlight nas telas reais), que roda uma única vez. */}
     <Onboarding
       open={onboardingOpen}
       onClose={() => {
         localStorage.setItem(ONBOARDING_KEY, '1');
         setOnboardingOpen(false);
+        if (!localStorage.getItem(TOUR_DONE)) setTourAtivo(true);
+      }}
+      onIniciarTour={() => setTourAtivo(true)}
+    />
+
+    {/* Tour guiado: navega pelas abas e aponta as funcionalidades no lugar */}
+    <GuidedTour
+      active={tourAtivo}
+      currentTab={tab}
+      onNavigate={setTab}
+      onFinish={() => {
+        localStorage.setItem(TOUR_DONE, '1');
+        setTourAtivo(false);
+        setTab('obs');
       }}
     />
 

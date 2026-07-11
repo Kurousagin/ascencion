@@ -1,6 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
-import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
+import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown, HelpCircle, Footprints } from 'lucide-react';
 import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
 import { METAS_DIARIAS_META } from '../quest-engine';
 import { useTemporada } from '../hooks/useTemporada';
@@ -17,9 +17,13 @@ import { useState, useEffect } from 'react';
 
 interface DashboardProps {
   t2Desbloqueado: boolean;
+  // Reabre o guia de boas-vindas (slides) para quem se perdeu.
+  onAjuda?: () => void;
+  // Refaz o tour guiado pelas telas — pode ser revisto quantas vezes quiser.
+  onRefazerTour?: () => void;
 }
 
-export function Dashboard({ t2Desbloqueado }: DashboardProps) {
+export function Dashboard({ t2Desbloqueado, onAjuda, onRefazerTour }: DashboardProps) {
   const { state, setSpeed, gerarMetasDiarias, reivindicarPresenteDaTorre } = useGame();
   const { aliadas } = useAlliance();
   const temporada = useTemporada(t2Desbloqueado);
@@ -71,8 +75,30 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
 
   return (
     <div className="p-3 space-y-2 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-1.5 border-b border-primary/30 relative">
+      <header className="pb-1.5 border-b border-primary/30 relative flex items-center justify-between">
         <h2 className="text-xl font-cinzel font-bold tracking-widest text-primary">OBSERVATÓRIO</h2>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onRefazerTour && (
+            <button
+              onClick={onRefazerTour}
+              aria-label="Refazer o tour pelas telas"
+              title="Tour pelas telas"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/60 hover:text-primary hover:border-primary/60 transition-all touch-manipulation"
+            >
+              <Footprints size={16} />
+            </button>
+          )}
+          {onAjuda && (
+            <button
+              onClick={onAjuda}
+              aria-label="Como jogar"
+              title="Como jogar"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/60 hover:text-primary hover:border-primary/60 transition-all touch-manipulation"
+            >
+              <HelpCircle size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* ── Faixa da temporada ativa (muda visualmente ao desbloquear a T2) ── */}
@@ -80,7 +106,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         className="rounded px-3 py-1.5 flex items-center justify-between border"
         style={{ borderColor: `${temporada.data.corTema}55`, backgroundColor: `${temporada.data.corTema}12` }}
       >
-        <span className="text-[11px] font-cinzel tracking-[0.2em]" style={{ color: temporada.data.corTema }}>
+        <span className="text-xs font-cinzel tracking-[0.2em]" style={{ color: temporada.data.corTema }}>
           TEMPORADA {temporada.romano} · {temporada.data.nome.toUpperCase()}
         </span>
         <span className="text-[10px] text-white/45">
@@ -89,7 +115,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       </div>
 
       {/* ── VITALS SECTION (above the fold) ─────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2" data-tour="vitais">
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col items-center justify-center">
           <span className="text-[10px] text-secondary tracking-widest mb-0.5">DIA</span>
           <span className="text-2xl text-primary font-bold font-cinzel">{state.dia}</span>
@@ -112,15 +138,17 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         <span className={`tracking-widest font-cinzel ${superlotado ? 'text-destructive' : 'text-secondary'}`}>
           POPULAÇÃO: {proprios}/{cap} {superlotado && <span className="animate-pulse">⚠ +{excedente}</span>}
         </span>
-        {vivos !== proprios && <span className="text-muted-foreground text-[11px]">+{vivos - proprios} hóspedes</span>}
+        {vivos !== proprios && <span className="text-muted-foreground text-xs">+{vivos - proprios} hóspedes</span>}
       </div>
 
       {/* ── MURAL DA CIDADELA (feed de vida) ───────────────────────────────── */}
-      <MuralAcontecimentos />
+      <div data-tour="mural">
+        <MuralAcontecimentos />
+      </div>
 
       {/* ── METAS DE HOJE ──────────────────────────────────────────────────── */}
-      <div className="space-y-1">
-        <span className="text-[11px] text-secondary tracking-widest block">METAS DE HOJE</span>
+      <div className="space-y-1" data-tour="metas">
+        <span className="text-xs text-secondary tracking-widest block">METAS DE HOJE</span>
         <div className="bg-[#1C2333] border border-primary/30 rounded p-2 space-y-1.5">
           {md.objetivos.map(id => {
             const meta = METAS_DIARIAS_META[id];
@@ -130,7 +158,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
                 <span className={`text-lg leading-none shrink-0 ${feito ? '' : 'opacity-50'}`}>{meta.icone}</span>
                 <div className="flex-1 min-w-0">
                   <div className={`text-xs font-cinzel font-bold leading-tight ${feito ? 'text-success' : 'text-foreground'}`}>{meta.titulo}</div>
-                  <div className="text-[11px] text-secondary/60 leading-tight">{meta.descricao}</div>
+                  <div className="text-xs text-secondary/60 leading-tight">{meta.descricao}</div>
                 </div>
               </div>
             );
@@ -156,9 +184,9 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="velocidade">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-secondary tracking-widest">VELOCIDADE</span>
+          <span className="text-xs text-secondary tracking-widest">VELOCIDADE</span>
           <div className="flex gap-1">
             {[1, 2, 5].map(spd => (
               <button
@@ -197,13 +225,13 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         onClick={() => setExpandedSection(expandedSection === 'construcoes' ? null : 'construcoes')}
         className="w-full flex items-center justify-between px-2 py-1.5 bg-[#1C2333] border border-primary/30 rounded hover:border-primary/50 transition-all text-left"
       >
-        <span className="text-[11px] font-cinzel text-primary tracking-widest flex items-center gap-1">
+        <span className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-1">
           <Hammer size={11} /> CONSTRUÇÕES
         </span>
         <ChevronDown size={12} className={`transition-transform ${expandedSection === 'construcoes' ? 'rotate-180' : ''}`} />
       </button>
       {expandedSection === 'construcoes' && (
-        <div className="grid grid-cols-2 gap-1 text-[11px]">
+        <div className="grid grid-cols-2 gap-1 text-xs">
           {(['Alojamento', 'Fazenda', 'Fogueira', 'Enfermaria', 'Templo', 'Quartel', 'Armazem', 'Arquivo', 'Mirante', 'RetratoTorre'] as EdificioTipo[]).map(tipo => {
             const edificio = state.edificios.find(e => e.tipo === tipo);
             const nivelAtual = edificio?.nivel || 0;
@@ -230,7 +258,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         onClick={() => setExpandedSection(expandedSection === 'intel' ? null : 'intel')}
         className="w-full flex items-center justify-between px-2 py-1.5 bg-[#1C2333] border border-primary/30 rounded hover:border-primary/50 transition-all text-left"
       >
-        <span className="text-[11px] font-cinzel text-primary tracking-widest flex items-center gap-1">
+        <span className="text-xs font-cinzel text-primary tracking-widest flex items-center gap-1">
           <ShieldAlert size={11} /> INTEL
         </span>
         <ChevronDown size={12} className={`transition-transform ${expandedSection === 'intel' ? 'rotate-180' : ''}`} />
@@ -240,7 +268,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
           {state.log.filter(l => ['alerta', 'morte', 'traicao'].includes(l.tipo)).slice(0, 5).map(l => {
             const isMorte = l.tipo === 'morte';
             return (
-              <div key={l.id} className={`flex gap-1.5 text-[11px] items-start p-1 rounded ${isMorte ? 'text-destructive/80' : 'text-warning/80'}`}>
+              <div key={l.id} className={`flex gap-1.5 text-xs items-start p-1 rounded ${isMorte ? 'text-destructive/80' : 'text-warning/80'}`}>
                 <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${isMorte ? 'bg-destructive' : 'bg-warning'}`} />
                 <div className="flex-1 min-w-0">
                   <span className="opacity-60 mr-1">D{l.dia}</span>
@@ -250,7 +278,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
             );
           })}
           {state.log.filter(l => ['alerta', 'morte', 'traicao'].includes(l.tipo)).length === 0 && (
-            <div className="text-[11px] text-muted-foreground italic px-2 py-1">sem eventos críticos</div>
+            <div className="text-xs text-muted-foreground italic px-2 py-1">sem eventos críticos</div>
           )}
         </div>
       )}

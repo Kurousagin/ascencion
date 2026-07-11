@@ -355,7 +355,7 @@ export function Alliance() {
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-3 border-b border-primary/30 relative flex items-center justify-between">
+      <header className="pb-3 border-b border-primary/30 relative flex items-center justify-between" data-tour="alianca">
         <div>
           <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">
             ALIANÇA
@@ -481,7 +481,7 @@ export function Alliance() {
                           {aliada.nome}
                         </div>
                         {aliada.resumo?.emGuerra && (
-                          <div className="text-[11px] px-2 py-1 bg-destructive/20 border border-destructive/50 rounded-sm text-destructive font-bold tracking-widest whitespace-nowrap">
+                          <div className="text-xs px-2 py-1 bg-destructive/20 border border-destructive/50 rounded-sm text-destructive font-bold tracking-widest whitespace-nowrap">
                             ⚔️ EM GUERRA
                           </div>
                         )}
@@ -564,7 +564,7 @@ export function Alliance() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-muted-foreground mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 Resumos sincronizados periodicamente — não é tempo real.
               </p>
             </>
@@ -597,7 +597,7 @@ export function Alliance() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none"
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Recursos, reforços e empréstimos abaixo vão para{" "}
               <span className="text-primary font-bold">{nomeAlvo}</span>.
             </p>
@@ -648,7 +648,7 @@ export function Alliance() {
                   </span>
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground -mt-1">
+              <p className="text-xs text-muted-foreground -mt-1">
                 O limite diário é somado entre todas as aliadas. Parte se perde
                 no caminho. Enviando: {totalEnvio()} recurso(s).
               </p>
@@ -898,7 +898,7 @@ export function Alliance() {
                           }`}
                         >
                           <div className="font-bold text-foreground">{n.nome}</div>
-                          <div className="text-[11px] text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {PROFISSOES[getProfissao(n)].nome} • {n.raridade}
                           </div>
                         </button>
@@ -1242,17 +1242,17 @@ export function Alliance() {
                         <span className="font-bold text-foreground text-sm truncate">
                           {reg.npcNome}
                         </span>
-                        <span className="text-[11px] text-primary/70 uppercase shrink-0">
+                        <span className="text-xs text-primary/70 uppercase shrink-0">
                           {prof}
                         </span>
                         {reg.tipo === "reforco" && (
-                          <span className="text-[11px] bg-blue-500/10 border border-blue-400/30 text-blue-400 px-1 py-0.5 rounded-sm uppercase shrink-0">
+                          <span className="text-xs bg-blue-500/10 border border-blue-400/30 text-blue-400 px-1 py-0.5 rounded-sm uppercase shrink-0">
                             reforço
                           </span>
                         )}
                       </div>
                       <span
-                        className={`text-[11px] font-bold uppercase tracking-wide shrink-0 ${
+                        className={`text-xs font-bold uppercase tracking-wide shrink-0 ${
                           emCurso
                             ? "text-primary"
                             : caiu

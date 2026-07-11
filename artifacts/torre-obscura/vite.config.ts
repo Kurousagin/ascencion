@@ -53,6 +53,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Separa vendors estáveis do código do jogo: o chunk do app muda a cada
+        // deploy, mas react/motion/radix ficam cacheados no device (PWA mobile).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) return 'vendor-react';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'vendor-ui';
+          return 'vendor';
+        },
+      },
+    },
   },
   server: {
     port,
@@ -61,6 +74,16 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
+    },
+    // Em produção o Express serve front e API na mesma origem (/api). Em dev,
+    // sem este proxy, /api cai no próprio Vite e toda a rede falha silenciosa
+    // (aliança, pioneers, claim de primordial). Suba o api-server em :8080 ou
+    // aponte API_PROXY_TARGET para outro host.
+    proxy: {
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   preview: {

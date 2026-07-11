@@ -11,7 +11,7 @@ import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAM
 import { getTestSave, isValidTestCode } from '../lib/test-saves';
 
 export function TitleScreen() {
-  const { hasSave, startNewGame, startTestGame, continueGame } = useGame();
+  const { hasSave, startNewGame, startTestGame, continueGame, catchUpProgress } = useGame();
   const { dissolveAll } = useAlliance();
 
   const [lancamentoOpen, setLancamentoOpen] = useState(false);
@@ -136,7 +136,7 @@ export function TitleScreen() {
             {LANCAMENTO_ATIVO && (
               <div className="flex items-center gap-2 px-3 py-1 border border-primary/40 bg-primary/5 rounded-sm mb-3">
                 <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                <span className="text-[11px] text-primary tracking-[0.25em] font-cinzel">
+                <span className="text-xs text-primary tracking-[0.25em] font-cinzel">
                   {LANCAMENTO_ATIVO.titulo}
                 </span>
               </div>
@@ -171,7 +171,7 @@ export function TitleScreen() {
               )}
               <button
                 onClick={continueGame}
-                disabled={!hasSave}
+                disabled={!hasSave || catchUpProgress !== null}
                 className={`w-full border h-14 font-cinzel font-bold text-lg tracking-[0.2em] transition-all mt-3 touch-manipulation ${
                   hasSave
                     ? 'border-primary text-primary hover:bg-primary/10'
@@ -205,6 +205,25 @@ export function TitleScreen() {
 
         </div>
       </div>
+
+      {/* Catch-up offline: overlay de progresso enquanto os dias perdidos são simulados */}
+      {catchUpProgress && (
+        <div className="fixed inset-0 z-[100] bg-background/90 backdrop-blur-sm flex flex-col items-center justify-center gap-4 px-8">
+          <p className="font-cinzel text-primary text-lg tracking-[0.2em] text-center">A TORRE LEMBRA</p>
+          <p className="text-muted-foreground text-sm text-center">
+            Os dias que passaram na sua ausência estão sendo vividos…
+          </p>
+          <div className="w-full max-w-xs h-1.5 bg-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-150"
+              style={{ width: `${Math.round((catchUpProgress.done / catchUpProgress.total) * 100)}%` }}
+            />
+          </div>
+          <p className="text-[12px] text-muted-foreground tracking-widest">
+            DIA {catchUpProgress.done} DE {catchUpProgress.total}
+          </p>
+        </div>
+      )}
 
       <Dialog.Root open={confirmPendente !== null} onOpenChange={o => { if (!o) setConfirmPendente(null); }}>
         <Dialog.Portal>
@@ -303,7 +322,7 @@ export function TitleScreen() {
                   />
                 </div>
 
-                <div className="space-y-1.5 text-[11px] text-secondary/60 bg-background/50 border border-primary/20 rounded-sm p-3">
+                <div className="space-y-1.5 text-xs text-secondary/60 bg-background/50 border border-primary/20 rounded-sm p-3">
                   <p><strong>TEST123</strong> — Cidadela básica (Andar 5, recursos moderados)</p>
                   <p><strong>FULL</strong> — Cidadela completa (Andar 20, todos edifícios L3, muito recursos)</p>
                   <p><strong>T2</strong> — Cidadela T2 (Andar 30, fragmentos T1+T2, relíquias T2)</p>
