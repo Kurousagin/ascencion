@@ -2299,6 +2299,19 @@ function calcRaridade(npc: Pick<NPC, 'forca' | 'agilidade' | 'inteligencia' | 'r
 }
 
 // Recalcula a raridade de um NPC existente após mudança de atributos.
+// Berço: fama inicial concedida pela raridade de nascença. Raridade é potencial
+// (o que a Torre entregou); nobreza é biografia — o berço só dá vantagem de
+// partida na fama, nunca o título em si.
+export function famaDeBerco(raridade: Raridade): number {
+  switch (raridade) {
+    case 'Raro':     return 5;
+    case 'Épico':    return 10;
+    case 'Lendário':
+    case 'Divino':   return 15;
+    default:         return 0;
+  }
+}
+
 export function recalcRaridade(npc: NPC): Raridade {
   return calcRaridade(npc);
 }
@@ -2438,6 +2451,7 @@ export const generateNPC = (isObscuro = false): NPC => {
     nome,
     sobrenome,
     raridade,
+    fama: famaDeBerco(raridade),
     habilidade: getRandomHabilidade(),
   };
 };
@@ -2505,7 +2519,7 @@ export function generateNpcGacha(forcadoRaridade?: Raridade): NPC {
     emExpedicao: false,
     posto: null as EdificioTipo | null,
   };
-  return { ...base, raridade, habilidade: getRandomHabilidade() };
+  return { ...base, raridade, fama: famaDeBerco(raridade), habilidade: getRandomHabilidade() };
 }
 
 // Custo do ritual em trindade. Mais vantajoso por unidade que a invocação simples

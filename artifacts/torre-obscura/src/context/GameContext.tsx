@@ -37,7 +37,7 @@ import {
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
 } from '../quest-engine';
 import {
-  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, FAMA_NOTAVEL, bonusMentor,
   fatorHumor, getAfinidade, AF_AMIZADE,
   type PromocaoResultado, type FeitoId,
 } from '../npc-engine';
@@ -221,7 +221,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // (quando houver — a câmara já registra o dela) e, se a promoção levou o
   // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
   const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
+    const famaAntes = npc.fama ?? 0;
     if (feito) registrarFeito(npc, feito);
+    // Primeiro degrau: a cidadela passa a notar quem cruza FAMA_NOTAVEL.
+    if (!npc.sobrenome && famaAntes < FAMA_NOTAVEL && (npc.fama ?? 0) >= FAMA_NOTAVEL) {
+      registrarAcontecimento(s, 'descoberta', ASCENSAO_LORE.notavel.replaceAll('{nome}', npc.nome.toUpperCase()));
+    }
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
     // Ascensão é acontecimento de tela (toast + Mural), não nota de rodapé:
@@ -426,7 +431,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       aplicarLuto(draft, m.id, m.nome).forEach(l => addLog(draft, l.tipo, l.mensagem)));
     diaGuerra.vitoriaIds?.forEach(id => {
       const n = draft.npcs.find(x => x.id === id);
-      if (n) registrarFeito(n, 'guerra_vencida');
+      if (n) promoverEnobrecer(draft, n, 'guerra_vencida');
     });
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
@@ -1066,8 +1071,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
-          registrarFeito(n, 'expedicao_sobrevivida');
-          if (!isFarming) registrarFeito(n, 'andar_conquistado');
+          promoverEnobrecer(s, n, 'expedicao_sobrevivida');
+          if (!isFarming) promoverEnobrecer(s, n, 'andar_conquistado');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1164,7 +1169,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
-          registrarFeito(n, 'expedicao_sobrevivida');
+          promoverEnobrecer(s, n, 'expedicao_sobrevivida');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1770,7 +1775,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (sucesso) {
       est.encontrada = true;
-      group.forEach(n => registrarFeito(n, 'camara_vencida'));
+      group.forEach(n => promoverEnobrecer(s, n, 'camara_vencida'));
       const floorData = FLOORS[camara.floor - 1];
 
       // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).

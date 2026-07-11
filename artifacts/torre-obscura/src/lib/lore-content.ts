@@ -895,6 +895,7 @@ export const EVENTOS_ANDAR_LORE: Record<string, { nome: string; icone: string; t
 // Placeholders: {nome} (já com sobrenome novo), {casa}, {padrinho}.
 
 export const ASCENSAO_LORE: Record<string, string> = {
+  notavel: '✦ {nome} tornou-se NOTÁVEL — a cidadela conhece seus feitos, e a nobreza começa a notar.',
   fundacao: '⚜ {nome} ASCENDEU À NOBREZA — ergueu a própria linhagem: nasce a Casa {casa}. Que o nome pese nos registros da Torre.',
   adocao: '⚜ {nome} ASCENDEU À NOBREZA — acolhido pela casa de {padrinho}, atende agora pelo nome da Casa {casa}.',
   propria: '✦ {nome} conquistou um sobrenome — a cidadela passa a conhecê-lo pelos seus feitos.',

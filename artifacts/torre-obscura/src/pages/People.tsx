@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
 import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, nomeEdificio, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
 import { humorDe, vinculosDe, tipoVinculo, type TipoVinculo } from '../npc-engine';
-import { FAMA_CASA } from '../npc-engine/fama';
+import { FAMA_CASA, tituloNobreza, TITULO_LABEL } from '../npc-engine/fama';
 import * as Dialog from '@radix-ui/react-dialog';
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
@@ -241,6 +241,7 @@ export function People() {
                   {humor.tom === 'bom' ? '😊' : humor.tom === 'critico' ? '😰' : humor.tom === 'ruim' ? '😟' : '😐'} {humor.rotulo}
                 </span>
                 <span className="text-white/50 text-right">
+                  <span className="text-secondary tracking-wider">{TITULO_LABEL[tituloNobreza(state.npcs, npc)].toUpperCase()} · </span>
                   {npc.sobrenome && (
                     <span className="text-primary/80">⚜ CASA {npc.sobrenome.toUpperCase()}
                       {(() => { const m = state.npcs.filter(x => x.vivo && x.sobrenome === npc.sobrenome).length; return m > 1 ? ` (${m})` : ''; })()} ·{' '}
