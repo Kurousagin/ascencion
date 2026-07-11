@@ -851,6 +851,45 @@ export const SUSSURROS_LUGAR_LORE: Record<string, string[]> = {
   ],
 };
 
+// ─── ESTACOES_LORE — a respiração longa da Torre ──────────────────────────────
+// A Percussão Profunda é o coração da Torre; a respiração é o seu ciclo longo.
+// A cada quinze dias o ar muda de direção — e com ele, o que cada bioma rende.
+
+export const ESTACOES_LORE: Record<string, { nome: string; icone: string; descricao: string }> = {
+  inspira: {
+    nome: 'A Torre Inspira',
+    icone: '🌫',
+    descricao: 'O ar desce. As profundezas acordam com apetite de presença — cavernas e abismos rendem mais; a superfície prende o fôlego.',
+  },
+  expira: {
+    nome: 'A Torre Expira',
+    icone: '🍂',
+    descricao: 'O ar sobe. A superfície floresce com o que o fundo devolve — florestas e ruínas rendem mais; as profundezas adormecem.',
+  },
+};
+
+// ─── EVENTOS_ANDAR_LORE — acontecimentos que atravessam a Torre ───────────────
+// Eventos diários raros, determinísticos pela seed da torre. {origem}, {destino}
+// e {andar} são nomes de andares.
+
+export const EVENTOS_ANDAR_LORE: Record<string, { nome: string; icone: string; texto: string }> = {
+  migracao: {
+    nome: 'Migração',
+    icone: '🦌',
+    texto: 'O que vivia em {origem} atravessou para {destino} durante a noite. A caça escasseia num, abunda no outro.',
+  },
+  escadas: {
+    nome: 'Escadas Erradias',
+    icone: '🪜',
+    texto: 'As escadas mudaram de lugar durante a noite. Há um atalho que ontem não existia — os mantimentos rendem mais no caminho.',
+  },
+  eco_errante: {
+    nome: 'Eco Errante',
+    icone: '〰',
+    texto: 'Um eco vagueia por {andar}. O que se fizer lá hoje, o andar repete — e retribui.',
+  },
+};
+
 // ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
 
 export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {

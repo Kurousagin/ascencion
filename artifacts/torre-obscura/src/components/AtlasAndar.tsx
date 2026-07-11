@@ -5,6 +5,9 @@ import { FLOORS, BIOMA_META, HABITANTES } from '../lib/game-data';
 import { camarasDaTorre } from '../floor-engine';
 import { climaDoDia } from '../lib/clima';
 import { descricaoVivaDoAndar } from '../lib/lugar';
+import { nivelFolego, multCadeia } from '../lib/folego';
+import { estacaoDoDia, multEstacao } from '../lib/estacao';
+import { eventoDoDia, multEventoParaAndar } from '../lib/eventos-andar';
 
 // ─── ATLAS DA TORRE — a ficha de cada andar conquistado ──────────────────────
 // Cada andar é um lugar com história própria: bioma, o tempo de hoje, quem o
@@ -33,6 +36,12 @@ export function AtlasAndar({ floor, onClose }: Props) {
 
   const bioma = BIOMA_META[f.bioma];
   const clima = climaDoDia(state.camaraSeed ?? 0, state.dia)[f.bioma];
+  const estacao = estacaoDoDia(state.dia);
+  const estacaoMult = multEstacao(estacao, f.bioma);
+  const evento = eventoDoDia(state.camaraSeed ?? 0, state.dia);
+  const eventoMult = multEventoParaAndar(evento, floor);
+  const folego = nivelFolego(state, floor);
+  const cadeiaAtiva = multCadeia(state, floor, f.bioma) > 1;
   const conquistadoDia = state.andarConquistadoDia?.[floor];
   const mortes = state.totalMortesAndar?.[floor] ?? 0;
   const memoriais = state.memoriais?.[floor] ?? [];
@@ -101,6 +110,30 @@ export function AtlasAndar({ floor, onClose }: Props) {
                   )}
                 </p>
                 <p className="text-xs text-white/40 italic leading-snug">{clima.descricao}</p>
+                {estacaoMult !== 1 && (
+                  <p className="text-xs text-white/55">
+                    {estacao.icone} {estacao.nome}
+                    <span className={estacaoMult > 1 ? 'text-success' : 'text-warning'}> ({estacaoMult > 1 ? '+8%' : '−8%'} para {bioma.label.toLowerCase()}s)</span>
+                  </p>
+                )}
+                {eventoMult !== 1 && evento && (
+                  <p className="text-xs text-white/55">
+                    {evento.icone} {evento.nome}
+                    <span className={eventoMult > 1 ? 'text-success' : 'text-warning'}> ({eventoMult > 1 ? '+15%' : '−15%'} de saque aqui hoje)</span>
+                  </p>
+                )}
+                {folego !== 'pleno' && (
+                  <p className="text-xs text-warning/90">
+                    {folego === 'exausto'
+                      ? 'O andar precisa respirar — rendendo 70% até descansar.'
+                      : 'O andar está cansado — rendendo 85%.'}
+                  </p>
+                )}
+                {cadeiaAtiva && (
+                  <p className="text-xs text-success/80">
+                    A caça de outro lugar do bioma migrou para cá (+10% de saque).
+                  </p>
+                )}
               </Secao>
 
               {/* História local */}

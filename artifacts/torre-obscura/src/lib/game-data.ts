@@ -2207,6 +2207,7 @@ export interface GameState {
   andarConquistadoDia?: Record<number, number>;                      // floor → dia da conquista
   memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
   ultimoSussurroLugarDia?: number;                                   // fôlego dos sussurros de lugar (anti-spam)
+  fadigaAndar?: Record<number, { usos: number; dia: number }>;       // fôlego dos andares (decaimento lazy, ver folego.ts)
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;

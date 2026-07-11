@@ -168,7 +168,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
       </header>
 
       {/* ── O tempo da Torre: como ela amanheceu hoje ─────────────────────── */}
-      <ClimaBanner seed={state.camaraSeed ?? 0} dia={state.dia} />
+      <ClimaBanner seed={state.camaraSeed ?? 0} dia={state.dia} andarAtual={state.andarAtual} />
 
       {/* Atlas da Torre — ficha do andar (portal; fica aqui por proximidade) */}
       <AtlasAndar floor={atlasFloor} onClose={() => setAtlasFloor(null)} />
