@@ -115,8 +115,13 @@ export function AtlasAndar({ floor, onClose }: Props) {
                 {memoriais.length > 0 && (
                   <div className="mt-1 border-l-2 border-destructive/40 pl-2.5 space-y-0.5">
                     {memoriais.map((m, i) => (
-                      <p key={i} className="text-xs text-white/50">✝ {m.nome} — dia {m.dia}</p>
+                      <p key={i} className="text-xs text-white/50 truncate">✝ {m.nome} — dia {m.dia}</p>
                     ))}
+                    {mortes > memoriais.length && (
+                      <p className="text-xs text-white/35 italic">
+                        …e mais {mortes - memoriais.length} cujo{mortes - memoriais.length > 1 ? 's nomes' : ' nome'} a Torre guardou consigo.
+                      </p>
+                    )}
                   </div>
                 )}
               </Secao>
