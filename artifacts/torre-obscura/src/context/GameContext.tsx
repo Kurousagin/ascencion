@@ -25,6 +25,12 @@ import {
   camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, chanceAbrirCamara,
   sortearRecompensaCamara, type CamaraSecreta,
 } from '../floor-engine';
+import { climaDoDia } from '../lib/clima';
+import { gerarRelato } from '../lib/relatos';
+import { sortearSussurroLugar } from '../lib/lugar';
+import { multFolego, multCadeia, usarFolego } from '../lib/folego';
+import { estacaoDoDia, multEstacao } from '../lib/estacao';
+import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
 import {
   verificarQuestAndar, verificarQuestOculta, gerarQuestOculta, gerarObjetivosDoDia,
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
@@ -193,6 +199,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (importancia === 'alta') {
       draft.toastsPendentes = [...(draft.toastsPendentes ?? []), ac].slice(-4);
     }
+  };
+
+  // Memorial: o andar lembra quem caiu nele (ficha do Atlas). Cap 5 por andar.
+  const registrarMemorial = (draft: GameState, floor: number, nome: string) => {
+    draft.memoriais = draft.memoriais ?? {};
+    draft.memoriais[floor] = [...(draft.memoriais[floor] ?? []), { nome, dia: draft.dia }].slice(-5);
   };
 
   // Desbloqueia um fragmento do Codex (idempotente). Retorna true se foi novo.
@@ -693,6 +705,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.ultimaExpedicaoGrupo)    parsed.ultimaExpedicaoGrupo = [];
     if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
     if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
+    // Migração: Atlas da Torre (história local por andar) + fôlego dos andares.
+    if (!parsed.andarConquistadoDia)     parsed.andarConquistadoDia = {};
+    if (!parsed.memoriais)               parsed.memoriais = {};
+    if (!parsed.fadigaAndar)             parsed.fadigaAndar = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
@@ -834,7 +850,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const group = s.npcs.filter(n => npcIds.includes(n.id));
     if (group.length === 0) return;
     if (group.some(n => !n.vivo || n.fadiga >= 90 || n.emExpedicao || n.emGuerra || (n.reforcoGuerra && !n.reforcoGuerraConcluido))) return;
-    const cost = calcCustoExpedicao(npcIds.length, floorData.tier);
+    // Evento do dia (determinístico): Escadas Erradias barateiam a expedição.
+    const evento = eventoDoDia(s.camaraSeed ?? 0, s.dia);
+    const cost = Math.round(calcCustoExpedicao(npcIds.length, floorData.tier) * multCustoEvento(evento));
     if (s.recursos.comida < cost) return;
     s.recursos.comida -= cost;
 
@@ -881,7 +899,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const ecoBonus = s.ecos.includes(floorData.floor)
         ? (HABITANTES[floorData.floor]?.quest.ecoBonus ?? 0) / 100
         : 0;
-      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus) * (hasLeitura ? 1.20 : 1.0);
+      // O tempo da Torre: clima do dia, estação (respiração longa), fôlego do
+      // andar (só farm), cadeia de biomas e evento do dia modulam o saque.
+      const clima = climaDoDia(s.camaraSeed ?? 0, s.dia)[floorData.bioma];
+      const estacao = estacaoDoDia(s.dia);
+      const estacaoMult = multEstacao(estacao, floorData.bioma);
+      const folegoMult = isFarming ? multFolego(s, floorData.floor) : 1.0;
+      const cadeiaMult = multCadeia(s, floorData.floor, floorData.bioma);
+      const eventoMult = multEventoParaAndar(evento, floorData.floor);
+      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus) * (hasLeitura ? 1.20 : 1.0)
+        * clima.multLoot * estacaoMult * folegoMult * cadeiaMult * eventoMult;
       const comidaG = Math.round(r.comida * lootMult);
       const madeiraG = Math.round(r.madeira * lootMult);
       const pedraG = Math.round(r.pedra * lootMult);
@@ -893,6 +920,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (ferroG) s.recursos.ferro = Math.min(cap, s.recursos.ferro + ferroG);
       // Só avança o andar em modo avançar.
       if (!isFarming) {
+        s.andarConquistadoDia = { ...(s.andarConquistadoDia ?? {}), [floorData.floor]: s.dia };
         s.andarAtual++;
         if (s.andarAtual > 40) s.vitoria = true;
       }
@@ -900,9 +928,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
       const biomaStr = biomaMultiplier !== 1.0 ? ` [Bioma ${biomaMultiplier > 1 ? '+30% poder' : '−20% poder'}]` : '';
       const ecoStr     = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
+      const climaStr   = clima.estado !== 'neutro' ? ` [${clima.icone} ${clima.nome} ${clima.estado === 'favoravel' ? '+10%' : '−10%'} loot]` : '';
+      const estacaoStr = estacaoMult !== 1 ? ` [${estacao.nome} ${estacaoMult > 1 ? '+8%' : '−8%'}]` : '';
+      const folegoStr  = folegoMult < 1 ? ` [${folegoMult <= 0.7 ? 'Andar exaurido −30%' : 'Andar cansado −15%'}]` : '';
+      const cadeiaStr  = cadeiaMult > 1 ? ' [Caça migrada +10%]' : '';
+      const eventoStr  = eventoMult !== 1 && evento ? ` [${evento.icone} ${evento.nome} ${eventoMult > 1 ? '+15%' : '−15%'}]` : '';
       const leituraStr = hasLeitura ? ' [Leitura da Torre +20% loot]' : '';
       const veteranoStr = hasVeterano ? ' [Veterano das Profundezas −30% mort.]' : '';
-      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}${leituraStr}${veteranoStr}`);
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}${climaStr}${estacaoStr}${folegoStr}${cadeiaStr}${eventoStr}${leituraStr}${veteranoStr}`);
 
       // Descoberta de habitante (ao avançar — inclui andares-boss se houver habitante definido)
       let habitanteDescoberto: string | undefined;
@@ -969,6 +1002,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Farm: rastrear exploração e potencialmente revelar câmara oculta
       let novaQuestOculta: { titulo: string; icone: string } | undefined;
       if (isFarming) {
+        // Fôlego: cada extração cansa o lugar (rende menos até descansar).
+        usarFolego(s, floorData.floor);
         const farmCount = ((s.farmsPerFloor ?? {})[floorData.floor] ?? 0) + 1;
         s.farmsPerFloor = { ...(s.farmsPerFloor ?? {}), [floorData.floor]: farmCount };
         // A partir da 3ª exploração bem-sucedida do mesmo andar: 20% de chance por vez
@@ -1022,6 +1057,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
           s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
+          registrarMemorial(s, floorData.floor, n.nome);
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -1049,6 +1085,26 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           s.camarasNovasDescobertas = [...(s.camarasNovasDescobertas ?? []), camaraId];
         }
       });
+
+      // Sussurro do lugar: raro, só em exploração de território (farm) e com
+      // fôlego mínimo de 3 dias — a Torre comenta o LUGAR, não o feito.
+      let sussurrouLugar = false;
+      if (isFarming && Math.random() < 0.08 && s.dia - (s.ultimoSussurroLugarDia ?? -99) >= 3) {
+        const linha = sortearSussurroLugar(floorData.bioma);
+        if (linha) {
+          registrarAcontecimento(s, 'evento', `SUSSURRO DO LUGAR — ${floorData.nome}: "${linha}"`);
+          s.ultimoSussurroLugarDia = s.dia;
+          sussurrouLugar = true;
+        }
+      }
+
+      // Relato de expedição: uma voz do grupo conta como foi (Mural, ~35%).
+      // O sussurro tem prioridade no dia — no máximo uma voz por expedição.
+      if (!sussurrouLugar && Math.random() < 0.35) {
+        const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
+        const relato = gerarRelato(floorData.bioma, isFarming ? 'farm' : 'vitoria', vivosDoGrupo, floorData.nome);
+        if (relato) registrarAcontecimento(s, 'evento', relato);
+      }
 
       saveState(s);
       setExpeditionResult(resultVitoria);
@@ -1099,6 +1155,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
           s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
+          registrarMemorial(s, floorData.floor, n.nome);
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -1109,6 +1166,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
+      // Relato de derrota: quem voltou conta o que a Torre não deixou levar (~45%).
+      if (Math.random() < 0.45) {
+        const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
+        const relato = gerarRelato(floorData.bioma, 'falha', vivosDoGrupo, floorData.nome);
+        if (relato) registrarAcontecimento(s, 'evento', relato);
+      }
+
       saveState(s);
       setExpeditionResult(resultFalha);
     }
@@ -1781,6 +1846,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           vivo.vivo = false;
           mortos.push(vivo.nome);
           aplicarLuto(s, vivo.id, vivo.nome).forEach(l => addLog(s, l.tipo, l.mensagem));
+          registrarMemorial(s, camara.floor, vivo.nome);
         }
       });
       mortos.forEach(nome => addLog(s, 'morte', `${nome.toUpperCase()} não voltou da ${camara.titulo} (Andar ${camara.floor}).`));

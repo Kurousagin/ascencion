@@ -653,6 +653,243 @@ export const ESCOLHAS_LORE: Record<number, {
   },
 };
 
+// ─── CLIMAS_LORE — o tempo da Torre, por bioma ────────────────────────────────
+// Nomes e descrições dos estados atmosféricos diários. A mecânica (pesos e
+// multiplicadores) vive em clima.ts; aqui é só a voz da Torre.
+
+export interface ClimaTexto { nome: string; icone: string; descricao: string }
+
+export const CLIMAS_LORE: Record<string, { neutro: ClimaTexto; favoravel: ClimaTexto; adverso: ClimaTexto }> = {
+  floresta: {
+    neutro:    { nome: 'Mata Quieta',      icone: '🌲', descricao: 'A mata segue o próprio ritmo, indiferente a quem passa.' },
+    favoravel: { nome: 'Clareira Aberta',  icone: '🍃', descricao: 'A luz encontrou caminho entre as copas. A mata entrega mais do que esconde.' },
+    adverso:   { nome: 'Névoa Baixa',      icone: '🌫', descricao: 'A névoa desceu e respira entre os troncos. O que se colhe, colhe-se às cegas.' },
+  },
+  caverna: {
+    neutro:    { nome: 'Pedra Parada',     icone: '⛏', descricao: 'As galerias dormem. Só o gotejar marca o tempo.' },
+    favoravel: { nome: 'Veios Expostos',   icone: '✨', descricao: 'As paredes suaram cristal durante a noite. Os veios brilham ao alcance da mão.' },
+    adverso:   { nome: 'Maré Subterrânea', icone: '💧', descricao: 'A água subiu nas galerias. O fundo guarda, mas hoje não entrega.' },
+  },
+  ruinas: {
+    neutro:    { nome: 'Silêncio Velho',   icone: '📜', descricao: 'O pó repousa sobre o que já foi. Nada mudou — que se veja.' },
+    favoravel: { nome: 'Poeira Assentada', icone: '🕯', descricao: 'Nada se moveu desde ontem. Os símbolos deixam-se ler.' },
+    adverso:   { nome: 'Ecos Despertos',   icone: '🌀', descricao: 'Os corredores repetem passos que ninguém deu. Difícil ouvir o que importa.' },
+  },
+  fortaleza: {
+    neutro:    { nome: 'Muralha Fria',     icone: '⚔', descricao: 'As pedras vigiam como sempre vigiaram. Nem mais, nem menos.' },
+    favoravel: { nome: 'Forja Morna',      icone: '🔥', descricao: 'Alguma braseira antiga reacendeu na madrugada. O ferro cede mais fácil.' },
+    adverso:   { nome: 'Vigília Cerrada',  icone: '🛡', descricao: 'As muralhas parecem mais atentas hoje. Cada pedra custa.' },
+  },
+  abismo: {
+    neutro:    { nome: 'Escuro Igual',     icone: '🌀', descricao: 'O vazio não muda. É essa a sua ameaça.' },
+    favoravel: { nome: 'Fôlego Curto',     icone: '🌬', descricao: 'O fundo prendeu a respiração. Passagem rara — aproveite-a.' },
+    adverso:   { nome: 'Sopro do Fundo',   icone: '🌑', descricao: 'Algo exala lá de baixo. Voltar carregado será mais difícil.' },
+  },
+};
+
+// ─── RELATOS_LORE — vozes de expedição, por bioma × resultado ─────────────────
+// Frases curtas assinadas por um membro do grupo, com {nome} e {andar}.
+// Entram no Mural com raridade controlada (ver relatos.ts).
+
+export const RELATOS_LORE: Record<string, { vitoria: string[]; falha: string[]; farm: string[] }> = {
+  floresta: {
+    vitoria: [
+      '{nome} voltou com resina nos dedos e um mapa de trilhas que ninguém pediu. "{andar} tem mais caminhos do que mostra", disse.',
+      '{nome} jura que as copas se abriram para o grupo passar em {andar}. Ninguém discutiu — estavam carregados demais para discutir.',
+      'Na volta de {andar}, {nome} marcou três árvores com o sinal da cidadela. "Para a mata lembrar de quem passou."',
+    ],
+    falha: [
+      '{nome} voltou calado de {andar}. Só disse: "a mata fechou atrás de nós".',
+      'O grupo perdeu a trilha duas vezes em {andar}. {nome} garante que era a mesma clareira — vinda das duas direções.',
+    ],
+    farm: [
+      '{nome} conhece {andar} pelo cheiro agora. "A mata já não estranha a gente."',
+      'Colheita metódica em {andar}. {nome} deixou um punhado de sementes onde tirou madeira — hábito novo, ninguém sabe de onde veio.',
+    ],
+  },
+  caverna: {
+    vitoria: [
+      '{nome} trouxe de {andar} uma pedra que apita quando esquenta. Ninguém quis segurá-la — está no armazém, no fundo.',
+      'O eco de {andar} repetiu o nome de {nome} três vezes. O grupo saiu com os bolsos cheios e o passo rápido.',
+      '{nome} diz que achou os veios de {andar} "escutando a parede". Funciona — é o que importa.',
+    ],
+    falha: [
+      'A escuridão de {andar} comeu duas tochas e a paciência do grupo. {nome} quer voltar com mais corda.',
+      '{nome} sentiu o chão de {andar} respirar. Pode ter sido cansaço. Pode não ter sido.',
+    ],
+    farm: [
+      '{nome} já desce {andar} sem contar os degraus. A caverna virou rotina — o que, ali embaixo, é quase um elogio.',
+      'De {andar}, o de sempre: pedra boa, silêncio ruim. {nome} assobia para preencher — a caverna não devolve o assobio.',
+    ],
+  },
+  ruinas: {
+    vitoria: [
+      '{nome} copiou de {andar} um símbolo que não conseguiu parar de desenhar no jantar. Guardaram o guardanapo.',
+      'Em {andar}, {nome} achou aberta uma porta que nas visitas anteriores era parede. Trouxeram o que dava — e não olharam para trás.',
+      '{nome} leu em voz alta uma inscrição de {andar} e a poeira assentou de repente. O saque foi bom. A dúvida ficou.',
+    ],
+    falha: [
+      'As ruínas de {andar} mudaram de lugar de novo — {nome} aposta a própria ração que o corredor girou.',
+      '{nome} voltou de {andar} com as mãos vazias e a certeza de que algo leu o grupo de cima a baixo.',
+    ],
+    farm: [
+      '{nome} já cumprimenta as estátuas de {andar} pelo nome que inventou para elas. Elas não respondem. Por enquanto.',
+      'Mais um carregamento de {andar}. {nome} diz que os símbolos das paredes estão "mais gastos" — como se alguém os relesse todas as noites.',
+    ],
+  },
+  fortaleza: {
+    vitoria: [
+      '{nome} desceu de {andar} com uma lâmina antiga e o cuidado de quem carrega coisa com dono.',
+      'A muralha de {andar} cedeu no terceiro empurrão. {nome} garante que no segundo ela empurrou de volta.',
+      '{nome} formou o grupo em cunha na entrada de {andar} — "como os antigos". Deu certo. Ninguém perguntou como sabia.',
+    ],
+    falha: [
+      '{andar} repeliu o grupo como quem já repeliu exércitos. {nome} anotou onde as defesas são mais baixas.',
+      '{nome} voltou de {andar} com o escudo rachado e uma teoria: "aquilo treina enquanto a gente descansa".',
+    ],
+    farm: [
+      '{nome} já sabe qual pedra de {andar} range antes de soltar. A fortaleza rende — resmungando.',
+      'Ferro de {andar}, mais uma leva. {nome} jura que as ameias contam o grupo quando passa. Sempre o número certo.',
+    ],
+  },
+  abismo: {
+    vitoria: [
+      '{nome} não fala do que viu em {andar}. Mas voltou, e o saque veio junto — hoje, isso basta.',
+      'O grupo atravessou {andar} num silêncio combinado. {nome} só o quebrou na volta: "deu certo porque ele não estava com fome".',
+      '{nome} amarrou uma corda na entrada de {andar}. Na volta, a corda tinha nós que ninguém fez.',
+    ],
+    falha: [
+      '{andar} devolveu o grupo mais leve — de carga e de certezas. {nome} não quer ser o primeiro da fila na próxima.',
+      '{nome} diz que em {andar} a lanterna iluminava menos que o normal. Mediram depois: a chama era a mesma. A escuridão é que era mais.',
+    ],
+    farm: [
+      'Rotina em {andar}, se é que existe rotina no abismo. {nome} voltou contando os passos em voz alta. Todos entenderam.',
+      '{nome} parou de olhar para baixo em {andar}. "O fundo olha de volta, e eu tenho mais o que fazer."',
+    ],
+  },
+};
+
+// ─── DESCRICOES_ANDAR_LORE — o estado vivo de cada lugar, por bioma ───────────
+// A descrição de um andar muda com o que o jogador fez nele: recém-conquistado,
+// abandonado, visitado, batido — e, se alguém caiu ali, o lugar lembra ({nome}).
+// Determinístico por estado (sem RNG): o texto evolui junto com o save.
+
+export const DESCRICOES_ANDAR_LORE: Record<string, {
+  recente: string; quieto: string; visitado: string; batido: string; memoria: string;
+}> = {
+  floresta: {
+    recente:  'A mata ainda estranha a conquista: os caminhos abertos cheiram a machado novo.',
+    quieto:   'Sem visitas, a floresta fecha devagar as trilhas que os seus abriram.',
+    visitado: 'As trilhas dos seus já não somem entre uma visita e outra. A mata cedeu passagem.',
+    batido:   'Caminho batido: a floresta conhece o grupo, e o grupo conhece a floresta. Resta saber quem observa quem.',
+    memoria:  'Há um canto onde a mata cresce mais devagar — onde {nome} ficou.',
+  },
+  caverna: {
+    recente:  'O eco da tomada ainda corre as galerias. A caverna se reacomoda.',
+    quieto:   'As galerias voltaram ao gotejar de sempre. A escuridão reocupou o que era dela.',
+    visitado: 'Os seus já descem com passo de quem conhece os degraus. A caverna finge não notar.',
+    batido:   'Cada veio tem marca das suas picaretas. A pedra rende — e conta.',
+    memoria:  'Uma galeria ficou intocada desde que {nome} não voltou dela.',
+  },
+  ruinas: {
+    recente:  'A poeira da conquista ainda não assentou sobre as inscrições.',
+    quieto:   'O silêncio velho retomou os corredores. Os símbolos seguem lá, pacientes.',
+    visitado: 'As ruínas já reconhecem as tochas dos seus. Alguns corredores parecem esperar por elas.',
+    batido:   'Os seus já leram estas paredes tantas vezes que as paredes começaram a ler de volta.',
+    memoria:  'Uma inscrição nova apareceu onde {nome} caiu. Ninguém admite tê-la feito.',
+  },
+  fortaleza: {
+    recente:  'A muralha ainda guarda o calor do assalto. As pedras se recompõem.',
+    quieto:   'A fortaleza voltou à vigília fria. Nada entra, nada sai, nada esquece.',
+    visitado: 'Os portões rangem menos para os seus. Costume — ou reconhecimento.',
+    batido:   'Os seus conhecem cada posto desta muralha. Ela conhece cada um dos seus.',
+    memoria:  'Uma lança cravada marca o ponto onde {nome} ficou de guarda para sempre.',
+  },
+  abismo: {
+    recente:  'O vazio se fechou atrás da conquista como água. Como se nada tivesse passado.',
+    quieto:   'O abismo não sente falta. O abismo só espera.',
+    visitado: 'Os seus atravessam com a pressa certa. O fundo respeita quem não se demora.',
+    batido:   'Tantas travessias abriram um costume no escuro. Perigoso, chamar isso de segurança.',
+    memoria:  'O fundo devolveu tudo de {nome}, menos {nome}.',
+  },
+};
+
+// ─── SUSSURROS_LUGAR_LORE — a Torre comenta o lugar, por bioma ────────────────
+// Ambiência rara durante explorações (não são fragmentos de Codex). Voz da
+// Torre: frases curtas, sem exclamações, sem mentiras — só observação antiga.
+
+export const SUSSURROS_LUGAR_LORE: Record<string, string[]> = {
+  floresta: [
+    'As raízes daqui conhecem o peso dos seus passos. Ajustaram-se a ele.',
+    'A mata guarda os galhos que os seus quebraram. Não por rancor. Por registro.',
+    'Algo verde cresce exatamente onde os seus acamparam. Não é acaso.',
+    'Os pássaros deste andar não fogem mais de vocês. Aprenderam. Ou foram instruídos.',
+  ],
+  caverna: [
+    'O eco daqui repete os seus passos com meio segundo de atraso. Está aprendendo o ritmo.',
+    'As pedras que os seus removeram deixaram vãos. A caverna respira por eles.',
+    'Há marcas de picareta que os seus não fizeram. São mais antigas. E idênticas.',
+    'A água daqui memoriza reflexos. O seu já apareceu duas vezes sem você.',
+  ],
+  ruinas: [
+    'A poeira que os seus levantaram assentou em novo desenho. As ruínas o estão lendo.',
+    'Uma inscrição daqui mudou uma letra desde a última visita. Ninguém tocou nela.',
+    'Os corredores encurtam para quem já passou. Este andar decidiu poupar os seus.',
+    'O que estava escrito aqui já foi lido em voz alta uma vez. As paredes ainda escutam a frase.',
+  ],
+  fortaleza: [
+    'As ameias contam os seus quando entram. E quando saem. Os números têm batido.',
+    'A muralha cede mais rápido no ponto onde os seus insistem. Rendição, ou convite.',
+    'Uma braseira antiga acende sozinha na véspera das suas visitas. Algo prepara a chegada.',
+    'O ferro daqui lembra a mão que o arranca. Já distingue as suas das outras.',
+  ],
+  abismo: [
+    'O fundo conhece o cheiro da sua cidadela. Não faz nada com isso. Ainda.',
+    'A corda que os seus deixaram continua lá. Com um nó a mais.',
+    'O silêncio daqui muda quando os seus chegam. Fica mais atento.',
+    'Algo no fundo repete os nomes que os seus gritaram. Baixinho. Para si.',
+  ],
+};
+
+// ─── ESTACOES_LORE — a respiração longa da Torre ──────────────────────────────
+// A Percussão Profunda é o coração da Torre; a respiração é o seu ciclo longo.
+// A cada quinze dias o ar muda de direção — e com ele, o que cada bioma rende.
+
+export const ESTACOES_LORE: Record<string, { nome: string; icone: string; descricao: string }> = {
+  inspira: {
+    nome: 'A Torre Inspira',
+    icone: '🌫',
+    descricao: 'O ar desce. As profundezas acordam com apetite de presença — cavernas e abismos rendem mais; a superfície prende o fôlego.',
+  },
+  expira: {
+    nome: 'A Torre Expira',
+    icone: '🍂',
+    descricao: 'O ar sobe. A superfície floresce com o que o fundo devolve — florestas e ruínas rendem mais; as profundezas adormecem.',
+  },
+};
+
+// ─── EVENTOS_ANDAR_LORE — acontecimentos que atravessam a Torre ───────────────
+// Eventos diários raros, determinísticos pela seed da torre. {origem}, {destino}
+// e {andar} são nomes de andares.
+
+export const EVENTOS_ANDAR_LORE: Record<string, { nome: string; icone: string; texto: string }> = {
+  migracao: {
+    nome: 'Migração',
+    icone: '🦌',
+    texto: 'O que vivia em {origem} atravessou para {destino} durante a noite. A caça escasseia num, abunda no outro.',
+  },
+  escadas: {
+    nome: 'Escadas Erradias',
+    icone: '🪜',
+    texto: 'As escadas mudaram de lugar durante a noite. Há um atalho que ontem não existia — os mantimentos rendem mais no caminho.',
+  },
+  eco_errante: {
+    nome: 'Eco Errante',
+    icone: '〰',
+    texto: 'Um eco vagueia por {andar}. O que se fizer lá hoje, o andar repete — e retribui.',
+  },
+};
+
 // ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
 
 export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {

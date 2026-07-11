@@ -2202,6 +2202,13 @@ export interface GameState {
   farmsPorAndarEClasse?: Record<number, Record<ProfissaoId, number>>;
   totalMortesAndar?: Record<number, number>;
 
+  // ─── Atlas da Torre ──────────────────────────────────────────────────────
+  // História local de cada andar, visível na ficha do Atlas.
+  andarConquistadoDia?: Record<number, number>;                      // floor → dia da conquista
+  memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
+  ultimoSussurroLugarDia?: number;                                   // fôlego dos sussurros de lugar (anti-spam)
+  fadigaAndar?: Record<number, { usos: number; dia: number }>;       // fôlego dos andares (decaimento lazy, ver folego.ts)
+
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
 
