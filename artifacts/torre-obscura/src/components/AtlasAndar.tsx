@@ -4,6 +4,7 @@ import { useGame } from '../context/GameContext';
 import { FLOORS, BIOMA_META, HABITANTES } from '../lib/game-data';
 import { camarasDaTorre } from '../floor-engine';
 import { climaDoDia } from '../lib/clima';
+import { descricaoVivaDoAndar } from '../lib/lugar';
 
 // ─── ATLAS DA TORRE — a ficha de cada andar conquistado ──────────────────────
 // Cada andar é um lugar com história própria: bioma, o tempo de hoje, quem o
@@ -82,6 +83,12 @@ export function AtlasAndar({ floor, onClose }: Props) {
             </div>
 
             <div className="px-5 py-4 space-y-4 overflow-y-auto custom-scrollbar">
+
+              {/* Descrição viva: o estado atual deste lugar, moldado pelo que
+                  o jogador fez (e perdeu) nele */}
+              <p className="text-xs text-white/60 italic leading-relaxed border-l-2 border-primary/30 pl-3">
+                {descricaoVivaDoAndar(state, floor)}
+              </p>
 
               {/* O tempo de hoje neste bioma */}
               <Secao titulo="HOJE">

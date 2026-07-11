@@ -2206,6 +2206,7 @@ export interface GameState {
   // História local de cada andar, visível na ficha do Atlas.
   andarConquistadoDia?: Record<number, number>;                      // floor → dia da conquista
   memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
+  ultimoSussurroLugarDia?: number;                                   // fôlego dos sussurros de lugar (anti-spam)
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;

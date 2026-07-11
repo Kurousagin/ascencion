@@ -769,6 +769,88 @@ export const RELATOS_LORE: Record<string, { vitoria: string[]; falha: string[]; 
   },
 };
 
+// ─── DESCRICOES_ANDAR_LORE — o estado vivo de cada lugar, por bioma ───────────
+// A descrição de um andar muda com o que o jogador fez nele: recém-conquistado,
+// abandonado, visitado, batido — e, se alguém caiu ali, o lugar lembra ({nome}).
+// Determinístico por estado (sem RNG): o texto evolui junto com o save.
+
+export const DESCRICOES_ANDAR_LORE: Record<string, {
+  recente: string; quieto: string; visitado: string; batido: string; memoria: string;
+}> = {
+  floresta: {
+    recente:  'A mata ainda estranha a conquista: os caminhos abertos cheiram a machado novo.',
+    quieto:   'Sem visitas, a floresta fecha devagar as trilhas que os seus abriram.',
+    visitado: 'As trilhas dos seus já não somem entre uma visita e outra. A mata cedeu passagem.',
+    batido:   'Caminho batido: a floresta conhece o grupo, e o grupo conhece a floresta. Resta saber quem observa quem.',
+    memoria:  'Há um canto onde a mata cresce mais devagar — onde {nome} ficou.',
+  },
+  caverna: {
+    recente:  'O eco da tomada ainda corre as galerias. A caverna se reacomoda.',
+    quieto:   'As galerias voltaram ao gotejar de sempre. A escuridão reocupou o que era dela.',
+    visitado: 'Os seus já descem com passo de quem conhece os degraus. A caverna finge não notar.',
+    batido:   'Cada veio tem marca das suas picaretas. A pedra rende — e conta.',
+    memoria:  'Uma galeria ficou intocada desde que {nome} não voltou dela.',
+  },
+  ruinas: {
+    recente:  'A poeira da conquista ainda não assentou sobre as inscrições.',
+    quieto:   'O silêncio velho retomou os corredores. Os símbolos seguem lá, pacientes.',
+    visitado: 'As ruínas já reconhecem as tochas dos seus. Alguns corredores parecem esperar por elas.',
+    batido:   'Os seus já leram estas paredes tantas vezes que as paredes começaram a ler de volta.',
+    memoria:  'Uma inscrição nova apareceu onde {nome} caiu. Ninguém admite tê-la feito.',
+  },
+  fortaleza: {
+    recente:  'A muralha ainda guarda o calor do assalto. As pedras se recompõem.',
+    quieto:   'A fortaleza voltou à vigília fria. Nada entra, nada sai, nada esquece.',
+    visitado: 'Os portões rangem menos para os seus. Costume — ou reconhecimento.',
+    batido:   'Os seus conhecem cada posto desta muralha. Ela conhece cada um dos seus.',
+    memoria:  'Uma lança cravada marca o ponto onde {nome} ficou de guarda para sempre.',
+  },
+  abismo: {
+    recente:  'O vazio se fechou atrás da conquista como água. Como se nada tivesse passado.',
+    quieto:   'O abismo não sente falta. O abismo só espera.',
+    visitado: 'Os seus atravessam com a pressa certa. O fundo respeita quem não se demora.',
+    batido:   'Tantas travessias abriram um costume no escuro. Perigoso, chamar isso de segurança.',
+    memoria:  'O fundo devolveu tudo de {nome}, menos {nome}.',
+  },
+};
+
+// ─── SUSSURROS_LUGAR_LORE — a Torre comenta o lugar, por bioma ────────────────
+// Ambiência rara durante explorações (não são fragmentos de Codex). Voz da
+// Torre: frases curtas, sem exclamações, sem mentiras — só observação antiga.
+
+export const SUSSURROS_LUGAR_LORE: Record<string, string[]> = {
+  floresta: [
+    'As raízes daqui conhecem o peso dos seus passos. Ajustaram-se a ele.',
+    'A mata guarda os galhos que os seus quebraram. Não por rancor. Por registro.',
+    'Algo verde cresce exatamente onde os seus acamparam. Não é acaso.',
+    'Os pássaros deste andar não fogem mais de vocês. Aprenderam. Ou foram instruídos.',
+  ],
+  caverna: [
+    'O eco daqui repete os seus passos com meio segundo de atraso. Está aprendendo o ritmo.',
+    'As pedras que os seus removeram deixaram vãos. A caverna respira por eles.',
+    'Há marcas de picareta que os seus não fizeram. São mais antigas. E idênticas.',
+    'A água daqui memoriza reflexos. O seu já apareceu duas vezes sem você.',
+  ],
+  ruinas: [
+    'A poeira que os seus levantaram assentou em novo desenho. As ruínas o estão lendo.',
+    'Uma inscrição daqui mudou uma letra desde a última visita. Ninguém tocou nela.',
+    'Os corredores encurtam para quem já passou. Este andar decidiu poupar os seus.',
+    'O que estava escrito aqui já foi lido em voz alta uma vez. As paredes ainda escutam a frase.',
+  ],
+  fortaleza: [
+    'As ameias contam os seus quando entram. E quando saem. Os números têm batido.',
+    'A muralha cede mais rápido no ponto onde os seus insistem. Rendição, ou convite.',
+    'Uma braseira antiga acende sozinha na véspera das suas visitas. Algo prepara a chegada.',
+    'O ferro daqui lembra a mão que o arranca. Já distingue as suas das outras.',
+  ],
+  abismo: [
+    'O fundo conhece o cheiro da sua cidadela. Não faz nada com isso. Ainda.',
+    'A corda que os seus deixaram continua lá. Com um nó a mais.',
+    'O silêncio daqui muda quando os seus chegam. Fica mais atento.',
+    'Algo no fundo repete os nomes que os seus gritaram. Baixinho. Para si.',
+  ],
+};
+
 // ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
 
 export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {

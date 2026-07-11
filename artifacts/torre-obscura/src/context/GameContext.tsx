@@ -27,6 +27,7 @@ import {
 } from '../floor-engine';
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
+import { sortearSussurroLugar } from '../lib/lugar';
 import {
   verificarQuestAndar, verificarQuestOculta, gerarQuestOculta, gerarObjetivosDoDia,
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
@@ -1066,8 +1067,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
 
+      // Sussurro do lugar: raro, só em exploração de território (farm) e com
+      // fôlego mínimo de 3 dias — a Torre comenta o LUGAR, não o feito.
+      let sussurrouLugar = false;
+      if (isFarming && Math.random() < 0.08 && s.dia - (s.ultimoSussurroLugarDia ?? -99) >= 3) {
+        const linha = sortearSussurroLugar(floorData.bioma);
+        if (linha) {
+          registrarAcontecimento(s, 'evento', `SUSSURRO DO LUGAR — ${floorData.nome}: "${linha}"`);
+          s.ultimoSussurroLugarDia = s.dia;
+          sussurrouLugar = true;
+        }
+      }
+
       // Relato de expedição: uma voz do grupo conta como foi (Mural, ~35%).
-      if (Math.random() < 0.35) {
+      // O sussurro tem prioridade no dia — no máximo uma voz por expedição.
+      if (!sussurrouLugar && Math.random() < 0.35) {
         const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
         const relato = gerarRelato(floorData.bioma, isFarming ? 'farm' : 'vitoria', vivosDoGrupo, floorData.nome);
         if (relato) registrarAcontecimento(s, 'evento', relato);
