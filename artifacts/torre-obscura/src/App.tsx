@@ -45,6 +45,7 @@ function SubAbas({ tab, onChange }: { tab: string; onChange: (t: string) => void
         <button
           key={a.id}
           onClick={() => onChange(a.id)}
+          data-tour={a.id === 'guerra' ? 'subaba-guerra' : undefined}
           className={`flex-1 min-h-[44px] text-[12px] font-bold tracking-widest touch-manipulation transition-colors border-b-2 -mb-px ${
             tab === a.id
               ? 'text-primary border-primary'
@@ -206,7 +207,7 @@ function MainGameInner() {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} />}
+              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} onAjuda={() => setOnboardingOpen(true)} />}
               {tab === 'torre'    && <Tower t2Desbloqueado={t2Desbloqueado} pioneerPosicao={pioneer.posicao} pioneersTotal={pioneer.status?.total ?? 0} />}
               {tab === 'cidadela' && <Citadel t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'povo'     && <People />}
@@ -267,6 +268,7 @@ function MainGameInner() {
         setOnboardingOpen(false);
         if (!localStorage.getItem(TOUR_DONE)) setTourAtivo(true);
       }}
+      onIniciarTour={() => setTourAtivo(true)}
     />
 
     {/* Tour guiado: navega pelas abas e aponta as funcionalidades no lugar */}

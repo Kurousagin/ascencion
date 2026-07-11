@@ -73,8 +73,14 @@ const STEPS: TourStep[] = [
   {
     tab: 'alianca',
     selector: '[data-tour="alianca"]',
-    titulo: 'Aliança & Guerra',
-    texto: 'Pareie com até 3 cidadelas reais por código: envie recursos, empreste moradores, mande reforços. A GUERRA vive na sub-aba aqui em cima — invasões têm prazo para responder.',
+    titulo: 'Aliança',
+    texto: 'Pareie com até 3 cidadelas reais por código: envie recursos (a Torre cobra 15%), empreste moradores, mande reforços. O que chega das aliadas espera na sua Caixa.',
+  },
+  {
+    tab: 'alianca',
+    selector: '[data-tour="subaba-guerra"]',
+    titulo: 'Guerra',
+    texto: 'Aqui você avista rivais de poder parecido, declara guerra e responde invasões — cada uma com prazo em dias. Vencer rende espólio; aliadas podem mandar reforços de guerra.',
   },
   {
     tab: 'obs',

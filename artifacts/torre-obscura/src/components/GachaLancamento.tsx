@@ -133,10 +133,10 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
 
     if (npcResultado.primordial) {
       // Tenta reivindicar atomicamente no servidor.
-      const claimed = await claimPrimordial(`primordial_t${lancamento.temporada}`, getDeviceId());
-      if (!claimed) {
-        // Corrida: outro jogador reivindicou entre o check e o confirm.
-        // Re-sorteia sem o primordial e mostra o novo resultado ao jogador.
+      const resultado = await claimPrimordial(`primordial_t${lancamento.temporada}`, getDeviceId());
+      if (resultado === 'conflito') {
+        // Corrida REAL: outro jogador reivindicou entre o check e o confirm.
+        // Só neste caso re-sorteia sem o primordial e mostra o novo resultado.
         localStorage.removeItem(flagResult);
         const npc = sortearNpc(lancamento, false); // força pool sem primordial
         setNpcResultado(npc);
@@ -145,6 +145,8 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
         setConfirmando(false);
         return;
       }
+      // 'erro' (offline/rede): concede otimista. Re-sortear aqui roubava o
+      // primordial do jogador por falha de conexão — o sorteio é o que vale.
     }
 
     adicionarNpcLancamento(npcResultado);

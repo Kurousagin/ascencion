@@ -1,6 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
-import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
+import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown, HelpCircle } from 'lucide-react';
 import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
 import { METAS_DIARIAS_META } from '../quest-engine';
 import { useTemporada } from '../hooks/useTemporada';
@@ -17,9 +17,11 @@ import { useState, useEffect } from 'react';
 
 interface DashboardProps {
   t2Desbloqueado: boolean;
+  // Reabre o guia de boas-vindas (com opção de refazer o tour) para quem se perdeu.
+  onAjuda?: () => void;
 }
 
-export function Dashboard({ t2Desbloqueado }: DashboardProps) {
+export function Dashboard({ t2Desbloqueado, onAjuda }: DashboardProps) {
   const { state, setSpeed, gerarMetasDiarias, reivindicarPresenteDaTorre } = useGame();
   const { aliadas } = useAlliance();
   const temporada = useTemporada(t2Desbloqueado);
@@ -71,8 +73,18 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
 
   return (
     <div className="p-3 space-y-2 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-1.5 border-b border-primary/30 relative">
+      <header className="pb-1.5 border-b border-primary/30 relative flex items-center justify-between">
         <h2 className="text-xl font-cinzel font-bold tracking-widest text-primary">OBSERVATÓRIO</h2>
+        {onAjuda && (
+          <button
+            onClick={onAjuda}
+            aria-label="Como jogar"
+            title="Como jogar"
+            className="w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/60 hover:text-primary hover:border-primary/60 transition-all touch-manipulation shrink-0"
+          >
+            <HelpCircle size={16} />
+          </button>
+        )}
       </header>
 
       {/* ── Faixa da temporada ativa (muda visualmente ao desbloquear a T2) ── */}
