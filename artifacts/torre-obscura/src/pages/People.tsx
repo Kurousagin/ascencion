@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ShieldAlert, Crosshair, Sparkles, Brain, Dna, Swords, Wind, BookOpen, Shield, Hammer, X, UserPlus, Dumbbell } from 'lucide-react';
-import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
+import { NPC, getProfissao, PROFISSOES, POSTO_AFIM, BUILDINGS, nomeEdificio, EdificioTipo, ProfissaoId, podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1, MAX_TREINAMENTOS, calcInstrutor, statTreinamento, calcNpcPower, PRIMORDIAL_RECUPERACAO_T1, PASSIVAS, HABILIDADES, type PassivaId } from '../lib/game-data';
 import { humorDe, vinculosDe, tipoVinculo, type TipoVinculo } from '../npc-engine';
+import { FAMA_CASA } from '../npc-engine/fama';
+import * as Dialog from '@radix-ui/react-dialog';
 export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -10,6 +12,8 @@ export function People() {
   // Censo: filtro de triagem ativo (null = todos) e critério de ordenação.
   const [filtro, setFiltro] = useState<string | null>(null);
   const [ordem, setOrdem] = useState<'poder' | 'fadiga' | 'lealdade' | 'nome'>('poder');
+  // Quadro de Postos: edifício cuja vaga está sendo preenchida (null = fechado).
+  const [vagaPicker, setVagaPicker] = useState<EdificioTipo | null>(null);
 
   const vivos = state.npcs.filter(n => n.vivo).length;
 
@@ -231,6 +235,16 @@ export function People() {
 
           {isExpanded && (
             <div className="mt-4 pt-4 border-t border-white/5">
+              {/* Retrato: humor com motivo + fama (o motor de vida visível) */}
+              <div className="flex items-center justify-between gap-2 mb-3 text-xs">
+                <span className={humorCor}>
+                  {humor.tom === 'bom' ? '😊' : humor.tom === 'critico' ? '😰' : humor.tom === 'ruim' ? '😟' : '😐'} {humor.rotulo}
+                </span>
+                <span className="text-white/50">
+                  FAMA <span className="text-primary font-bold font-cinzel">{npc.fama ?? 0}</span>
+                  {(npc.fama ?? 0) >= FAMA_CASA && <span className="text-primary/70"> · digno de fundar uma casa</span>}
+                </span>
+              </div>
               <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
                 {([
                   { key: 'forca',        label: 'FOR', value: npc.forca },
@@ -303,14 +317,15 @@ export function People() {
                             ? { icone: '🔗', rotulo: 'Afinidade' }
                             : { icone: '⚡', rotulo: 'Tensão' };
                         return (
-                          <span
+                          <button
                             key={v.id}
-                            title={info.rotulo}
-                            className={`text-xs px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                            title={`${info.rotulo} — ver ${v.nome}`}
+                            onClick={e => { e.stopPropagation(); setExpandedId(v.id); }}
+                            className={`text-xs px-1.5 py-0.5 rounded-sm border flex items-center gap-1 touch-manipulation active:scale-95 transition-all ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5 hover:bg-success/10' : 'text-destructive border-destructive/30 bg-destructive/5 hover:bg-destructive/10'}`}
                           >
                             {info.icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
                             <span className="opacity-70">· {info.rotulo}</span>
-                          </span>
+                          </button>
                         );
                       })}
                     </div>
@@ -711,6 +726,47 @@ export function People() {
               ))}
             </div>
 
+            {/* Quadro de Postos: gestão por vaga, não por pessoa */}
+            {state.edificios.some(e => e.nivel >= 1 && e.tipo in POSTO_AFIM) && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-cinzel text-primary/80 tracking-[0.2em] border-b border-white/10 pb-1">
+                  QUADRO DE POSTOS
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {state.edificios.filter(e => e.nivel >= 1 && e.tipo in POSTO_AFIM).map(e => {
+                    const ocupantes = vivosL.filter(n => n.posto === e.tipo);
+                    return (
+                      <div key={e.tipo} className="border border-card-border bg-[#11161F] rounded-sm p-2 space-y-1">
+                        <div className="text-[12px] text-secondary tracking-wider flex justify-between gap-1">
+                          <span className="truncate">{nomeEdificio(e.tipo, state.andarAtual)}</span>
+                          <span className="text-white/35 shrink-0">{ocupantes.length}/{e.nivel}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {ocupantes.map(n => (
+                            <button
+                              key={n.id}
+                              onClick={() => setExpandedId(n.id)}
+                              className="text-[12px] px-1.5 py-0.5 border border-success/30 text-success bg-success/5 rounded-sm truncate max-w-full touch-manipulation"
+                            >
+                              {n.nome.split(' ')[0]}
+                            </button>
+                          ))}
+                          {ocupantes.length < e.nivel && (
+                            <button
+                              onClick={() => setVagaPicker(e.tipo)}
+                              className="text-[12px] px-1.5 py-0.5 border border-dashed border-primary/40 text-primary/70 rounded-sm hover:bg-primary/10 touch-manipulation"
+                            >
+                              + vaga
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Grupos por profissão */}
             {PROFS.map(prof => {
               const doGrupo = lista.filter(n => getProfissao(n) === prof);
@@ -722,7 +778,7 @@ export function People() {
                     <span className="text-xs font-cinzel text-primary/80 tracking-[0.2em] flex items-center gap-1.5">
                       {getProfIcon(prof)} {PROFISSOES[prof].nome.toUpperCase()}S
                     </span>
-                    <span className="text-[12px] text-white/40">{doGrupo.length} · poder {poderGrupo.toFixed(0)}</span>
+                    <span className="text-[12px] text-white/40">quantidade ={doGrupo.length} · poder total = {poderGrupo.toFixed(0)}</span>
                   </div>
                   {doGrupo.map(n => (expandedId === n.id ? renderCard(n) : renderCompacto(n)))}
                 </div>
@@ -734,6 +790,58 @@ export function People() {
           </>
         );
       })()}
+
+      {/* Picker de vaga do Quadro de Postos: candidatos ordenados por afinidade */}
+      <Dialog.Root open={vagaPicker !== null} onOpenChange={o => { if (!o) setVagaPicker(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-background/90 backdrop-blur-sm z-[70]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-sm max-h-[70dvh] bg-gradient-to-b from-[#1C2333] to-[#161B22] border border-primary/30 rounded-sm p-4 z-[70] flex flex-col outline-none">
+            {vagaPicker && (() => {
+              const afim = POSTO_AFIM[vagaPicker];
+              const candidatos = state.npcs
+                .filter(n => n.vivo && !n.emprestado && !n.reforco && n.posto !== vagaPicker)
+                .sort((a, b) => {
+                  const aAfim = getProfissao(a) === afim ? 1 : 0;
+                  const bAfim = getProfissao(b) === afim ? 1 : 0;
+                  return bAfim - aAfim || calcNpcPower(b) - calcNpcPower(a);
+                });
+              return (
+                <>
+                  <Dialog.Title className="font-cinzel font-bold text-primary tracking-widest text-sm mb-1">
+                    VAGA — {nomeEdificio(vagaPicker, state.andarAtual).toUpperCase()}
+                  </Dialog.Title>
+                  <p className="text-[12px] text-white/45 mb-3">
+                    Afinidade: <span className="text-white/70">{afim ? PROFISSOES[afim].nome : '—'}</span> (★ recebe bônus maior)
+                  </p>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5">
+                    {candidatos.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Ninguém disponível.</p>}
+                    {candidatos.map(n => {
+                      const isAfim = getProfissao(n) === afim;
+                      return (
+                        <button
+                          key={n.id}
+                          onClick={() => { assignPosto(n.id, vagaPicker); setVagaPicker(null); }}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-sm border text-left touch-manipulation transition-all ${
+                            isAfim ? 'border-success/40 bg-success/5 hover:border-success/70' : 'border-card-border bg-[#0D1117] hover:border-primary/40'
+                          }`}
+                        >
+                          <span className="text-sm font-bold text-foreground truncate">
+                            {isAfim && <span className="text-success">★ </span>}{n.nome}
+                            {n.posto && <span className="text-[12px] text-white/35 font-normal"> · sai de {n.posto}</span>}
+                          </span>
+                          <span className="text-[12px] text-secondary shrink-0 flex items-center gap-1">
+                            {getProfIcon(getProfissao(n))} {PROFISSOES[getProfissao(n)].nome}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Seção colapsável de falecidos */}
       {state.npcs.filter(n => !n.vivo).length > 0 && (
