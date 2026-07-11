@@ -85,8 +85,13 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
   };
   const profissaoIdeal = biomaInfo ? BIOMA_META[floorData!.bioma].profissaoIdeal : null;
 
-  // Ordenar por stat primário descendente — melhor fit aparece primeiro
-  const eligiblesSorted = [...state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90)]
+  // Ordenar por stat primário descendente — melhor fit aparece primeiro.
+  // Quem jurou ao Ofício fica oculto por padrão (menos ruído ao montar grupo).
+  const [mostrarOficio, setMostrarOficio] = useState(false);
+  const ocultosOficio = state.npcs.filter(n => n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90 && n.juramento === 'oficio').length;
+  const eligiblesSorted = [...state.npcs.filter(n =>
+    n.vivo && !n.emExpedicao && !n.emGuerra && n.fadiga < 90 &&
+    (mostrarOficio || n.juramento !== 'oficio' || selectedNpcs.includes(n.id)))]
     .sort((a, b) => (b[statPrimario as keyof typeof b] as number) - (a[statPrimario as keyof typeof a] as number));
 
   const handleToggle = (id: string) => {
@@ -1150,6 +1155,16 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                 <span>Ordenado por <span className="text-white/60 font-bold">{statLabel[statPrimario]}</span> — stat primário de {biomaInfo.label}</span>
                 {profissaoIdeal && <span className="ml-auto text-white/30">★ = {profissaoIdeal} ideal</span>}
               </div>
+            )}
+
+            {/* Jurados ao Ofício ficam fora da formação por padrão */}
+            {ocultosOficio > 0 && !mostrarOficio && (
+              <button
+                onClick={() => setMostrarOficio(true)}
+                className="text-[12px] text-white/40 hover:text-white/60 text-left px-1 mb-2 touch-manipulation"
+              >
+                ⚒ {ocultosOficio} jurado{ocultosOficio > 1 ? 's' : ''} ao Ofício oculto{ocultosOficio > 1 ? 's' : ''} — mostrar mesmo assim
+              </button>
             )}
 
             <div className="flex-1 overflow-y-auto space-y-2 mb-5 custom-scrollbar pr-2">

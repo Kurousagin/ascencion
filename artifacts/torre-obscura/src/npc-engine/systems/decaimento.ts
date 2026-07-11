@@ -51,6 +51,8 @@ export const sistemaDecaimento: SistemaVida = {
     vivos.filter(n => !n.emGuerra).forEach(n => {
       let rec = 10 + colonia.fadigaRec;
       if (n.habilidade === 'curandeiro') rec += 15;
+      // Juramento à Escalada: descanso focado — recupera 25% mais rápido.
+      if (n.juramento === 'escalada') rec = Math.round(rec * 1.25);
       if (colonia.excedente > 0) rec = Math.max(0, rec - colonia.excedente * 4);
       n.fadiga = Math.max(0, n.fadiga - rec);
     });

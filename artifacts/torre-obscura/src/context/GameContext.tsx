@@ -12,7 +12,7 @@ import {
   podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1,
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
-  generateNpcGacha, calcCustoGacha, GACHA_BATCH,
+  generateNpcGacha, calcCustoGacha, GACHA_BATCH, PROFISSOES, decidirJuramento, famaDeBerco,
   HABITANTES, BOSS_ECO_LORE,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
@@ -28,6 +28,7 @@ import {
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
 import { sortearSussurroLugar } from '../lib/lugar';
+import { ASCENSAO_LORE, JURAMENTO_LORE } from '../lib/lore-content';
 import { multFolego, multCadeia, usarFolego } from '../lib/folego';
 import { estacaoDoDia, multEstacao } from '../lib/estacao';
 import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
@@ -36,7 +37,7 @@ import {
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
 } from '../quest-engine';
 import {
-  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, bonusMentor,
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, FAMA_NOTAVEL, bonusMentor,
   fatorHumor, getAfinidade, AF_AMIZADE,
   type PromocaoResultado, type FeitoId,
 } from '../npc-engine';
@@ -106,6 +107,10 @@ interface GameContextType {
   // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
   estudarNpc: (npcId: string) => void;
+  // Juramentos: destina o morador à Escalada ou ao Ofício (cooldown 10 dias).
+  jurarNpc: (npcId: string, juramento: 'escalada' | 'oficio') => void;
+  sugerirJuramentos: () => void;
+  declararVocacaoCasa: (casa: string, vocacao: 'escalada' | 'oficio') => void;
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
@@ -220,16 +225,69 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // (quando houver — a câmara já registra o dela) e, se a promoção levou o
   // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
   const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
+    const famaAntes = npc.fama ?? 0;
     if (feito) registrarFeito(npc, feito);
+    // Primeiro degrau: a cidadela passa a notar quem cruza FAMA_NOTAVEL.
+    if (!npc.sobrenome && famaAntes < FAMA_NOTAVEL && (npc.fama ?? 0) >= FAMA_NOTAVEL) {
+      registrarAcontecimento(s, 'descoberta', ASCENSAO_LORE.notavel.replaceAll('{nome}', npc.nome.toUpperCase()));
+    }
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
-    if (promo.tipo === 'adocao') {
-      addLog(s, 'descoberta', `A CASA ${promo.casa.toUpperCase()} acolhe ${npc.nome.toUpperCase()} — um plebeu ascende à nobreza.`);
-    } else if (promo.tipo === 'fundacao') {
-      addLog(s, 'vitoria', `${npc.nome.toUpperCase()} ergue a própria linhagem — nasce a Casa ${promo.casa}.`);
-    } else {
-      addLog(s, 'info', `${npc.nome.toUpperCase()} conquista um sobrenome ao alcançar a nobreza.`);
-    }
+    // Ascensão é acontecimento de tela (toast + Mural), não nota de rodapé:
+    // fundação e adoção entram como 'vitoria' (importância alta).
+    const template = ASCENSAO_LORE[promo.tipo];
+    const msg = template
+      .replaceAll('{nome}', npc.nome.toUpperCase())
+      .replaceAll('{casa}', promo.casa)
+      .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : '');
+    registrarAcontecimento(s, promo.tipo === 'propria' ? 'descoberta' : 'vitoria', msg);
+  };
+
+  // Juramento diante da Fogueira: troca tem fôlego de 10 dias (anti min-max).
+  const JURAMENTO_COOLDOWN = 10;
+  const jurarNpc = (npcId: string, juramento: 'escalada' | 'oficio') => {
+    if (!state) return;
+    const s = structuredClone(state);
+    const n = s.npcs.find(x => x.id === npcId && x.vivo);
+    if (!n || n.juramento === juramento) return;
+    if (n.juramentoDia != null && s.dia - n.juramentoDia < JURAMENTO_COOLDOWN) return;
+    n.juramento = juramento;
+    n.juramentoDia = s.dia;
+    addLog(s, 'evento', JURAMENTO_LORE[juramento].replaceAll('{nome}', n.nome.toUpperCase()));
+    saveState(s);
+  };
+
+  // Sugere juramentos em massa para quem ainda não jurou, pela decisão de
+  // perfil de cada um (decidirJuramento) — não por régua global de stat.
+  const sugerirJuramentos = () => {
+    if (!state) return;
+    const s = structuredClone(state);
+    const vivosL = s.npcs.filter(n => n.vivo && !n.emprestado && !n.reforco);
+    let jurados = 0;
+    vivosL.filter(n => !n.juramento).forEach(n => {
+      n.juramento = decidirJuramento(vivosL, n);
+      n.juramentoDia = s.dia;
+      jurados++;
+    });
+    if (jurados === 0) return;
+    addLog(s, 'evento', `JURAMENTOS DIANTE DA FOGUEIRA — ${jurados} morador${jurados > 1 ? 'es' : ''} declarou a quem serve: a Escalada ou o Ofício.`);
+    saveState(s);
+  };
+
+  // Vocação de Casa: membro com juramento alinhado à vocação declarada rende +5%.
+  const fatorCasa = (s: GameState) => (n: NPC) => {
+    const voc = n.sobrenome ? s.casasVocacao?.[n.sobrenome] : undefined;
+    return voc && voc === n.juramento ? 1.05 : 1;
+  };
+
+  // O Cabeça da Casa declara a vocação (Escalada ou Ofício) da linhagem.
+  const declararVocacaoCasa = (casa: string, vocacao: 'escalada' | 'oficio') => {
+    if (!state) return;
+    const s = structuredClone(state);
+    if (s.casasVocacao?.[casa] === vocacao) return;
+    s.casasVocacao = { ...(s.casasVocacao ?? {}), [casa]: vocacao };
+    addLog(s, 'evento', `A CASA ${casa.toUpperCase()} declarou sua vocação: ${vocacao === 'escalada' ? 'a Escalada — seus nomes subirão a Torre' : 'o Ofício — suas mãos sustentarão a cidadela'}.`);
+    saveState(s);
   };
 
   // Registra progresso de uma meta diária no draft (idempotente por dia).
@@ -286,7 +344,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     // Aggregate building effects (levels + workers) once per day.
     // O humor escala a contribuição de cada trabalhador (motor de vida).
-    const ef = getEfeitos(draft.edificios, draft.npcs, fatorHumor);
+    const ef = getEfeitos(draft.edificios, draft.npcs, n => fatorHumor(n) * fatorCasa(draft)(n));
     draft.recursos.capacidadeArmazem = ef.capacidadeArmazem;
 
     // 1. Produção de comida (edifícios) — creditada ANTES do consumo
@@ -424,7 +482,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       aplicarLuto(draft, m.id, m.nome).forEach(l => addLog(draft, l.tipo, l.mensagem)));
     diaGuerra.vitoriaIds?.forEach(id => {
       const n = draft.npcs.find(x => x.id === id);
-      if (n) registrarFeito(n, 'guerra_vencida');
+      if (n) promoverEnobrecer(draft, n, 'guerra_vencida');
     });
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
@@ -643,6 +701,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       lancamento:   npcConfig.primordial ?? false,
       vestigio:     npcConfig.vestigio ?? false,
       passivaId:    npcConfig.passivaId,
+      // Primordiais e vestígios nascem jurados à Escalada: no cânone, foram
+      // os primeiros a subir — servir à subida é a natureza deles. Berço idem.
+      fama:         famaDeBerco(npcConfig.divino ? 'Divino' : npcConfig.primordial ? 'Lendário' : npcConfig.vestigio ? 'Épico' : 'Raro'),
+      juramento:    'escalada',
+      juramentoDia: s.dia,
     };
     s.npcs.push(npc);
     addLog(s, 'descoberta', `${npcConfig.nome.toUpperCase()} une-se à sua cidadela.`);
@@ -709,6 +772,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.andarConquistadoDia)     parsed.andarConquistadoDia = {};
     if (!parsed.memoriais)               parsed.memoriais = {};
     if (!parsed.fadigaAndar)             parsed.fadigaAndar = {};
+    if (!parsed.casasVocacao)            parsed.casasVocacao = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
@@ -863,11 +927,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     registrarProgressoMetaDiaria(s, 'explorar');
 
     // Power uses calcNpcPower (skill bonuses) + Quartel bonus
-    const ef = getEfeitos(s.edificios, s.npcs, fatorHumor);
+    const ef = getEfeitos(s.edificios, s.npcs, n => fatorHumor(n) * fatorCasa(s)(n));
     const cap = ef.capacidadeArmazem;
     s.recursos.capacidadeArmazem = cap;
     // Humor pesa no poder individual: gente abalada luta pior.
-    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n), 0);
+    const basePower = group.reduce((sum, n) => sum + calcNpcPower(n) * fatorHumor(n) * fatorCasa(s)(n), 0);
     // O bioma afeta o poder efetivo do grupo: profissão certa = +30%, errada = -20%.
     const biomaMultiplier = calcBiomaMultiplier(group, floorData.bioma);
     const groupPower = basePower * (1 + ef.poderBonus) * biomaMultiplier;
@@ -992,6 +1056,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const chanceResgate = floorData.isBoss ? 0.35 : 0.12;
           if (Math.random() < chanceResgate) {
             const novo = generateNPC(Math.random() < 0.1);
+            novo.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), novo);
+            novo.juramentoDia = s.dia;
             s.npcs.push(novo);
             resgatado = { nome: novo.nome, raridade: novo.raridade };
             addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
@@ -1064,8 +1130,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
-          registrarFeito(n, 'expedicao_sobrevivida');
-          if (!isFarming) registrarFeito(n, 'andar_conquistado');
+          promoverEnobrecer(s, n, 'expedicao_sobrevivida');
+          if (!isFarming) promoverEnobrecer(s, n, 'andar_conquistado');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1162,7 +1228,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           if (getProfissao(n) === 'batedor') fatigueGain = Math.round(fatigueGain * 0.8);
           n.fadiga = Math.min(100, n.fadiga + fatigueGain);
           n.emExpedicao = false;
-          registrarFeito(n, 'expedicao_sobrevivida');
+          promoverEnobrecer(s, n, 'expedicao_sobrevivida');
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
@@ -1197,6 +1263,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const novos: NPC[] = [];
     for (let i = 0; i < batch; i++) {
       const npc = generateNpcGacha();
+      // Autonomia: o recém-chegado jura por vontade própria, pelo seu perfil.
+      npc.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), npc);
+      npc.juramentoDia = s.dia;
       s.npcs.push(npc);
       novos.push(npc);
     }
@@ -1768,7 +1837,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (sucesso) {
       est.encontrada = true;
-      group.forEach(n => registrarFeito(n, 'camara_vencida'));
+      group.forEach(n => promoverEnobrecer(s, n, 'camara_vencida'));
       const floorData = FLOORS[camara.floor - 1];
 
       // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).
@@ -2012,6 +2081,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       responderGuerra,
       treinarNpc,
       estudarNpc,
+      jurarNpc,
+      sugerirJuramentos,
+      declararVocacaoCasa,
       interagirHabitante,
       resolverEscolhaHabitante,
       explorarCamaraSecreta,

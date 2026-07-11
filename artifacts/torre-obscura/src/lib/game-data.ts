@@ -151,6 +151,11 @@ export interface NPC {
   sobrenome?: string;
   casaFundador?: boolean;
   fama?: number;
+  // Juramento diante da Fogueira: a quem este morador serve.
+  // 'escalada' = a Subida (descansa 25% mais rápido); 'oficio' = a Cidadela
+  // (+15% de rendimento no posto). Troca tem fôlego de 10 dias (juramentoDia).
+  juramento?: 'escalada' | 'oficio';
+  juramentoDia?: number;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
@@ -2208,6 +2213,9 @@ export interface GameState {
   memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
   ultimoSussurroLugarDia?: number;                                   // fôlego dos sussurros de lugar (anti-spam)
   fadigaAndar?: Record<number, { usos: number; dia: number }>;       // fôlego dos andares (decaimento lazy, ver folego.ts)
+  // Vocação declarada pelo Cabeça de cada casa nobre: membros com juramento
+  // alinhado à vocação rendem +5% (poder na Escalada, posto no Ofício).
+  casasVocacao?: Record<string, 'escalada' | 'oficio'>;
 
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
@@ -2299,6 +2307,56 @@ function calcRaridade(npc: Pick<NPC, 'forca' | 'agilidade' | 'inteligencia' | 'r
 }
 
 // Recalcula a raridade de um NPC existente após mudança de atributos.
+// ─── Juramento por vontade própria ───────────────────────────────────────────
+// O morador decide a quem serve pelo próprio perfil, não por uma régua global:
+// profissão de subida (combatente/batedor), habilidade de campo e poder acima
+// da mediana puxam para a ESCALADA; profissão civil (erudito/sentinela), poder
+// fraco ou personalidade ruim para combate (obscuro, lealdade/sanidade frágeis)
+// puxam para o OFÍCIO. Empate segue a profissão.
+const HABILIDADES_DE_CAMPO = new Set(['berserker', 'guardiao', 'veterano', 'explorador']);
+
+export function decidirJuramento(vivos: NPC[], npc: NPC): 'escalada' | 'oficio' {
+  const poderes = vivos.map(n => calcNpcPower(n)).sort((a, b) => a - b);
+  const medianaPoder = poderes[Math.floor(poderes.length / 2)] ?? 0;
+  const prof = getProfissao(npc);
+
+  let tendencia = 0;
+  tendencia += prof === 'combatente' || prof === 'batedor' ? 1 : -1;
+  if (calcNpcPower(npc) >= medianaPoder) tendencia += 1;
+  if (HABILIDADES_DE_CAMPO.has(npc.habilidade)) tendencia += 1;
+  if (npc.obscuro || npc.lealdade < 40 || npc.sanidade < 50) tendencia -= 2;
+
+  return tendencia >= 1 ? 'escalada' : 'oficio';
+}
+
+// Título civil de quem jurou ao Ofício — camada de exibição derivada do stat
+// dominante (o ProfissaoId de combate não muda: contrato de rede e quests intactos).
+export const OFICIO_LABEL: Record<'forca' | 'agilidade' | 'inteligencia' | 'resistencia', string> = {
+  forca: 'Lavrador',
+  agilidade: 'Vigia do Alto',
+  inteligencia: 'Escriba',
+  resistencia: 'Zelador da Chama',
+};
+
+export function oficioDe(npc: NPC): string {
+  const stats = { forca: npc.forca, agilidade: npc.agilidade, inteligencia: npc.inteligencia, resistencia: npc.resistencia };
+  const dominante = (Object.entries(stats) as [keyof typeof stats, number][]).sort((a, b) => b[1] - a[1])[0][0];
+  return OFICIO_LABEL[dominante];
+}
+
+// Berço: fama inicial concedida pela raridade de nascença. Raridade é potencial
+// (o que a Torre entregou); nobreza é biografia — o berço só dá vantagem de
+// partida na fama, nunca o título em si.
+export function famaDeBerco(raridade: Raridade): number {
+  switch (raridade) {
+    case 'Raro':     return 5;
+    case 'Épico':    return 10;
+    case 'Lendário':
+    case 'Divino':   return 15;
+    default:         return 0;
+  }
+}
+
 export function recalcRaridade(npc: NPC): Raridade {
   return calcRaridade(npc);
 }
@@ -2438,6 +2496,7 @@ export const generateNPC = (isObscuro = false): NPC => {
     nome,
     sobrenome,
     raridade,
+    fama: famaDeBerco(raridade),
     habilidade: getRandomHabilidade(),
   };
 };
@@ -2505,7 +2564,7 @@ export function generateNpcGacha(forcadoRaridade?: Raridade): NPC {
     emExpedicao: false,
     posto: null as EdificioTipo | null,
   };
-  return { ...base, raridade, habilidade: getRandomHabilidade() };
+  return { ...base, raridade, fama: famaDeBerco(raridade), habilidade: getRandomHabilidade() };
 }
 
 // Custo do ritual em trindade. Mais vantajoso por unidade que a invocação simples
@@ -2847,8 +2906,8 @@ export const BUILDINGS: Record<EdificioTipo, BuildingDef> = {
       { custo: { madeira: 20, pedra: 8 },             resumo: 'Limite de 9 moradores',  efeito: { capPopulacao: 9 } },
       { custo: { madeira: 40, pedra: 25 },            resumo: 'Limite de 12 moradores', efeito: { capPopulacao: 12 } },
       { custo: { madeira: 70, pedra: 45, ferro: 15 }, resumo: 'Limite de 16 moradores', efeito: { capPopulacao: 16 } },
-      { custo: { madeira: 100, pedra: 65, ferro: 30 }, resumo: 'Limite de 18 moradores', efeito: { capPopulacao: 18 } },
-      { custo: { madeira: 140, pedra: 90, ferro: 50 }, resumo: 'Limite de 20 moradores', efeito: { capPopulacao: 20 } },
+      { custo: { madeira: 120, pedra: 80, ferro: 40 }, resumo: 'Limite de 24 moradores', efeito: { capPopulacao: 24 } },
+      { custo: { madeira: 180, pedra: 120, ferro: 70 }, resumo: 'Limite de 32 moradores', efeito: { capPopulacao: 32 } },
     ],
   },
   Arquivo: {
@@ -2942,7 +3001,8 @@ export function getEfeitos(
     const afim = POSTO_AFIM[e.tipo];
     if (afim) {
       for (const w of trabalhadoresDe(e.tipo, e.nivel, npcs)) {
-        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1);
+        // Juramento ao Ofício: mãos que juraram rendem +15% no posto.
+        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1) * (w.juramento === 'oficio' ? 1.15 : 1);
         switch (e.tipo) {
           case 'Fazenda':    ef.comidaDia += Math.round(w.inteligencia * 0.5 * mult); break;
           case 'Enfermaria': ef.fadigaRec += Math.round(w.inteligencia * 0.4 * mult); break;

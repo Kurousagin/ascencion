@@ -6,7 +6,7 @@
 // relacionamentos do state recebido; a UI/log fica com o GameContext.
 
 import type { GameState, NPC, Raridade } from '../lib/game-data';
-import { SOBRENOMES, ehRaridadeNobre } from '../lib/game-data';
+import { SOBRENOMES } from '../lib/game-data';
 import { getAfinidade, ajustarAfinidade } from './relationships';
 import { FAMA_CASA } from './fama';
 
@@ -47,7 +47,9 @@ export function promoverParaNobre(
   rng: () => number = Math.random,
 ): PromocaoResultado | null {
   if (npc.sobrenome) return null;                 // já tem casa
-  if (!ehRaridadeNobre(npc.raridade)) return null; // ainda plebeu
+  // Nobreza vem de FEITOS, não de estrelas: o rito exige fama de casa.
+  // (Raridade dá berço — fama inicial — nunca o título; ver famaDeBerco.)
+  if ((npc.fama ?? 0) < FAMA_CASA) return null;
 
   // (a) Adoção: nobre vivo, com casa, e vínculo forte.
   const padrinho = draft.npcs

@@ -123,8 +123,8 @@ describe('aplicarLuto', () => {
 });
 
 describe('promoverParaNobre', () => {
-  it('adota o promovido na casa de um nobre vinculado', () => {
-    const plebeu = mkNpc({ raridade: 'Raro', nome: 'Kael' });
+  it('adota o promovido na casa de um nobre vinculado (fama de casa exigida)', () => {
+    const plebeu = mkNpc({ raridade: 'Raro', nome: 'Kael', fama: 25 });
     const nobre  = mkNpc({ raridade: 'Épico', nome: 'Sigrid de Corval', sobrenome: 'de Corval' });
     const s = mkState([plebeu, nobre]);
     ajustarAfinidade(s, plebeu.id, nobre.id, 50);
@@ -141,15 +141,15 @@ describe('promoverParaNobre', () => {
     expect(heroi.casaFundador).toBe(true);
     expect(heroi.sobrenome).toBeTruthy();
   });
-  it('fallback: sobrenome próprio quando sem vínculo nem fama', () => {
-    const npc = mkNpc({ raridade: 'Raro', nome: 'Kael', fama: 0 });
+  it('fallback: sobrenome próprio com fama de casa, sem vínculo nem rolagem de fundação', () => {
+    const npc = mkNpc({ raridade: 'Raro', nome: 'Kael', fama: 25 });
     const s = mkState([npc]);
     const r = promoverParaNobre(s, npc, seq([0.99]));
     expect(r?.tipo).toBe('propria');
     expect(npc.sobrenome).toBeTruthy();
   });
-  it('não faz nada com plebeu (raridade baixa)', () => {
-    const npc = mkNpc({ raridade: 'Comum' });
+  it('não faz nada sem fama de casa — raridade alta não compra título', () => {
+    const npc = mkNpc({ raridade: 'Épico', fama: 10 });
     const s = mkState([npc]);
     expect(promoverParaNobre(s, npc, seq([0]))).toBeNull();
   });
