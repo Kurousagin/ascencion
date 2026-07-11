@@ -240,9 +240,14 @@ export function People() {
                 <span className={humorCor}>
                   {humor.tom === 'bom' ? '😊' : humor.tom === 'critico' ? '😰' : humor.tom === 'ruim' ? '😟' : '😐'} {humor.rotulo}
                 </span>
-                <span className="text-white/50">
+                <span className="text-white/50 text-right">
+                  {npc.sobrenome && (
+                    <span className="text-primary/80">⚜ CASA {npc.sobrenome.toUpperCase()}
+                      {(() => { const m = state.npcs.filter(x => x.vivo && x.sobrenome === npc.sobrenome).length; return m > 1 ? ` (${m})` : ''; })()} ·{' '}
+                    </span>
+                  )}
                   FAMA <span className="text-primary font-bold font-cinzel">{npc.fama ?? 0}</span>
-                  {(npc.fama ?? 0) >= FAMA_CASA && <span className="text-primary/70"> · digno de fundar uma casa</span>}
+                  {!npc.sobrenome && (npc.fama ?? 0) >= FAMA_CASA && <span className="text-primary/70"> · digno de fundar uma casa</span>}
                 </span>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">

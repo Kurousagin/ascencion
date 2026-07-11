@@ -28,6 +28,7 @@ import {
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
 import { sortearSussurroLugar } from '../lib/lugar';
+import { ASCENSAO_LORE } from '../lib/lore-content';
 import { multFolego, multCadeia, usarFolego } from '../lib/folego';
 import { estacaoDoDia, multEstacao } from '../lib/estacao';
 import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
@@ -223,13 +224,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (feito) registrarFeito(npc, feito);
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
-    if (promo.tipo === 'adocao') {
-      addLog(s, 'descoberta', `A CASA ${promo.casa.toUpperCase()} acolhe ${npc.nome.toUpperCase()} — um plebeu ascende à nobreza.`);
-    } else if (promo.tipo === 'fundacao') {
-      addLog(s, 'vitoria', `${npc.nome.toUpperCase()} ergue a própria linhagem — nasce a Casa ${promo.casa}.`);
-    } else {
-      addLog(s, 'info', `${npc.nome.toUpperCase()} conquista um sobrenome ao alcançar a nobreza.`);
-    }
+    // Ascensão é acontecimento de tela (toast + Mural), não nota de rodapé:
+    // fundação e adoção entram como 'vitoria' (importância alta).
+    const template = ASCENSAO_LORE[promo.tipo];
+    const msg = template
+      .replaceAll('{nome}', npc.nome.toUpperCase())
+      .replaceAll('{casa}', promo.casa)
+      .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : '');
+    registrarAcontecimento(s, promo.tipo === 'propria' ? 'descoberta' : 'vitoria', msg);
   };
 
   // Registra progresso de uma meta diária no draft (idempotente por dia).

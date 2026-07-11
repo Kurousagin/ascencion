@@ -890,6 +890,16 @@ export const EVENTOS_ANDAR_LORE: Record<string, { nome: string; icone: string; t
   },
 };
 
+// ─── ASCENSAO_LORE — ritos de nobilitação ────────────────────────────────────
+// Narração dos três caminhos de promoverParaNobre (npc-engine/houses.ts).
+// Placeholders: {nome} (já com sobrenome novo), {casa}, {padrinho}.
+
+export const ASCENSAO_LORE: Record<string, string> = {
+  fundacao: '⚜ {nome} ASCENDEU À NOBREZA — ergueu a própria linhagem: nasce a Casa {casa}. Que o nome pese nos registros da Torre.',
+  adocao: '⚜ {nome} ASCENDEU À NOBREZA — acolhido pela casa de {padrinho}, atende agora pelo nome da Casa {casa}.',
+  propria: '✦ {nome} conquistou um sobrenome — a cidadela passa a conhecê-lo pelos seus feitos.',
+};
+
 // ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
 
 export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {
