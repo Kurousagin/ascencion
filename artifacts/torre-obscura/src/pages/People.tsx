@@ -302,7 +302,7 @@ export function People() {
                         return (
                           <span
                             key={v.id}
-                            title={rotulo}
+                            title={info.rotulo}
                             className={`text-xs px-1.5 py-0.5 rounded-sm border flex items-center gap-1 ${v.afinidade >= 0 ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
                           >
                             {info.icone} {v.nome} <span className="opacity-70">{v.afinidade > 0 ? '+' : ''}{v.afinidade}</span>
