@@ -2304,6 +2304,28 @@ function calcRaridade(npc: Pick<NPC, 'forca' | 'agilidade' | 'inteligencia' | 'r
 }
 
 // Recalcula a raridade de um NPC existente após mudança de atributos.
+// ─── Juramento por vontade própria ───────────────────────────────────────────
+// O morador decide a quem serve pelo próprio perfil, não por uma régua global:
+// profissão de subida (combatente/batedor), habilidade de campo e poder acima
+// da mediana puxam para a ESCALADA; profissão civil (erudito/sentinela), poder
+// fraco ou personalidade ruim para combate (obscuro, lealdade/sanidade frágeis)
+// puxam para o OFÍCIO. Empate segue a profissão.
+const HABILIDADES_DE_CAMPO = new Set(['berserker', 'guardiao', 'veterano', 'explorador']);
+
+export function decidirJuramento(vivos: NPC[], npc: NPC): 'escalada' | 'oficio' {
+  const poderes = vivos.map(n => calcNpcPower(n)).sort((a, b) => a - b);
+  const medianaPoder = poderes[Math.floor(poderes.length / 2)] ?? 0;
+  const prof = getProfissao(npc);
+
+  let tendencia = 0;
+  tendencia += prof === 'combatente' || prof === 'batedor' ? 1 : -1;
+  if (calcNpcPower(npc) >= medianaPoder) tendencia += 1;
+  if (HABILIDADES_DE_CAMPO.has(npc.habilidade)) tendencia += 1;
+  if (npc.obscuro || npc.lealdade < 40 || npc.sanidade < 50) tendencia -= 2;
+
+  return tendencia >= 1 ? 'escalada' : 'oficio';
+}
+
 // Berço: fama inicial concedida pela raridade de nascença. Raridade é potencial
 // (o que a Torre entregou); nobreza é biografia — o berço só dá vantagem de
 // partida na fama, nunca o título em si.

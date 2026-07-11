@@ -12,7 +12,7 @@ import {
   podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1,
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
-  generateNpcGacha, calcCustoGacha, GACHA_BATCH, PROFISSOES,
+  generateNpcGacha, calcCustoGacha, GACHA_BATCH, PROFISSOES, decidirJuramento, famaDeBerco,
   HABITANTES, BOSS_ECO_LORE,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
@@ -256,22 +256,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     saveState(s);
   };
 
-  // Sugere juramentos em massa para quem ainda não jurou: stat primário da
-  // profissão acima da mediana dos vivos → Escalada; abaixo → Ofício.
+  // Sugere juramentos em massa para quem ainda não jurou, pela decisão de
+  // perfil de cada um (decidirJuramento) — não por régua global de stat.
   const sugerirJuramentos = () => {
     if (!state) return;
     const s = structuredClone(state);
     const vivosL = s.npcs.filter(n => n.vivo && !n.emprestado && !n.reforco);
-    const aptidao = (n: NPC) => {
-      const prof = getProfissao(n);
-      const stat = PROFISSOES[prof].stat;
-      return n[stat];
-    };
-    const valores = vivosL.map(aptidao).sort((a, b) => a - b);
-    const mediana = valores[Math.floor(valores.length / 2)] ?? 0;
     let jurados = 0;
     vivosL.filter(n => !n.juramento).forEach(n => {
-      n.juramento = aptidao(n) >= mediana ? 'escalada' : 'oficio';
+      n.juramento = decidirJuramento(vivosL, n);
       n.juramentoDia = s.dia;
       jurados++;
     });
@@ -691,6 +684,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       lancamento:   npcConfig.primordial ?? false,
       vestigio:     npcConfig.vestigio ?? false,
       passivaId:    npcConfig.passivaId,
+      // Primordiais e vestígios nascem jurados à Escalada: no cânone, foram
+      // os primeiros a subir — servir à subida é a natureza deles. Berço idem.
+      fama:         famaDeBerco(npcConfig.divino ? 'Divino' : npcConfig.primordial ? 'Lendário' : npcConfig.vestigio ? 'Épico' : 'Raro'),
+      juramento:    'escalada',
+      juramentoDia: s.dia,
     };
     s.npcs.push(npc);
     addLog(s, 'descoberta', `${npcConfig.nome.toUpperCase()} une-se à sua cidadela.`);
@@ -1040,6 +1038,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           const chanceResgate = floorData.isBoss ? 0.35 : 0.12;
           if (Math.random() < chanceResgate) {
             const novo = generateNPC(Math.random() < 0.1);
+            novo.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), novo);
+            novo.juramentoDia = s.dia;
             s.npcs.push(novo);
             resgatado = { nome: novo.nome, raridade: novo.raridade };
             addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
@@ -1245,6 +1245,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     const novos: NPC[] = [];
     for (let i = 0; i < batch; i++) {
       const npc = generateNpcGacha();
+      // Autonomia: o recém-chegado jura por vontade própria, pelo seu perfil.
+      npc.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), npc);
+      npc.juramentoDia = s.dia;
       s.npcs.push(npc);
       novos.push(npc);
     }

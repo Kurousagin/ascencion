@@ -755,8 +755,9 @@ export function People() {
               </div>
             )}
 
-            {/* Ordenação + filtro de casa (discreto: um select, só se há casas) */}
-            <div className="flex items-center gap-1.5 text-[12px]">
+            {/* Ordenação + filtro de casa. flex-wrap: em telas estreitas (iPhone)
+                o select de casas desce para a própria linha em vez de cortar. */}
+            <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
               <span className="text-secondary tracking-widest shrink-0">ORDENAR:</span>
               {(['poder', 'fadiga', 'lealdade', 'nome'] as const).map(o => (
                 <button
@@ -771,7 +772,7 @@ export function People() {
                 <select
                   value={filtroCasa ?? ''}
                   onChange={e => setFiltroCasa(e.target.value || null)}
-                  className={`ml-auto max-w-[42%] bg-[#11161F] border rounded-sm px-1.5 py-1 text-[12px] touch-manipulation ${filtroCasa ? 'border-primary/50 text-primary' : 'border-card-border text-white/50'}`}
+                  className={`ml-auto min-w-0 max-w-full bg-[#11161F] border rounded-sm px-1.5 py-1.5 text-[12px] touch-manipulation ${filtroCasa ? 'border-primary/50 text-primary' : 'border-card-border text-white/50'}`}
                 >
                   <option value="">⚜ Todas as casas</option>
                   {casas.map(c => (
