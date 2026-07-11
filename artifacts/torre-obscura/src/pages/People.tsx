@@ -223,7 +223,7 @@ export function People() {
             <span className={`text-xs font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
           </div>
 
-          <div className="flex gap-4 mb-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-2">
             <Bar value={npc.sanidade} label="SANIDADE" />
             <Bar value={npc.lealdade} label="LEALDADE" />
             <Bar value={npc.fadiga} label="FADIGA" inverted />
@@ -305,7 +305,7 @@ export function People() {
                   </span>
                 </div>
               )}
-              <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs mb-3">
                 {([
                   { key: 'forca',        label: 'FOR', value: npc.forca },
                   { key: 'agilidade',    label: 'AGI', value: npc.agilidade },
@@ -327,7 +327,7 @@ export function People() {
               </div>
 
               {/* Identidade: profissão + habilidade e seus efeitos */}
-              <div className="grid grid-cols-2 gap-2 mb-1">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 mb-1">
                 <div className="bg-black/20 border border-white/5 rounded-sm p-2.5">
                   <div className="text-xs text-primary/70 tracking-widest mb-1 flex items-center gap-1 font-bold uppercase">
                     {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
@@ -392,10 +392,10 @@ export function People() {
                   </div>
                 )}
               </div>
-              <div className="flex justify-around text-[12px] text-muted-foreground font-inter bg-[#0D1117] py-2 rounded-sm border border-card-border">
-                <div>SAN: <span className="text-foreground">{Math.floor(npc.sanidade)}</span>/100</div>
-                <div>LEA: <span className="text-foreground">{Math.floor(npc.lealdade)}</span>/100</div>
-                <div>FAD: <span className="text-foreground">{Math.floor(npc.fadiga)}</span>/100</div>
+              <div className="grid grid-cols-3 gap-2 text-[12px] text-muted-foreground font-inter bg-[#0D1117] py-2 rounded-sm border border-card-border">
+                <div className="text-center">SAN: <span className="text-foreground block font-bold">{Math.floor(npc.sanidade)}</span>/100</div>
+                <div className="text-center">LEA: <span className="text-foreground block font-bold">{Math.floor(npc.lealdade)}</span>/100</div>
+                <div className="text-center">FAD: <span className="text-foreground block font-bold">{Math.floor(npc.fadiga)}</span>/100</div>
               </div>
 
               {/* Recuperação primordial */}
