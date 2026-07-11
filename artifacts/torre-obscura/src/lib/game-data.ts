@@ -2202,6 +2202,11 @@ export interface GameState {
   farmsPorAndarEClasse?: Record<number, Record<ProfissaoId, number>>;
   totalMortesAndar?: Record<number, number>;
 
+  // ─── Atlas da Torre ──────────────────────────────────────────────────────
+  // História local de cada andar, visível na ficha do Atlas.
+  andarConquistadoDia?: Record<number, number>;                      // floor → dia da conquista
+  memoriais?: Record<number, Array<{ nome: string; dia: number }>>;  // quem caiu em cada andar (cap 5)
+
   // ─── Metas Diárias ───────────────────────────────────────────────────────
   metasDiarias: MetasDiariasState;
 

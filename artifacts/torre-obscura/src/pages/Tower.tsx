@@ -9,6 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { SelecaoMoradores } from '../components/SelecaoMoradores';
 import { ClimaBanner } from '../components/ClimaBanner';
+import { AtlasAndar } from '../components/AtlasAndar';
 
 interface TowerProps {
   t2Desbloqueado: boolean;
@@ -135,6 +136,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
     }
   };
 
+  // Atlas da Torre: ficha do andar aberta (null = fechado)
+  const [atlasFloor, setAtlasFloor] = useState<number | null>(null);
+
   // Andares já conquistados (para farm)
   const conquistados = FLOORS.slice(0, state.andarAtual - 1).reverse();
   const [mostrarTodosAndares, setMostrarTodosAndares] = useState(false);
@@ -165,6 +169,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
       {/* ── O tempo da Torre: como ela amanheceu hoje ─────────────────────── */}
       <ClimaBanner seed={state.camaraSeed ?? 0} dia={state.dia} />
+
+      {/* Atlas da Torre — ficha do andar (portal; fica aqui por proximidade) */}
+      <AtlasAndar floor={atlasFloor} onClose={() => setAtlasFloor(null)} />
 
       {/* Banner de modo exploração */}
       {isFarming && (
@@ -375,6 +382,14 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
                   <span className={`text-[12px] font-bold tracking-widest flex items-center gap-1 ${isSelected ? 'text-secondary' : 'text-primary'}`}>
                     {isSelected ? <><RotateCcw size={12} /> SELECIONADO</> : <><Check size={12} /> CONQUISTADO</>}
                   </span>
+                </button>
+                {/* Atlas da Torre: a ficha deste lugar */}
+                <button
+                  onClick={() => setAtlasFloor(f.floor)}
+                  title={`Atlas — ${f.nome}`}
+                  className="w-10 flex items-center justify-center rounded-sm border border-card-border text-white/50 hover:text-primary hover:border-primary/40 transition-all touch-manipulation flex-shrink-0 text-base"
+                >
+                  🗺
                 </button>
                 {/* Botão do habitante (andares não-boss com habitante descoberto) */}
                 {habData && habEst && habEst !== 'oculto' && (

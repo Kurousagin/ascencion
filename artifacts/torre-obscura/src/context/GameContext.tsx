@@ -197,6 +197,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Memorial: o andar lembra quem caiu nele (ficha do Atlas). Cap 5 por andar.
+  const registrarMemorial = (draft: GameState, floor: number, nome: string) => {
+    draft.memoriais = draft.memoriais ?? {};
+    draft.memoriais[floor] = [...(draft.memoriais[floor] ?? []), { nome, dia: draft.dia }].slice(-5);
+  };
+
   // Desbloqueia um fragmento do Codex (idempotente). Retorna true se foi novo.
   const desbloquearFragmento = (s: GameState, id: string): boolean => {
     if (!CODEX_FRAGMENTOS[id]) return false;
@@ -695,6 +701,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (!parsed.ultimaExpedicaoGrupo)    parsed.ultimaExpedicaoGrupo = [];
     if (!parsed.farmsPorAndarEClasse)    parsed.farmsPorAndarEClasse = {};
     if (!parsed.totalMortesAndar)        parsed.totalMortesAndar = {};
+    // Migração: Atlas da Torre (história local por andar).
+    if (!parsed.andarConquistadoDia)     parsed.andarConquistadoDia = {};
+    if (!parsed.memoriais)               parsed.memoriais = {};
     if (!parsed.metasDiarias) parsed.metasDiarias = { data: '', objetivos: [], progresso: [], recompensaColetada: false };
     // Migração: motor de vida — mapa de relacionamentos, fama e backfill de casa.
     if (!parsed.relacionamentos) parsed.relacionamentos = {};
@@ -897,6 +906,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       if (ferroG) s.recursos.ferro = Math.min(cap, s.recursos.ferro + ferroG);
       // Só avança o andar em modo avançar.
       if (!isFarming) {
+        s.andarConquistadoDia = { ...(s.andarConquistadoDia ?? {}), [floorData.floor]: s.dia };
         s.andarAtual++;
         if (s.andarAtual > 40) s.vitoria = true;
       }
@@ -1027,6 +1037,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
           s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
+          registrarMemorial(s, floorData.floor, n.nome);
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -1111,6 +1122,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           // Rastrear morte por andar para requisitos de câmaras secretas
           s.totalMortesAndar = s.totalMortesAndar ?? {};
           s.totalMortesAndar[floorData.floor] = (s.totalMortesAndar[floorData.floor] ?? 0) + 1;
+          registrarMemorial(s, floorData.floor, n.nome);
         } else {
           let fatigueGain = getRandomInt(28, 45);
           if (n.habilidade === 'veterano') fatigueGain = Math.round(fatigueGain * 0.75);
@@ -1801,6 +1813,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           vivo.vivo = false;
           mortos.push(vivo.nome);
           aplicarLuto(s, vivo.id, vivo.nome).forEach(l => addLog(s, l.tipo, l.mensagem));
+          registrarMemorial(s, camara.floor, vivo.nome);
         }
       });
       mortos.forEach(nome => addLog(s, 'morte', `${nome.toUpperCase()} não voltou da ${camara.titulo} (Andar ${camara.floor}).`));
