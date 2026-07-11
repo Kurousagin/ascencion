@@ -12,7 +12,7 @@ import {
   podeTreinarNpc, podeEstudarNpc, podeEstudarNpcT1, calcCustoTreinamento, calcCustoEstudo, calcCustoEstudoT1,
   MAX_TREINAMENTOS, recalcRaridade, calcInstrutor,
   statTreinamento,
-  generateNpcGacha, calcCustoGacha, GACHA_BATCH,
+  generateNpcGacha, calcCustoGacha, GACHA_BATCH, PROFISSOES,
   HABITANTES, BOSS_ECO_LORE,
   CODEX_FRAGMENTOS, SUSSURROS_POR_CAPITULO, FragmentoCodex,
   idFragmentoHabitante, idFragmentoEco, floorsHabitantesTemporada, capituloDoAndar,
@@ -28,7 +28,7 @@ import {
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
 import { sortearSussurroLugar } from '../lib/lugar';
-import { ASCENSAO_LORE } from '../lib/lore-content';
+import { ASCENSAO_LORE, JURAMENTO_LORE } from '../lib/lore-content';
 import { multFolego, multCadeia, usarFolego } from '../lib/folego';
 import { estacaoDoDia, multEstacao } from '../lib/estacao';
 import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
@@ -107,6 +107,9 @@ interface GameContextType {
   // Treinamento: aumenta stat primário permanentemente no Quartel (requer andar >= 6).
   treinarNpc: (npcId: string) => void;
   estudarNpc: (npcId: string) => void;
+  // Juramentos: destina o morador à Escalada ou ao Ofício (cooldown 10 dias).
+  jurarNpc: (npcId: string, juramento: 'escalada' | 'oficio') => void;
+  sugerirJuramentos: () => void;
   // Habitantes da Torre: interação com entidades descobertas nos andares.
   // Aceita quest (descoberto→quest_ativa) ou conclui (quest_ativa→concluido).
   interagirHabitante: (floor: number) => void;
@@ -237,6 +240,44 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       .replaceAll('{casa}', promo.casa)
       .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : '');
     registrarAcontecimento(s, promo.tipo === 'propria' ? 'descoberta' : 'vitoria', msg);
+  };
+
+  // Juramento diante da Fogueira: troca tem fôlego de 10 dias (anti min-max).
+  const JURAMENTO_COOLDOWN = 10;
+  const jurarNpc = (npcId: string, juramento: 'escalada' | 'oficio') => {
+    if (!state) return;
+    const s = structuredClone(state);
+    const n = s.npcs.find(x => x.id === npcId && x.vivo);
+    if (!n || n.juramento === juramento) return;
+    if (n.juramentoDia != null && s.dia - n.juramentoDia < JURAMENTO_COOLDOWN) return;
+    n.juramento = juramento;
+    n.juramentoDia = s.dia;
+    addLog(s, 'evento', JURAMENTO_LORE[juramento].replaceAll('{nome}', n.nome.toUpperCase()));
+    saveState(s);
+  };
+
+  // Sugere juramentos em massa para quem ainda não jurou: stat primário da
+  // profissão acima da mediana dos vivos → Escalada; abaixo → Ofício.
+  const sugerirJuramentos = () => {
+    if (!state) return;
+    const s = structuredClone(state);
+    const vivosL = s.npcs.filter(n => n.vivo && !n.emprestado && !n.reforco);
+    const aptidao = (n: NPC) => {
+      const prof = getProfissao(n);
+      const stat = PROFISSOES[prof].stat;
+      return n[stat];
+    };
+    const valores = vivosL.map(aptidao).sort((a, b) => a - b);
+    const mediana = valores[Math.floor(valores.length / 2)] ?? 0;
+    let jurados = 0;
+    vivosL.filter(n => !n.juramento).forEach(n => {
+      n.juramento = aptidao(n) >= mediana ? 'escalada' : 'oficio';
+      n.juramentoDia = s.dia;
+      jurados++;
+    });
+    if (jurados === 0) return;
+    addLog(s, 'evento', `JURAMENTOS DIANTE DA FOGUEIRA — ${jurados} morador${jurados > 1 ? 'es' : ''} declarou a quem serve: a Escalada ou o Ofício.`);
+    saveState(s);
   };
 
   // Registra progresso de uma meta diária no draft (idempotente por dia).
@@ -2019,6 +2060,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       responderGuerra,
       treinarNpc,
       estudarNpc,
+      jurarNpc,
+      sugerirJuramentos,
       interagirHabitante,
       resolverEscolhaHabitante,
       explorarCamaraSecreta,

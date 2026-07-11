@@ -6,7 +6,7 @@ import { humorDe, vinculosDe, tipoVinculo, type TipoVinculo } from '../npc-engin
 import { FAMA_CASA, tituloNobreza, TITULO_LABEL } from '../npc-engine/fama';
 import * as Dialog from '@radix-ui/react-dialog';
 export function People() {
-  const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
+  const { state, assignPosto, treinarNpc, estudarNpc, jurarNpc, sugerirJuramentos } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [mostrarMortos, setMostrarMortos] = useState(false);
   // Censo: filtro de triagem ativo (null = todos) e critério de ordenação.
@@ -14,6 +14,8 @@ export function People() {
   const [ordem, setOrdem] = useState<'poder' | 'fadiga' | 'lealdade' | 'nome'>('poder');
   // Quadro de Postos: edifício cuja vaga está sendo preenchida (null = fechado).
   const [vagaPicker, setVagaPicker] = useState<EdificioTipo | null>(null);
+  // Filtro por casa nobre (null = todas). Só aparece quando existem casas.
+  const [filtroCasa, setFiltroCasa] = useState<string | null>(null);
 
   const vivos = state.npcs.filter(n => n.vivo).length;
 
@@ -251,6 +253,37 @@ export function People() {
                   {!npc.sobrenome && (npc.fama ?? 0) >= FAMA_CASA && <span className="text-primary/70"> · digno de fundar uma casa</span>}
                 </span>
               </div>
+
+              {/* Juramento: a quem este morador serve (troca com fôlego de 10 dias) */}
+              {!npc.emprestado && !npc.reforco && (
+                <div className="flex items-center justify-between gap-2 mb-3 text-xs" onClick={e => e.stopPropagation()}>
+                  <span className="text-white/50 min-w-0 truncate">
+                    {npc.juramento === 'escalada' ? '🗡 Jurou à Escalada — descansa 25% mais rápido'
+                      : npc.juramento === 'oficio' ? '⚒ Jurou ao Ofício — +15% no posto'
+                      : 'Ainda não jurou diante da Fogueira'}
+                  </span>
+                  {(() => {
+                    const restante = npc.juramentoDia != null ? 10 - (state.dia - npc.juramentoDia) : 0;
+                    if (restante > 0 && npc.juramento) {
+                      return <span className="text-white/30 shrink-0">fôlego {restante}d</span>;
+                    }
+                    if (!npc.juramento) {
+                      return (
+                        <span className="flex gap-1 shrink-0">
+                          <button onClick={() => jurarNpc(npc.id, 'escalada')} className="px-2 py-1 border border-primary/40 text-primary/80 rounded-sm hover:bg-primary/10 touch-manipulation">🗡 ESCALADA</button>
+                          <button onClick={() => jurarNpc(npc.id, 'oficio')} className="px-2 py-1 border border-secondary/40 text-secondary rounded-sm hover:bg-secondary/10 touch-manipulation">⚒ OFÍCIO</button>
+                        </span>
+                      );
+                    }
+                    const alvo = npc.juramento === 'escalada' ? 'oficio' : 'escalada';
+                    return (
+                      <button onClick={() => jurarNpc(npc.id, alvo)} className="shrink-0 px-2 py-1 border border-card-border text-white/50 rounded-sm hover:border-primary/40 touch-manipulation">
+                        {alvo === 'escalada' ? 'JURAR À ESCALADA' : 'JURAR AO OFÍCIO'}
+                      </button>
+                    );
+                  })()}
+                </div>
+              )}
               <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
                 {([
                   { key: 'forca',        label: 'FOR', value: npc.forca },
@@ -656,6 +689,9 @@ export function People() {
 
         const filtroDef = TRIAGEM.find(t => t.id === filtro);
         let lista = filtroDef ? vivosL.filter(filtroDef.pred) : vivosL;
+        // Casas existentes (para o filtro discreto) + aplicação do filtro.
+        const casas = [...new Set(vivosL.map(n => n.sobrenome).filter(Boolean) as string[])].sort();
+        if (filtroCasa) lista = lista.filter(n => n.sobrenome === filtroCasa);
         lista = [...lista].sort((a, b) =>
           ordem === 'nome' ? a.nome.localeCompare(b.nome)
           : ordem === 'fadiga' ? b.fadiga - a.fadiga
@@ -679,6 +715,7 @@ export function People() {
               <div className="flex-1 min-w-0 flex items-center gap-2.5 px-2.5 py-2">
                 <span className="text-sm shrink-0">{emojiHumor(n)}</span>
                 <span className="font-bold text-sm text-foreground truncate">{n.nome}</span>
+                {n.juramento && <span className="text-[12px] shrink-0 opacity-70" title={n.juramento === 'escalada' ? 'Jurou à Escalada' : 'Jurou ao Ofício'}>{n.juramento === 'escalada' ? '🗡' : '⚒'}</span>}
                 {n.posto && <Hammer size={11} className="text-success shrink-0" />}
                 {(n.emprestado || n.reforco) && <UserPlus size={11} className="text-[#4A9EFF] shrink-0" />}
                 <span className="ml-auto flex items-center gap-2 shrink-0">
@@ -718,7 +755,7 @@ export function People() {
               </div>
             )}
 
-            {/* Ordenação */}
+            {/* Ordenação + filtro de casa (discreto: um select, só se há casas) */}
             <div className="flex items-center gap-1.5 text-[12px]">
               <span className="text-secondary tracking-widest shrink-0">ORDENAR:</span>
               {(['poder', 'fadiga', 'lealdade', 'nome'] as const).map(o => (
@@ -730,13 +767,33 @@ export function People() {
                   {o}
                 </button>
               ))}
+              {casas.length > 0 && (
+                <select
+                  value={filtroCasa ?? ''}
+                  onChange={e => setFiltroCasa(e.target.value || null)}
+                  className={`ml-auto max-w-[42%] bg-[#11161F] border rounded-sm px-1.5 py-1 text-[12px] touch-manipulation ${filtroCasa ? 'border-primary/50 text-primary' : 'border-card-border text-white/50'}`}
+                >
+                  <option value="">⚜ Todas as casas</option>
+                  {casas.map(c => (
+                    <option key={c} value={c}>⚜ {c} ({vivosL.filter(n => n.sobrenome === c).length})</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Quadro de Postos: gestão por vaga, não por pessoa */}
             {state.edificios.some(e => e.nivel >= 1 && e.tipo in POSTO_AFIM) && (
               <div className="space-y-1.5">
-                <div className="text-xs font-cinzel text-primary/80 tracking-[0.2em] border-b border-white/10 pb-1">
-                  QUADRO DE POSTOS
+                <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                  <span className="text-xs font-cinzel text-primary/80 tracking-[0.2em]">QUADRO DE POSTOS</span>
+                  {vivosL.some(n => !n.juramento && !n.emprestado && !n.reforco) && (
+                    <button
+                      onClick={sugerirJuramentos}
+                      className="text-[12px] px-2 py-1 border border-primary/40 text-primary/80 rounded-sm hover:bg-primary/10 touch-manipulation tracking-wider"
+                    >
+                      🔥 SUGERIR JURAMENTOS
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {state.edificios.filter(e => e.nivel >= 1 && e.tipo in POSTO_AFIM).map(e => {
@@ -809,7 +866,9 @@ export function People() {
                 .sort((a, b) => {
                   const aAfim = getProfissao(a) === afim ? 1 : 0;
                   const bAfim = getProfissao(b) === afim ? 1 : 0;
-                  return bAfim - aAfim || calcNpcPower(b) - calcNpcPower(a);
+                  const aOficio = a.juramento === 'oficio' ? 1 : 0;
+                  const bOficio = b.juramento === 'oficio' ? 1 : 0;
+                  return bAfim - aAfim || bOficio - aOficio || calcNpcPower(b) - calcNpcPower(a);
                 });
               return (
                 <>

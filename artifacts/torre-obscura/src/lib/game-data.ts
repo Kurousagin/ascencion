@@ -151,6 +151,11 @@ export interface NPC {
   sobrenome?: string;
   casaFundador?: boolean;
   fama?: number;
+  // Juramento diante da Fogueira: a quem este morador serve.
+  // 'escalada' = a Subida (descansa 25% mais rápido); 'oficio' = a Cidadela
+  // (+15% de rendimento no posto). Troca tem fôlego de 10 dias (juramentoDia).
+  juramento?: 'escalada' | 'oficio';
+  juramentoDia?: number;
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).
@@ -2956,7 +2961,8 @@ export function getEfeitos(
     const afim = POSTO_AFIM[e.tipo];
     if (afim) {
       for (const w of trabalhadoresDe(e.tipo, e.nivel, npcs)) {
-        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1);
+        // Juramento ao Ofício: mãos que juraram rendem +15% no posto.
+        const mult = (getProfissao(w) === afim ? 1.5 : 1) * (fatorNpc?.(w) ?? 1) * (w.juramento === 'oficio' ? 1.15 : 1);
         switch (e.tipo) {
           case 'Fazenda':    ef.comidaDia += Math.round(w.inteligencia * 0.5 * mult); break;
           case 'Enfermaria': ef.fadigaRec += Math.round(w.inteligencia * 0.4 * mult); break;
