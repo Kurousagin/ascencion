@@ -7,6 +7,9 @@ export function People() {
   const { state, assignPosto, treinarNpc, estudarNpc } = useGame();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [mostrarMortos, setMostrarMortos] = useState(false);
+  // Censo: filtro de triagem ativo (null = todos) e critério de ordenação.
+  const [filtro, setFiltro] = useState<string | null>(null);
+  const [ordem, setOrdem] = useState<'poder' | 'fadiga' | 'lealdade' | 'nome'>('poder');
 
   const vivos = state.npcs.filter(n => n.vivo).length;
 
@@ -617,10 +620,120 @@ export function People() {
         <div className="absolute bottom-0 left-0 w-1/3 gold-line" />
       </header>
 
-      {/* Habitantes vivos */}
-      <div className="space-y-3">
-        {state.npcs.filter(n => n.vivo).map(renderCard)}
-      </div>
+      {/* ── CENSO: triagem, ordenação e grupos por profissão ─────────────── */}
+      {(() => {
+        const vivosL = state.npcs.filter(n => n.vivo);
+        const TRIAGEM: Array<{ id: string; label: string; pred: (n: NPC) => boolean }> = [
+          { id: 'exaustos',  label: '😴 Exaustos',          pred: n => n.fadiga >= 70 },
+          { id: 'abalados',  label: '🩸 Sanidade baixa',    pred: n => n.sanidade < 50 },
+          { id: 'lealdade',  label: '⚠ Lealdade em risco', pred: n => n.lealdade < 30 },
+          { id: 'sem_posto', label: '🛠 Sem posto',         pred: n => !n.posto && !n.emprestado && !n.reforco },
+          { id: 'hospedes',  label: '🤝 Hóspedes',          pred: n => !!n.emprestado || !!n.reforco },
+        ];
+        const chips = TRIAGEM.map(t => ({ ...t, n: vivosL.filter(t.pred).length })).filter(t => t.n > 0);
+        const precisaAtencao = (n: NPC) => TRIAGEM.slice(0, 3).some(t => t.pred(n));
+
+        const filtroDef = TRIAGEM.find(t => t.id === filtro);
+        let lista = filtroDef ? vivosL.filter(filtroDef.pred) : vivosL;
+        lista = [...lista].sort((a, b) =>
+          ordem === 'nome' ? a.nome.localeCompare(b.nome)
+          : ordem === 'fadiga' ? b.fadiga - a.fadiga
+          : ordem === 'lealdade' ? a.lealdade - b.lealdade
+          : calcNpcPower(b) - calcNpcPower(a));
+
+        const emojiHumor = (n: NPC) => {
+          const tom = humorDe(n).tom;
+          return tom === 'bom' ? '😊' : tom === 'critico' ? '😰' : tom === 'ruim' ? '😟' : '😐';
+        };
+
+        const renderCompacto = (n: NPC) => {
+          const rarityColor = getRarityColorHex(n.raridade);
+          return (
+            <div
+              key={n.id}
+              onClick={() => setExpandedId(n.id)}
+              className="flex items-stretch gap-0 bg-[#11161F] border border-card-border hover:border-primary/40 rounded-sm cursor-pointer overflow-hidden transition-all touch-manipulation"
+            >
+              <div className="w-1 shrink-0" style={{ backgroundColor: rarityColor }} />
+              <div className="flex-1 min-w-0 flex items-center gap-2.5 px-2.5 py-2">
+                <span className="text-sm shrink-0">{emojiHumor(n)}</span>
+                <span className="font-bold text-sm text-foreground truncate">{n.nome}</span>
+                {n.posto && <Hammer size={11} className="text-success shrink-0" />}
+                {(n.emprestado || n.reforco) && <UserPlus size={11} className="text-[#4A9EFF] shrink-0" />}
+                <span className="ml-auto flex items-center gap-2 shrink-0">
+                  <span className="w-14 space-y-[3px]">
+                    <span className="block h-[3px] bg-black/60 rounded-full overflow-hidden">
+                      <span className={`block h-full ${n.fadiga > 60 ? 'bg-destructive' : 'bg-success'}`} style={{ width: `${100 - n.fadiga}%` }} />
+                    </span>
+                    <span className="block h-[3px] bg-black/60 rounded-full overflow-hidden">
+                      <span className={`block h-full ${n.sanidade < 50 ? 'bg-warning' : 'bg-[#4A9EFF]'}`} style={{ width: `${n.sanidade}%` }} />
+                    </span>
+                  </span>
+                  <span className="text-xs font-cinzel font-bold text-primary w-9 text-right">{calcNpcPower(n).toFixed(0)}</span>
+                  {precisaAtencao(n) && <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse-atencao" />}
+                </span>
+              </div>
+            </div>
+          );
+        };
+
+        const PROFS: ProfissaoId[] = ['combatente', 'batedor', 'erudito', 'sentinela'];
+        return (
+          <>
+            {/* Triagem: o checklist do dia */}
+            {chips.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto custom-scrollbar -mx-1 px-1 pb-1">
+                {chips.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setFiltro(f => (f === t.id ? null : t.id))}
+                    className={`shrink-0 text-[12px] px-2.5 py-1.5 rounded-sm border tracking-wide font-bold transition-all touch-manipulation ${
+                      filtro === t.id ? 'border-primary text-primary bg-primary/10' : 'border-card-border text-white/60 bg-[#11161F]'
+                    }`}
+                  >
+                    {t.label} ({t.n})
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Ordenação */}
+            <div className="flex items-center gap-1.5 text-[12px]">
+              <span className="text-secondary tracking-widest shrink-0">ORDENAR:</span>
+              {(['poder', 'fadiga', 'lealdade', 'nome'] as const).map(o => (
+                <button
+                  key={o}
+                  onClick={() => setOrdem(o)}
+                  className={`px-2 py-1 rounded-sm uppercase tracking-wider touch-manipulation ${ordem === o ? 'text-primary font-bold bg-primary/10' : 'text-white/40'}`}
+                >
+                  {o}
+                </button>
+              ))}
+            </div>
+
+            {/* Grupos por profissão */}
+            {PROFS.map(prof => {
+              const doGrupo = lista.filter(n => getProfissao(n) === prof);
+              if (doGrupo.length === 0) return null;
+              const poderGrupo = doGrupo.reduce((s, n) => s + calcNpcPower(n), 0);
+              return (
+                <div key={prof} className="space-y-1.5">
+                  <div className="flex items-baseline gap-2 border-b border-white/10 pb-1">
+                    <span className="text-xs font-cinzel text-primary/80 tracking-[0.2em] flex items-center gap-1.5">
+                      {getProfIcon(prof)} {PROFISSOES[prof].nome.toUpperCase()}S
+                    </span>
+                    <span className="text-[12px] text-white/40">{doGrupo.length} · poder {poderGrupo.toFixed(0)}</span>
+                  </div>
+                  {doGrupo.map(n => (expandedId === n.id ? renderCard(n) : renderCompacto(n)))}
+                </div>
+              );
+            })}
+            {lista.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-6">Ninguém neste filtro. A cidadela agradece.</p>
+            )}
+          </>
+        );
+      })()}
 
       {/* Seção colapsável de falecidos */}
       {state.npcs.filter(n => !n.vivo).length > 0 && (
