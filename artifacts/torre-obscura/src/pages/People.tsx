@@ -146,9 +146,9 @@ export function People() {
         onClick={() => setExpandedId(isExpanded ? null : npc.id)}
       >
         <div className="w-1.5 shrink-0" style={{ backgroundColor: rarityColor }} />
-        <div className="flex-1 p-3.5">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-3">
+        <div className="flex-1 p-2 sm:p-3.5">
+          <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div 
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-cinzel font-bold text-lg shadow-inner border-2 border-background"
                 style={{ backgroundColor: rarityColor }}
@@ -156,23 +156,23 @@ export function People() {
                 {domLetter}
               </div>
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-foreground text-lg font-inter">{npc.nome}</span>
-                  <span className="text-[12px]" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                  <span className="font-bold text-foreground text-base sm:text-lg font-inter truncate">{npc.nome}</span>
+                  <span className="text-[12px] shrink-0" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
                   <span
-                    className="text-[12px] font-cinzel font-bold px-1.5 py-0.5 rounded-sm border flex items-center gap-1 tracking-wider"
+                    className="text-[11px] sm:text-[12px] font-cinzel font-bold px-1 sm:px-1.5 py-0.5 rounded-sm border flex items-center gap-1 tracking-wider shrink-0"
                     style={{ color: rarityColor, borderColor: `${rarityColor}55`, backgroundColor: `${rarityColor}14` }}
                     title="Poder de combate (stats + habilidade, penalizado por fadiga)"
                   >
-                    <Swords size={10} /> {poder.toFixed(1)}
+                    <Swords size={9} /> {poder.toFixed(1)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  <span className="text-[12px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
-                    {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}
+                <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap">
+                  <span className="text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-widest sm:tracking-wider font-bold whitespace-nowrap">
+                    {getProfIcon(getProfissao(npc))} <span className="hidden sm:inline">{PROFISSOES[getProfissao(npc)].nome}</span>
                   </span>
-                  <span className="text-[12px] px-2 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-wider">
-                    {getHabIcon(npc.habilidade)} {HABILIDADES[npc.habilidade].nome}
+                  <span className="text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 bg-black/40 text-secondary border border-white/10 rounded-sm flex items-center gap-1 uppercase tracking-widest sm:tracking-wider whitespace-nowrap">
+                    {getHabIcon(npc.habilidade)} <span className="hidden sm:inline">{HABILIDADES[npc.habilidade].nome}</span>
                   </span>
                   {npc.posto && (
                     <span className="text-xs px-1.5 py-0.5 bg-success/10 text-success border border-success/30 rounded-sm flex items-center gap-1 uppercase tracking-wider">
