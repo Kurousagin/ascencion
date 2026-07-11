@@ -64,6 +64,23 @@ export default defineConfig({
           if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'vendor-ui';
           return 'vendor';
         },
+        // Garante ordem de carregamento: react → outras dependências
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId
+            ? chunkInfo.facadeModuleId.split('/').pop()
+            : 'chunk';
+          const order = {
+            'vendor-react': '00',
+            'vendor-motion': '01',
+            'vendor-ui': '02',
+            'vendor': '03',
+          };
+          const prefix = Object.entries(order).find(([key]) =>
+            chunkInfo.name.includes(key)
+          )?.[1] ?? '99';
+          return `assets/${prefix}-[name]-[hash].js`;
+        },
       },
     },
   },
