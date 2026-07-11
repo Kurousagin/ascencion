@@ -149,9 +149,13 @@ export function GuidedTour({ active, currentTab, onNavigate, onFinish }: Props) 
 
   if (!active || !step) return null;
 
+  // Posição do card: SEMPRE fixado na metade da tela oposta ao centro do alvo.
+  // Posicionar relativo ao rect quebrava com alvos altos (ex.: seção do Ritual):
+  // o card caía fora do viewport e o tour parecia travado. Fixar por cima/baixo
+  // nunca sai da tela e o env() respeita Dynamic Island / home indicator.
   const vh = window.innerHeight;
-  const abaixo = rect ? rect.bottom + PAD + 12 : 0;
-  const cardEmbaixo = rect ? rect.bottom < vh * 0.55 : true;
+  const centroAlvo = rect ? rect.top + rect.height / 2 : vh;
+  const cardNoTopo = centroAlvo >= vh / 2;
 
   return (
     <div className="fixed inset-0 z-[80]" role="dialog" aria-label="Tour guiado">
@@ -174,19 +178,30 @@ export function GuidedTour({ active, currentTab, onNavigate, onFinish }: Props) 
           />
         )}
       </AnimatePresence>
-      {!rect && <div className="absolute inset-0 bg-[#050508]/84" />}
+      {/* Procurando o alvo: escurece, mas nunca sem saída — PULAR sempre à mão */}
+      {!rect && (
+        <div className="absolute inset-0 bg-[#050508]/84 flex items-end justify-center">
+          <button
+            onClick={finish}
+            className="text-xs text-white/40 tracking-wider touch-manipulation min-h-[44px] px-6"
+            style={{ marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}
+          >
+            PULAR TOUR
+          </button>
+        </div>
+      )}
 
       {/* Card do passo */}
       {rect && (
         <motion.div
           key={`card-${idx}`}
-          initial={{ opacity: 0, y: cardEmbaixo ? 8 : -8 }}
+          initial={{ opacity: 0, y: cardNoTopo ? -8 : 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.1 }}
-          className="absolute left-1/2 -translate-x-1/2 w-[92vw] max-w-sm bg-gradient-to-b from-[#1A1F2E] to-[#111520] border border-primary/40 rounded-sm shadow-2xl p-4"
-          style={cardEmbaixo
-            ? { top: Math.min(abaixo, vh - 210) }
-            : { bottom: vh - rect.top + PAD + 12 }}
+          className="absolute left-1/2 -translate-x-1/2 w-[92vw] max-w-sm bg-gradient-to-b from-[#1A1F2E] to-[#111520] border border-primary/40 rounded-sm shadow-2xl p-4 max-h-[45dvh] overflow-y-auto"
+          style={cardNoTopo
+            ? { top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }
+            : { bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
         >
           <p className="font-cinzel font-bold text-primary tracking-widest text-sm mb-1">{step.titulo}</p>
           <p className="text-xs text-white/70 leading-relaxed">{step.texto}</p>
