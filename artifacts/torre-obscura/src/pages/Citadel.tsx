@@ -332,7 +332,7 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
       </section>
 
       {/* ── RITUAL EM TRINDADE (gacha) ─────────────────────────────────────── */}
-      <section>
+      <section data-tour="ritual">
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-4 flex items-center gap-2 border-t border-primary/20 pt-6">
           RITUAL EM TRINDADE
         </h3>
@@ -393,7 +393,7 @@ export function Citadel({ t2Desbloqueado = false }: { t2Desbloqueado?: boolean }
       </section>
 
       {/* Infraestrutura */}
-      <section>
+      <section data-tour="infraestrutura">
         <h3 className="text-xs font-cinzel text-primary tracking-widest mb-2 border-t border-primary/20 pt-4">
           INFRAESTRUTURA
         </h3>

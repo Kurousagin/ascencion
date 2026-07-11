@@ -89,7 +89,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       </div>
 
       {/* ── VITALS SECTION (above the fold) ─────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2" data-tour="vitais">
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col items-center justify-center">
           <span className="text-[10px] text-secondary tracking-widest mb-0.5">DIA</span>
           <span className="text-2xl text-primary font-bold font-cinzel">{state.dia}</span>
@@ -116,10 +116,12 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       </div>
 
       {/* ── MURAL DA CIDADELA (feed de vida) ───────────────────────────────── */}
-      <MuralAcontecimentos />
+      <div data-tour="mural">
+        <MuralAcontecimentos />
+      </div>
 
       {/* ── METAS DE HOJE ──────────────────────────────────────────────────── */}
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="metas">
         <span className="text-xs text-secondary tracking-widest block">METAS DE HOJE</span>
         <div className="bg-[#1C2333] border border-primary/30 rounded p-2 space-y-1.5">
           {md.objetivos.map(id => {
@@ -156,7 +158,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="velocidade">
         <div className="flex items-center justify-between">
           <span className="text-xs text-secondary tracking-widest">VELOCIDADE</span>
           <div className="flex gap-1">

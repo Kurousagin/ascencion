@@ -123,6 +123,7 @@ const SLIDES: Slide[] = [
       'Comece pequeno: comida, teto, um primeiro grupo forte. Suba com cuidado e leia o que a Torre deixar escapar.',
       'Cada morador importa. Cada escolha fica. A Torre não perdoa despreparados — mas recompensa quem presta atenção.',
     ],
+    dica: 'Ao tocar em COMEÇAR, eu percorro as telas com você — apontando onde cada coisa vive.',
   },
 ];
 
