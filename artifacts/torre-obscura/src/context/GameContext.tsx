@@ -25,6 +25,8 @@ import {
   camarasDaTorre, novaCamaraSeed, verificarRequisitoCamara, chanceAbrirCamara,
   sortearRecompensaCamara, type CamaraSecreta,
 } from '../floor-engine';
+import { climaDoDia } from '../lib/clima';
+import { gerarRelato } from '../lib/relatos';
 import {
   verificarQuestAndar, verificarQuestOculta, gerarQuestOculta, gerarObjetivosDoDia,
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
@@ -881,7 +883,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const ecoBonus = s.ecos.includes(floorData.floor)
         ? (HABITANTES[floorData.floor]?.quest.ecoBonus ?? 0) / 100
         : 0;
-      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus) * (hasLeitura ? 1.20 : 1.0);
+      // O tempo da Torre: o clima do dia no bioma modula o saque (±10%).
+      const clima = climaDoDia(s.camaraSeed ?? 0, s.dia)[floorData.bioma];
+      const lootMult = (isFarming ? 0.7 : 1.0) * (1 + batedores * 0.15) * (1 + ecoBonus) * (hasLeitura ? 1.20 : 1.0) * clima.multLoot;
       const comidaG = Math.round(r.comida * lootMult);
       const madeiraG = Math.round(r.madeira * lootMult);
       const pedraG = Math.round(r.pedra * lootMult);
@@ -900,9 +904,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const modoStr = isFarming ? `EXPLORAÇÃO ANDAR ${floorData.floor}` : `ANDAR ${floorData.floor} CONQUISTADO`;
       const biomaStr = biomaMultiplier !== 1.0 ? ` [Bioma ${biomaMultiplier > 1 ? '+30% poder' : '−20% poder'}]` : '';
       const ecoStr     = ecoBonus > 0 ? ` [Eco +${Math.round(ecoBonus * 100)}% loot]` : '';
+      const climaStr   = clima.estado !== 'neutro' ? ` [${clima.icone} ${clima.nome} ${clima.estado === 'favoravel' ? '+10%' : '−10%'} loot]` : '';
       const leituraStr = hasLeitura ? ' [Leitura da Torre +20% loot]' : '';
       const veteranoStr = hasVeterano ? ' [Veterano das Profundezas −30% mort.]' : '';
-      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}${leituraStr}${veteranoStr}`);
+      addLog(s, 'vitoria', `${modoStr}. +${madeiraG} madeira, +${pedraG} pedra${ferroG ? `, +${ferroG} ferro` : ''}, +${comidaG} comida.${batedores ? ` (Batedores +${Math.round(batedores * 15)}% loot)` : ''}${isFarming ? ' (modo exploração — 70% loot)' : ''}${biomaStr}${ecoStr}${climaStr}${leituraStr}${veteranoStr}`);
 
       // Descoberta de habitante (ao avançar — inclui andares-boss se houver habitante definido)
       let habitanteDescoberto: string | undefined;
@@ -1050,6 +1055,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
 
+      // Relato de expedição: uma voz do grupo conta como foi (Mural, ~35%).
+      if (Math.random() < 0.35) {
+        const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
+        const relato = gerarRelato(floorData.bioma, isFarming ? 'farm' : 'vitoria', vivosDoGrupo, floorData.nome);
+        if (relato) registrarAcontecimento(s, 'evento', relato);
+      }
+
       saveState(s);
       setExpeditionResult(resultVitoria);
     } else {
@@ -1109,6 +1121,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
+      // Relato de derrota: quem voltou conta o que a Torre não deixou levar (~45%).
+      if (Math.random() < 0.45) {
+        const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
+        const relato = gerarRelato(floorData.bioma, 'falha', vivosDoGrupo, floorData.nome);
+        if (relato) registrarAcontecimento(s, 'evento', relato);
+      }
+
       saveState(s);
       setExpeditionResult(resultFalha);
     }

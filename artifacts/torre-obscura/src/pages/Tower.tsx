@@ -8,6 +8,7 @@ import { Skull, ChevronUp, Swords, Wheat, Check, X, Trees, Mountain, Zap, Shield
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { SelecaoMoradores } from '../components/SelecaoMoradores';
+import { ClimaBanner } from '../components/ClimaBanner';
 
 interface TowerProps {
   t2Desbloqueado: boolean;
@@ -161,6 +162,9 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
           )}
         </button>
       </header>
+
+      {/* ── O tempo da Torre: como ela amanheceu hoje ─────────────────────── */}
+      <ClimaBanner seed={state.camaraSeed ?? 0} dia={state.dia} />
 
       {/* Banner de modo exploração */}
       {isFarming && (
