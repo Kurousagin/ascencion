@@ -13,6 +13,7 @@ import { War } from './pages/War';
 import { LogScreen } from './pages/LogScreen';
 import { GameOverScreen } from './pages/GameOver';
 import { Onboarding } from './components/Onboarding';
+import { GuidedTour } from './components/GuidedTour';
 import { CamaraDescobertaModal } from './components/CamaraDescobertaModal';
 import { ResultadoCamaraModal } from './components/ResultadoCamaraModal';
 import { FeedToastHost } from './components/FeedToastHost';
@@ -21,7 +22,7 @@ import { PioneerPessoal, T2GlobalBanner } from './components/PioneerBanner';
 import { usePioneer } from './hooks/usePioneer';
 import { useNotificationsHeartbeat } from './hooks/useNotificationsHeartbeat';
 import { useTier2EventUpdate } from './hooks/useTier2EventUpdate';
-import { ONBOARDING_KEY, ONBOARDING_PENDING, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_PENDING, GACHA_T2_DONE, GACHA_T2_RESULT } from './lib/onboarding-keys';
+import { ONBOARDING_KEY, ONBOARDING_PENDING, TOUR_DONE, GACHA_LANCAMENTO_PENDING, GACHA_LANCAMENTO_DONE, GACHA_LANCAMENTO_RESULT, GACHA_T2_PENDING, GACHA_T2_DONE, GACHA_T2_RESULT } from './lib/onboarding-keys';
 import { LANCAMENTO_ATIVO, LANCAMENTO_T2 } from './lib/lancamento';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -44,6 +45,7 @@ function SubAbas({ tab, onChange }: { tab: string; onChange: (t: string) => void
         <button
           key={a.id}
           onClick={() => onChange(a.id)}
+          data-tour={a.id === 'guerra' ? 'subaba-guerra' : undefined}
           className={`flex-1 min-h-[44px] text-[12px] font-bold tracking-widest touch-manipulation transition-colors border-b-2 -mb-px ${
             tab === a.id
               ? 'text-primary border-primary'
@@ -90,6 +92,7 @@ function MainGameInner() {
     setTabState(t);
   };
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [tourAtivo, setTourAtivo] = useState(false);
   const [gachaOpen, setGachaOpen] = useState(false);
   const [gachaT2Open, setGachaT2Open] = useState(false);
 
@@ -151,6 +154,12 @@ function MainGameInner() {
     if (sessionStorage.getItem(ONBOARDING_PENDING)) {
       sessionStorage.removeItem(ONBOARDING_PENDING);
       setOnboardingOpen(true);
+      return;
+    }
+    // 6. Tour guiado para quem já conhecia o jogo: o onboarding não reabre para
+    // veteranos, mas o tour (novo) apresenta a navegação atual uma única vez.
+    if (localStorage.getItem(ONBOARDING_KEY) && !localStorage.getItem(TOUR_DONE)) {
+      setTourAtivo(true);
     }
   }, [state]);
 
@@ -198,7 +207,7 @@ function MainGameInner() {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} />}
+              {tab === 'obs'      && <Dashboard t2Desbloqueado={t2Desbloqueado} onAjuda={() => setOnboardingOpen(true)} onRefazerTour={() => setTourAtivo(true)} />}
               {tab === 'torre'    && <Tower t2Desbloqueado={t2Desbloqueado} pioneerPosicao={pioneer.posicao} pioneersTotal={pioneer.status?.total ?? 0} />}
               {tab === 'cidadela' && <Citadel t2Desbloqueado={t2Desbloqueado} />}
               {tab === 'povo'     && <People />}
@@ -250,12 +259,27 @@ function MainGameInner() {
       />
     )}
 
-    {/* Onboarding — tutorial da primeira vez */}
+    {/* Onboarding — tutorial da primeira vez. Ao fechar, emenda no tour guiado
+        interativo (spotlight nas telas reais), que roda uma única vez. */}
     <Onboarding
       open={onboardingOpen}
       onClose={() => {
         localStorage.setItem(ONBOARDING_KEY, '1');
         setOnboardingOpen(false);
+        if (!localStorage.getItem(TOUR_DONE)) setTourAtivo(true);
+      }}
+      onIniciarTour={() => setTourAtivo(true)}
+    />
+
+    {/* Tour guiado: navega pelas abas e aponta as funcionalidades no lugar */}
+    <GuidedTour
+      active={tourAtivo}
+      currentTab={tab}
+      onNavigate={setTab}
+      onFinish={() => {
+        localStorage.setItem(TOUR_DONE, '1');
+        setTourAtivo(false);
+        setTab('obs');
       }}
     />
 

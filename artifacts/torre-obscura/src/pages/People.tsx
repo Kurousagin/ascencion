@@ -609,7 +609,7 @@ export function People() {
 
   return (
     <div className="p-4 space-y-6 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-3 border-b border-primary/30 relative flex justify-between items-end">
+      <header className="pb-3 border-b border-primary/30 relative flex justify-between items-end" data-tour="povo">
         <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">HABITANTES</h2>
         <span className="text-[12px] text-primary bg-primary/10 px-2 py-1 border border-primary/20 rounded-sm font-bold tracking-widest">
           {vivos} VIVOS

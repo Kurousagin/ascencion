@@ -36,6 +36,8 @@ A Torre não é um cenário passivo. Ela é um ser vivo, fracionado em ecos. Ao 
 
 Cada temporada tem um **Primordial** — um NPC único no mundo inteiro, distribuído via gacha gratuito de lançamento. Apenas **um jogador** no mundo possui cada Primordial simultaneamente. Se um jogador abandona o jogo, o Primordial "retorna à Torre" e pode ser redistribuído na próxima rodada de lançamento.
 
+**Origem (cânone):** os Primordiais foram **os primeiros a subir a Torre original** — por isso cada um é um ser único no mundo: não são uma espécie nem um título, são indivíduos que existiram uma única vez. A unicidade é consequência direta da lore e, portanto, **regra dura de design**: nenhum fluxo (gacha, rede, recuperação de save) pode conceder um Primordial sem confirmação do claim global no servidor.
+
 | Temporada | Nome           | Papel narrativo                                                  |
 |-----------|----------------|------------------------------------------------------------------|
 | T1        | Valdris, o Eterno | Testemunha de eras. Sobreviveu antes da Torre existir. Sabe mais do que diz. |
@@ -97,7 +99,7 @@ O Observador é a jogadora — mas não é apenas uma presença neutra. Ao longo
 ## 6. Anomalias de Lore (Eventos Especiais)
 
 ### Dois Primordiais no mesmo espaço
-Se por algum bug ou decisão de design futura dois Primordiais do mesmo tipo existirem na mesma aliança ou cidadela, isso é tratado como **anomalia narrativa**:
+A anomalia é **rede de segurança para bugs** — nunca licença de design: nenhum sistema pode escolher criar a duplicata (ver seção 3, Origem). Se, apesar disso, dois Primordiais do mesmo tipo existirem na mesma aliança ou cidadela, isso é tratado como **anomalia narrativa**:
 - Disparar um evento de log único com texto de lore específico (não genérico).
 - Exemplo para dois Valdris: *"Dois que esperaram o mesmo tempo em espaços diferentes. A Torre não sabia o que fazer com isso. Agora sabe. E é silêncio."*
 - A anomalia não deve punir o jogador mecanicamente — é apenas lore.

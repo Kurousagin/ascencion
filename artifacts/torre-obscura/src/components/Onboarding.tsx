@@ -61,9 +61,19 @@ const SLIDES: Slide[] = [
     corpo: [
       'Monte grupos e envie expedições. Poder de combate, fadiga, moral e o bioma do andar decidem o resultado — vitórias rendem recursos; derrotas podem custar vidas.',
       'A cada 5 andares, um Chefe guarda a passagem. Vencê-lo revela um Eco do Capítulo: um pedaço da história e bônus permanente de saque.',
-      'Andares conquistados continuam úteis: explore-os de novo para extrair recursos.',
     ],
     dica: 'Não arrisque seus melhores moradores de uma vez. A Torre pune a pressa.',
+  },
+  {
+    icone: '⛰️',
+    titulo: 'Os Andares',
+    subtitulo: 'Conquistar é só o começo.',
+    corpo: [
+      'Cada andar tem um bioma com afinidades próprias: o mesmo grupo rende mais ou menos dependendo de onde luta. Observe o bioma antes de escalar a equipe.',
+      'Conquistar um andar libera o seguinte — e o conquistado vira território: volte a explorá-lo (EXPLORAR ANDAR) para colher recursos com menos risco.',
+      'Ecos de Habitantes e de Chefes fortalecem o saque de cada andar. Um andar bem trabalhado alimenta a subida para o próximo.',
+    ],
+    dica: 'Muitas quests de Habitantes pedem exploração repetida no próprio andar — os dois objetivos se pagam juntos.',
   },
   {
     icone: '✦',
@@ -97,13 +107,24 @@ const SLIDES: Slide[] = [
   },
   {
     icone: '🤝',
-    titulo: 'Aliança & Guerra',
+    titulo: 'Aliança',
     subtitulo: 'Você não está sozinho.',
     corpo: [
-      'Alie-se a até 3 cidadelas reais trocando um código de pareamento. Envie recursos (a Torre cobra 15% de taxa), empreste moradores por alguns dias ou mande reforços para expedições e guerras.',
-      'Cidadelas rivais podem invadir: você terá um prazo em dias para mobilizar a defesa — ou ser saqueado. Também pode declarar guerra e tomar o espólio.',
+      'Alie-se a até 3 cidadelas reais trocando um código de pareamento. Envie recursos (a Torre cobra 15% de taxa), empreste moradores por alguns dias ou mande reforços para expedições.',
+      'O que as aliadas mandam chega na sua Caixa — o número vermelho na aba ALIANÇA avisa quando há algo esperando.',
     ],
-    dica: 'GUERRA vive dentro da aba ALIANÇA. Quando uma invasão chegar, o alerta vermelho no topo leva você direto para lá.',
+    dica: 'Empréstimos voltam sozinhos no prazo; reforços retornam ao fim da expedição. Tudo fica no histórico.',
+  },
+  {
+    icone: '⚔️',
+    titulo: 'Guerra',
+    subtitulo: 'O espólio de quem resiste.',
+    corpo: [
+      'Na sub-aba GUERRA (dentro de ALIANÇA) você avista cidadelas rivais de poder próximo ao seu e pode declarar guerra, mobilizando uma tropa de combate.',
+      'Rivais também invadem: o alerta vermelho no topo mostra o prazo em dias para montar a defesa. Sem resposta dentro do prazo, a defesa acontece sozinha — com quem estiver disponível.',
+      'Vencer rende espólio; perder custa recursos. Se a guerra apertar, peça socorro: aliadas podem mandar reforços de guerra pela Caixa.',
+    ],
+    dica: 'Poder de tropa considera atributos e fadiga. Nunca mobilize moradores exaustos.',
   },
   {
     icone: '🎁',
@@ -123,15 +144,19 @@ const SLIDES: Slide[] = [
       'Comece pequeno: comida, teto, um primeiro grupo forte. Suba com cuidado e leia o que a Torre deixar escapar.',
       'Cada morador importa. Cada escolha fica. A Torre não perdoa despreparados — mas recompensa quem presta atenção.',
     ],
+    dica: 'Ao tocar em COMEÇAR, eu percorro as telas com você — apontando onde cada coisa vive.',
   },
 ];
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  // Quando fornecido (instância em jogo), o último passo oferece refazer o
+  // tour guiado pelas telas — para quem reabriu o guia por estar perdido.
+  onIniciarTour?: () => void;
 }
 
-export function Onboarding({ open, onClose }: Props) {
+export function Onboarding({ open, onClose, onIniciarTour }: Props) {
   const [slide, setSlide] = useState(0);
   const isFirst = slide === 0;
   const isLast  = slide === SLIDES.length - 1;
@@ -208,6 +233,15 @@ export function Onboarding({ open, onClose }: Props) {
                       <BookOpen size={12} className="text-primary/60 mt-0.5 shrink-0" />
                       <p className="text-[12px] text-primary/60 italic leading-relaxed">{current.dica}</p>
                     </div>
+                  )}
+
+                  {isLast && onIniciarTour && (
+                    <button
+                      onClick={() => { handleClose(); onIniciarTour(); }}
+                      className="mt-3 w-full h-11 border border-primary/40 text-primary font-cinzel font-bold text-[12px] tracking-[0.2em] hover:bg-primary/10 transition-all touch-manipulation"
+                    >
+                      REVER O TOUR PELAS TELAS
+                    </button>
                   )}
                 </motion.div>
               </AnimatePresence>

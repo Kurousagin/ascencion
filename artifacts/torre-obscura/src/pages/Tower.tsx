@@ -151,6 +151,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
         {/* Botão do Codex Obscuro */}
         <button
           onClick={() => { setCodexOpen(true); abrirCodex(); }}
+          data-tour="codex"
           title="Codex Obscuro — fragmentos de lore"
           className="relative mb-0.5 w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/70 hover:text-primary hover:border-primary/60 transition-all touch-manipulation shrink-0"
         >
@@ -305,6 +306,7 @@ export function Tower({ t2Desbloqueado, pioneerPosicao, pioneersTotal }: TowerPr
 
           <button
             onClick={() => setModalOpen(true)}
+            data-tour="expedicao"
             className={`w-full h-14 font-cinzel font-bold tracking-[0.2em] text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 touch-manipulation ${
               isFarming
                 ? 'bg-secondary/80 text-background shadow-none'

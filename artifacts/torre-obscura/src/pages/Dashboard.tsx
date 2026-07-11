@@ -1,6 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { useAlliance } from '../context/AllianceContext';
-import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown } from 'lucide-react';
+import { ShieldAlert, Users, Bell, Gift, Check, Hammer, ChevronDown, HelpCircle, Footprints } from 'lucide-react';
 import { getEfeitos, POP_BASE, BUILDINGS, EdificioTipo, nomeEdificio, trabalhadoresDe, POSTO_AFIM } from '../lib/game-data';
 import { METAS_DIARIAS_META } from '../quest-engine';
 import { useTemporada } from '../hooks/useTemporada';
@@ -17,9 +17,13 @@ import { useState, useEffect } from 'react';
 
 interface DashboardProps {
   t2Desbloqueado: boolean;
+  // Reabre o guia de boas-vindas (slides) para quem se perdeu.
+  onAjuda?: () => void;
+  // Refaz o tour guiado pelas telas — pode ser revisto quantas vezes quiser.
+  onRefazerTour?: () => void;
 }
 
-export function Dashboard({ t2Desbloqueado }: DashboardProps) {
+export function Dashboard({ t2Desbloqueado, onAjuda, onRefazerTour }: DashboardProps) {
   const { state, setSpeed, gerarMetasDiarias, reivindicarPresenteDaTorre } = useGame();
   const { aliadas } = useAlliance();
   const temporada = useTemporada(t2Desbloqueado);
@@ -71,8 +75,30 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
 
   return (
     <div className="p-3 space-y-2 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-1.5 border-b border-primary/30 relative">
+      <header className="pb-1.5 border-b border-primary/30 relative flex items-center justify-between">
         <h2 className="text-xl font-cinzel font-bold tracking-widest text-primary">OBSERVATÓRIO</h2>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onRefazerTour && (
+            <button
+              onClick={onRefazerTour}
+              aria-label="Refazer o tour pelas telas"
+              title="Tour pelas telas"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/60 hover:text-primary hover:border-primary/60 transition-all touch-manipulation"
+            >
+              <Footprints size={16} />
+            </button>
+          )}
+          {onAjuda && (
+            <button
+              onClick={onAjuda}
+              aria-label="Como jogar"
+              title="Como jogar"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-primary/30 text-primary/60 hover:text-primary hover:border-primary/60 transition-all touch-manipulation"
+            >
+              <HelpCircle size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* ── Faixa da temporada ativa (muda visualmente ao desbloquear a T2) ── */}
@@ -89,7 +115,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       </div>
 
       {/* ── VITALS SECTION (above the fold) ─────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2" data-tour="vitais">
         <div className="bg-[#1C2333] border border-primary/30 p-2 rounded flex flex-col items-center justify-center">
           <span className="text-[10px] text-secondary tracking-widest mb-0.5">DIA</span>
           <span className="text-2xl text-primary font-bold font-cinzel">{state.dia}</span>
@@ -116,10 +142,12 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
       </div>
 
       {/* ── MURAL DA CIDADELA (feed de vida) ───────────────────────────────── */}
-      <MuralAcontecimentos />
+      <div data-tour="mural">
+        <MuralAcontecimentos />
+      </div>
 
       {/* ── METAS DE HOJE ──────────────────────────────────────────────────── */}
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="metas">
         <span className="text-xs text-secondary tracking-widest block">METAS DE HOJE</span>
         <div className="bg-[#1C2333] border border-primary/30 rounded p-2 space-y-1.5">
           {md.objetivos.map(id => {
@@ -156,7 +184,7 @@ export function Dashboard({ t2Desbloqueado }: DashboardProps) {
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="velocidade">
         <div className="flex items-center justify-between">
           <span className="text-xs text-secondary tracking-widest">VELOCIDADE</span>
           <div className="flex gap-1">

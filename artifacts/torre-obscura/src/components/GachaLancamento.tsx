@@ -71,6 +71,8 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
   const [cartaEscolhida, setCartaEscolhida] = useState<number | null>(null);
   const [primordialDisponivel, setPrimordialDisponivel] = useState(true);
   const [confirmando, setConfirmando] = useState(false);
+  // Claim do primordial falhou por rede: mantém o resultado e pede nova tentativa.
+  const [erroClaim, setErroClaim] = useState(false);
 
   // Seleciona flags de localStorage baseado no tipo (T1 ou T2)
   const flagDone = tipo === 'T2' ? GACHA_T2_DONE : GACHA_LANCAMENTO_DONE;
@@ -130,18 +132,27 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
   const confirmarStats = async () => {
     if (!npcResultado || confirmando) return;
     setConfirmando(true);
+    setErroClaim(false);
 
     if (npcResultado.primordial) {
-      // Tenta reivindicar atomicamente no servidor.
-      const claimed = await claimPrimordial(`primordial_t${lancamento.temporada}`, getDeviceId());
-      if (!claimed) {
-        // Corrida: outro jogador reivindicou entre o check e o confirm.
-        // Re-sorteia sem o primordial e mostra o novo resultado ao jogador.
+      // Unicidade de primordial é regra DURA: só existe um Valdris no mundo,
+      // e ele só é concedido com o claim confirmado pelo servidor.
+      const resultado = await claimPrimordial(`primordial_t${lancamento.temporada}`, getDeviceId());
+      if (resultado === 'conflito') {
+        // Corrida REAL: outro jogador reivindicou entre o check e o confirm.
+        // Só neste caso re-sorteia sem o primordial e mostra o novo resultado.
         localStorage.removeItem(flagResult);
         const npc = sortearNpc(lancamento, false); // força pool sem primordial
         setNpcResultado(npc);
         localStorage.setItem(flagResult, JSON.stringify(npc));
         setFase('lore');
+        setConfirmando(false);
+        return;
+      }
+      if (resultado === 'erro') {
+        // Rede indisponível: NEM concede (quebraria a unicidade) NEM re-sorteia
+        // (roubaria o sorteio). O resultado fica guardado; o jogador tenta de novo.
+        setErroClaim(true);
         setConfirmando(false);
         return;
       }
@@ -414,6 +425,12 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
 
                   {/* Ação */}
                   <div className="px-5 py-5">
+                    {erroClaim && (
+                      <p className="text-xs text-destructive/90 text-center leading-relaxed mb-3">
+                        A Torre não respondeu ao chamado. Verifique sua conexão e toque de novo —
+                        o seu sorteio está guardado.
+                      </p>
+                    )}
                     <button
                       onClick={confirmarStats}
                       disabled={confirmando}
@@ -425,7 +442,7 @@ export function GachaLancamento({ open, lancamento, onClose, tipo = 'T1' }: Prop
                           : 'bg-[#1A3060] hover:bg-[#1F3870] text-[#7DB0E8] border border-[#3A5080]/60 shadow-[0_0_20px_rgba(80,140,220,0.1)]'
                       }`}
                     >
-                      {confirmando ? 'REGISTRANDO…' : 'ACEITAR E INICIAR'}
+                      {confirmando ? 'REGISTRANDO…' : erroClaim ? 'TENTAR NOVAMENTE' : 'ACEITAR E INICIAR'}
                     </button>
                   </div>
                 </div>

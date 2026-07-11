@@ -355,7 +355,7 @@ export function Alliance() {
 
   return (
     <div className="p-4 space-y-8 pb-24 h-full overflow-y-auto custom-scrollbar">
-      <header className="pb-3 border-b border-primary/30 relative flex items-center justify-between">
+      <header className="pb-3 border-b border-primary/30 relative flex items-center justify-between" data-tour="alianca">
         <div>
           <h2 className="text-2xl font-cinzel font-bold tracking-widest text-primary">
             ALIANÇA

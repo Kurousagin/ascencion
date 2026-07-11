@@ -22,6 +22,7 @@ const tabs = [
 export function BottomNav({ currentTab, onTabChange, badges }: BottomNavProps) {
   return (
     <nav
+      data-tour="nav"
       className="
         bg-[#0D1117]
         border-t border-[rgba(212,175,55,0.3)]

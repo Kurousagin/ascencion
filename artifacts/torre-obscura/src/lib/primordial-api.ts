@@ -7,6 +7,7 @@ import {
   consultarPrimordial,
   reivindicarPrimordial,
   liberarPrimordiais,
+  ApiError,
   type PrimordialTipo,
 } from '@workspace/api-client-react';
 
@@ -32,16 +33,22 @@ export async function releaseAllPrimordialClaims(deviceId: string): Promise<void
   }
 }
 
+// A unicidade de primordial é regra DURA (um por mundo, por temporada): o NPC
+// só é concedido com 'ok' confirmado pelo servidor. Distinguir o conflito real
+// (409 = outro jogador levou → re-sortear) de falha de rede ('erro' → manter o
+// resultado e tentar de novo) evita tanto duplicatas quanto roubar o sorteio.
+export type ClaimResultado = 'ok' | 'conflito' | 'erro';
+
 export async function claimPrimordial(
   tipo: string,
   deviceId: string,
-): Promise<boolean> {
+): Promise<ClaimResultado> {
   try {
     // 200 = reivindicado (novo ou idempotente para o mesmo device).
-    // 409 (outro jogador já reivindicou) lança ApiError → false, bloqueando a concessão local.
     await reivindicarPrimordial({ tipo: tipo as PrimordialTipo, deviceId });
-    return true;
-  } catch {
-    return false;
+    return 'ok';
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) return 'conflito';
+    return 'erro';
   }
 }

@@ -75,6 +75,16 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // Em produção o Express serve front e API na mesma origem (/api). Em dev,
+    // sem este proxy, /api cai no próprio Vite e toda a rede falha silenciosa
+    // (aliança, pioneers, claim de primordial). Suba o api-server em :8080 ou
+    // aponte API_PROXY_TARGET para outro host.
+    proxy: {
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,
