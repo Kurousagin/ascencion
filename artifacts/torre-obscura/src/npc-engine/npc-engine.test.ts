@@ -6,6 +6,7 @@ import { sistemaDecaimento } from './systems/decaimento';
 import { sistemaTraicao } from './systems/traicao';
 import { sistemaConvivio } from './systems/convivio';
 import { aplicarLuto } from './grief';
+import { anotarCronica, CRONICA_CAP } from './cronica';
 import { promoverParaNobre } from './houses';
 import { humorDe } from './mood';
 import { sistemaVinculosTipados, tipoVinculo, bonusMentor } from './systems/vinculos-tipados';
@@ -24,6 +25,7 @@ const mkNpc = (over: Partial<NPC> = {}): NPC => ({
 
 const mkState = (npcs: NPC[], over: Partial<GameState> = {}): GameState => ({
   npcs,
+  dia: 10,
   relacionamentos: {},
   moral: 70,
   recursos: { comida: 100, madeira: 0, pedra: 0, ferro: 0, capacidadeArmazem: 300 },
@@ -119,6 +121,37 @@ describe('aplicarLuto', () => {
     expect(a.lealdade).toBe(76); // −(80/20)
     expect(logs.length).toBe(1);
     expect(getAfinidade(s, a.id, 'morto')).toBe(0);
+  });
+  it('marca luto visível proporcional à afinidade e anota na crônica se forte', () => {
+    const a = mkNpc();
+    const s = mkState([a]); // dia 10
+    ajustarAfinidade(s, a.id, 'morto', 80);
+    aplicarLuto(s, 'morto', 'Morto');
+    expect(a.luto).toEqual({ nome: 'Morto', ateDia: 10 + 11 }); // 3 + 80/10
+    expect(a.cronica![0].texto).toContain('Morto');
+  });
+  it('vínculo fraco enluta sem entrar na crônica; decaimento expira o luto', () => {
+    const a = mkNpc();
+    const s = mkState([a]);
+    ajustarAfinidade(s, a.id, 'morto', 20);
+    aplicarLuto(s, 'morto', 'Morto');
+    expect(a.luto?.ateDia).toBe(15); // 10 + (3 + 20/10)
+    expect(a.cronica).toBeUndefined();
+    s.dia = 15;
+    sistemaDecaimento.processarDia(ctx(s, colonia(), seq([0.9])));
+    expect(a.luto).toBeUndefined();
+  });
+});
+
+describe('anotarCronica', () => {
+  it('agrega entradas repetidas em sequência (×N) e respeita o cap', () => {
+    const a = mkNpc();
+    anotarCronica(a, 1, 'voltou com vida de uma expedição');
+    anotarCronica(a, 3, 'voltou com vida de uma expedição');
+    expect(a.cronica).toEqual([{ dia: 3, texto: 'voltou com vida de uma expedição', vezes: 2 }]);
+    for (let d = 4; d < 4 + CRONICA_CAP + 3; d++) anotarCronica(a, d, `feito do dia ${d}`);
+    expect(a.cronica!.length).toBe(CRONICA_CAP);
+    expect(a.cronica![CRONICA_CAP - 1].texto).toBe(`feito do dia ${4 + CRONICA_CAP + 2}`);
   });
 });
 

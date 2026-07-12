@@ -28,7 +28,7 @@ import {
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
 import { sortearSussurroLugar } from '../lib/lugar';
-import { ASCENSAO_LORE, JURAMENTO_LORE } from '../lib/lore-content';
+import { ASCENSAO_LORE, JURAMENTO_LORE, CRONICA_LORE } from '../lib/lore-content';
 import { multFolego, multCadeia, usarFolego } from '../lib/folego';
 import { estacaoDoDia, multEstacao } from '../lib/estacao';
 import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
@@ -37,7 +37,7 @@ import {
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
 } from '../quest-engine';
 import {
-  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, FAMA_NOTAVEL, bonusMentor,
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, anotarCronica, FAMA_NOTAVEL, bonusMentor,
   fatorHumor, getAfinidade, AF_AMIZADE,
   type PromocaoResultado, type FeitoId,
 } from '../npc-engine';
@@ -226,10 +226,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
   const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
     const famaAntes = npc.fama ?? 0;
-    if (feito) registrarFeito(npc, feito);
+    if (feito) {
+      registrarFeito(npc, feito);
+      anotarCronica(npc, s.dia, CRONICA_LORE.feitos[feito]);
+    }
     // Primeiro degrau: a cidadela passa a notar quem cruza FAMA_NOTAVEL.
     if (!npc.sobrenome && famaAntes < FAMA_NOTAVEL && (npc.fama ?? 0) >= FAMA_NOTAVEL) {
       registrarAcontecimento(s, 'descoberta', ASCENSAO_LORE.notavel.replaceAll('{nome}', npc.nome.toUpperCase()));
+      anotarCronica(npc, s.dia, CRONICA_LORE.notavel);
     }
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
@@ -241,6 +245,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       .replaceAll('{casa}', promo.casa)
       .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : '');
     registrarAcontecimento(s, promo.tipo === 'propria' ? 'descoberta' : 'vitoria', msg);
+    anotarCronica(npc, s.dia, CRONICA_LORE[promo.tipo]
+      .replaceAll('{casa}', promo.casa)
+      .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : ''));
   };
 
   // Juramento diante da Fogueira: troca tem fôlego de 10 dias (anti min-max).
@@ -253,6 +260,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (n.juramentoDia != null && s.dia - n.juramentoDia < JURAMENTO_COOLDOWN) return;
     n.juramento = juramento;
     n.juramentoDia = s.dia;
+    anotarCronica(n, s.dia, juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
     addLog(s, 'evento', JURAMENTO_LORE[juramento].replaceAll('{nome}', n.nome.toUpperCase()));
     saveState(s);
   };
@@ -267,6 +275,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     vivosL.filter(n => !n.juramento).forEach(n => {
       n.juramento = decidirJuramento(vivosL, n);
       n.juramentoDia = s.dia;
+      anotarCronica(n, s.dia, n.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
       jurados++;
     });
     if (jurados === 0) return;
@@ -1058,6 +1067,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             const novo = generateNPC(Math.random() < 0.1);
             novo.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), novo);
             novo.juramentoDia = s.dia;
+            anotarCronica(novo, s.dia, novo.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
             s.npcs.push(novo);
             resgatado = { nome: novo.nome, raridade: novo.raridade };
             addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
@@ -1266,6 +1276,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Autonomia: o recém-chegado jura por vontade própria, pelo seu perfil.
       npc.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), npc);
       npc.juramentoDia = s.dia;
+      anotarCronica(npc, s.dia, npc.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
       s.npcs.push(npc);
       novos.push(npc);
     }

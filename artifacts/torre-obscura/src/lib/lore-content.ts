@@ -907,6 +907,26 @@ export const ASCENSAO_LORE: Record<string, string> = {
   propria: '✦ {nome} conquistou um sobrenome — a cidadela passa a conhecê-lo pelos seus feitos.',
 };
 
+// ─── CRONICA_LORE — biografia por evento no retrato do morador ────────────────
+// Frases curtas, em minúsculas (entram após "Dia N — "). Placeholders: {casa},
+// {padrinho}, {nome} (do falecido, no luto).
+export const CRONICA_LORE = {
+  feitos: {
+    expedicao_sobrevivida: 'voltou com vida de uma expedição',
+    camara_vencida: 'venceu uma câmara selada',
+    andar_conquistado: 'esteve na conquista de um andar',
+    treino_concluido: 'concluiu uma sessão de treinamento',
+    guerra_vencida: 'lutou e venceu uma guerra',
+  } as Record<string, string>,
+  notavel: 'a cidadela passou a notar seu nome',
+  fundacao: 'ergueu a própria linhagem: a Casa {casa}',
+  adocao: 'foi acolhido pela Casa {casa}, por mão de {padrinho}',
+  propria: 'conquistou um sobrenome pelos próprios feitos',
+  juramento_escalada: 'jurou à Escalada diante da Fogueira',
+  juramento_oficio: 'jurou ao Ofício diante da Fogueira',
+  luto: 'perdeu {nome}, a quem prezava',
+};
+
 // ─── EDIFÍCIOS — NARRATIVA DE EVOLUÇÃO POR TEMPORADA ──────────────────────────
 
 export const EDIFICIOS_LORE: Record<string, { t1: string; t2?: string }> = {

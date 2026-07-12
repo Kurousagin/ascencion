@@ -254,6 +254,17 @@ export function People() {
                 </span>
               </div>
 
+              {/* Luto visível: a perda pesa no retrato enquanto durar */}
+              {npc.luto && npc.luto.ateDia > state.dia && (
+                <div className="mb-3 text-xs text-white/60 bg-black/25 border border-white/10 rounded-sm px-2 py-1.5 flex items-center gap-1.5">
+                  <span className="shrink-0">🕯</span>
+                  <span className="min-w-0">
+                    De luto por <span className="text-foreground/80 font-bold">{npc.luto.nome}</span>
+                    <span className="text-white/35"> · {npc.luto.ateDia - state.dia}d</span>
+                  </span>
+                </div>
+              )}
+
               {/* Juramento: a quem este morador serve (troca com fôlego de 10 dias) */}
               {!npc.emprestado && !npc.reforco && (
                 <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-3 text-xs" onClick={e => e.stopPropagation()}>
@@ -388,6 +399,19 @@ export function People() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+                {(npc.cronica?.length ?? 0) > 0 && (
+                  <div>
+                    <div className="text-xs text-secondary tracking-widest mb-1">CRÔNICA</div>
+                    <div className="space-y-0.5">
+                      {[...(npc.cronica ?? [])].reverse().slice(0, 6).map((c, i) => (
+                        <div key={i} className="text-[12px] text-white/50 leading-snug">
+                          <span className="text-primary/60 font-cinzel">Dia {c.dia}</span> — {c.texto}
+                          {(c.vezes ?? 1) > 1 && <span className="text-white/35"> (×{c.vezes})</span>}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -737,6 +761,7 @@ export function People() {
                 <span className="text-sm shrink-0">{emojiHumor(n)}</span>
                 <span className="font-bold text-sm text-foreground truncate">{n.nome}</span>
                 {n.juramento && <span className="text-[12px] shrink-0 opacity-70" title={n.juramento === 'escalada' ? 'Jurou à Escalada' : 'Jurou ao Ofício'}>{n.juramento === 'escalada' ? '🗡' : '⚒'}</span>}
+                {n.luto && n.luto.ateDia > state.dia && <span className="text-[12px] shrink-0" title={`De luto por ${n.luto.nome}`}>🕯</span>}
                 {n.posto && <Hammer size={11} className="text-success shrink-0" />}
                 {(n.emprestado || n.reforco) && <UserPlus size={11} className="text-[#4A9EFF] shrink-0" />}
                 <span className="ml-auto flex items-center gap-2 shrink-0">

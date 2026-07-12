@@ -11,6 +11,7 @@ export * from './houses';
 export * from './grief';
 export * from './mood';
 export * from './fama';
+export * from './cronica';
 export * from './systems/vinculos-tipados';
 export * from './systems/eventos-sociais';
 

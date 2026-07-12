@@ -6,6 +6,8 @@
 
 import type { GameState, LogTipo } from '../lib/game-data';
 import { getAfinidade, parKey } from './relationships';
+import { anotarCronica } from './cronica';
+import { CRONICA_LORE } from '../lib/lore-content';
 
 export interface LogIntent { tipo: LogTipo; mensagem: string; }
 
@@ -26,6 +28,13 @@ export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string
     const lealPenalty = Math.round(af / 20) * viuvez;      // af 100 → −5 lealdade
     n.sanidade = Math.max(0, n.sanidade - sanPenalty);
     n.lealdade = Math.max(0, n.lealdade - lealPenalty);
+    // Luto visível no retrato: duração proporcional à afinidade (romance dobra).
+    const dias = Math.min(20, Math.round(3 + af / 10) * viuvez);
+    n.luto = { nome: mortoNome, ateDia: draft.dia + dias };
+    // Perdas que marcam a biografia: vínculo forte ou romance.
+    if (af >= 40 || viuvez === 2) {
+      anotarCronica(n, draft.dia, CRONICA_LORE.luto.replaceAll('{nome}', mortoNome));
+    }
     enlutados.push({ nome: n.nome, af });
   }
 
