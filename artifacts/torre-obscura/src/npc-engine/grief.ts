@@ -5,7 +5,7 @@
 // autoExplorar) para o GameContext registrar; e limpa os vínculos do morto.
 
 import type { GameState, LogTipo } from '../lib/game-data';
-import { getAfinidade, parKey } from './relationships';
+import { getAfinidade, parKey, aproximarPorMomento, MOMENTO_LUTO_COMPARTILHADO } from './relationships';
 import { anotarCronica } from './cronica';
 import { CRONICA_LORE } from '../lib/lore-content';
 
@@ -16,7 +16,7 @@ const LIMIAR_LUTO = 15;
 
 export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string): LogIntent[] {
   const logs: LogIntent[] = [];
-  const enlutados: { nome: string; af: number }[] = [];
+  const enlutados: { id: string; nome: string; af: number }[] = [];
 
   for (const n of draft.npcs) {
     if (!n.vivo || n.id === mortoId) continue;
@@ -35,8 +35,11 @@ export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string
     if (af >= 40 || viuvez === 2) {
       anotarCronica(n, draft.dia, CRONICA_LORE.luto.replaceAll('{nome}', mortoNome));
     }
-    enlutados.push({ nome: n.nome, af });
+    enlutados.push({ id: n.id, nome: n.nome, af });
   }
+
+  // Chorar o mesmo morto aproxima os enlutados entre si.
+  aproximarPorMomento(draft, enlutados.map(e => e.id), MOMENTO_LUTO_COMPARTILHADO);
 
   // Limpa os vínculos do morto para não deixar fantasmas nos mapas.
   if (draft.relacionamentos) {

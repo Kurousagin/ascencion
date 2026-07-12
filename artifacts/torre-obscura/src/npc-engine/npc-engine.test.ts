@@ -130,6 +130,15 @@ describe('aplicarLuto', () => {
     expect(a.luto).toEqual({ nome: 'Morto', ateDia: 10 + 11 }); // 3 + 80/10
     expect(a.cronica![0].texto).toContain('Morto');
   });
+  it('quem chora o mesmo morto se aproxima (luto compartilhado)', () => {
+    const a = mkNpc();
+    const b = mkNpc();
+    const s = mkState([a, b]);
+    ajustarAfinidade(s, a.id, 'morto', 50);
+    ajustarAfinidade(s, b.id, 'morto', 50);
+    aplicarLuto(s, 'morto', 'Morto');
+    expect(getAfinidade(s, a.id, b.id)).toBe(2); // MOMENTO_LUTO_COMPARTILHADO
+  });
   it('vínculo fraco enluta sem entrar na crônica; decaimento expira o luto', () => {
     const a = mkNpc();
     const s = mkState([a]);

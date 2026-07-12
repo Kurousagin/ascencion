@@ -38,7 +38,8 @@ import {
 } from '../quest-engine';
 import {
   tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, anotarCronica, FAMA_NOTAVEL, bonusMentor,
-  fatorHumor, getAfinidade, AF_AMIZADE,
+  fatorHumor, getAfinidade, AF_AMIZADE, ajustarAfinidade, aproximarPorMomento,
+  MOMENTO_TRAUMA, MOMENTO_CONQUISTA, MOMENTO_MENTOR,
   type PromocaoResultado, type FeitoId,
 } from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
@@ -493,6 +494,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const n = draft.npcs.find(x => x.id === id);
       if (n) promoverEnobrecer(draft, n, 'guerra_vencida');
     });
+    // Vencer a guerra lado a lado aproxima os que marcharam juntos.
+    if (diaGuerra.vitoriaIds && diaGuerra.vitoriaIds.length >= 2) {
+      aproximarPorMomento(draft, diaGuerra.vitoriaIds, MOMENTO_CONQUISTA);
+    }
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
     //     Se expirar sem resposta → auto-defesa (todos os aptos marcham) ou
@@ -1146,6 +1151,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
+      // Trauma compartilhado: quem voltou de onde alguém caiu fica mais próximo.
+      if (resultVitoria.mortos.length > 0) {
+        const sobreviventes = group.filter(n => n.vivo);
+        if (sobreviventes.length >= 2) {
+          aproximarPorMomento(s, sobreviventes.map(n => n.id), MOMENTO_TRAUMA);
+          addLog(s, 'evento', `Os que voltaram do Andar ${floorData.floor} carregam o mesmo silêncio — e estão mais próximos por ele.`);
+        }
+      }
+
       // PISTA de câmara: só a(s) câmara(s) do ANDAR recém-explorado podem ter a
       // pista revelada nesta volta — fruto de explorar aquele andar e, no retorno,
       // perceber que o requisito ESTRITO foi atingido. A pista (est.descoberta) NÃO
@@ -1242,6 +1256,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
+      // Trauma compartilhado: quem voltou de onde alguém caiu fica mais próximo.
+      if (resultFalha.mortos.length > 0) {
+        const sobreviventes = group.filter(n => n.vivo);
+        if (sobreviventes.length >= 2) {
+          aproximarPorMomento(s, sobreviventes.map(n => n.id), MOMENTO_TRAUMA);
+          addLog(s, 'evento', `Os que voltaram do Andar ${floorData.floor} carregam o mesmo silêncio — e estão mais próximos por ele.`);
+        }
+      }
 
       // Relato de derrota: quem voltou conta o que a Torre não deixou levar (~45%).
       if (Math.random() < 0.45) {
@@ -1637,6 +1660,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    // A sessão orientada aproxima aluno e instrutor (semente de mentoria).
+    if (instrutor) ajustarAfinidade(s, npc.id, instrutor.id, MOMENTO_MENTOR);
     promoverEnobrecer(s, npc);
     saveState(s);
   };
@@ -1692,6 +1717,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    // A sessão orientada aproxima aluno e instrutor (semente de mentoria).
+    if (instrutor) ajustarAfinidade(s, npc.id, instrutor.id, MOMENTO_MENTOR);
     promoverEnobrecer(s, npc);
     saveState(s);
     setState(s);
@@ -1849,6 +1876,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (sucesso) {
       est.encontrada = true;
       group.forEach(n => promoverEnobrecer(s, n, 'camara_vencida'));
+      // Vencer uma câmara selada lado a lado aproxima o grupo.
+      aproximarPorMomento(s, group.map(n => n.id), MOMENTO_CONQUISTA);
       const floorData = FLOORS[camara.floor - 1];
 
       // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).
