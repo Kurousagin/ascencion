@@ -113,12 +113,12 @@ export function People() {
 
     if (!npc.vivo) {
       return (
-        <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-60 grayscale flex justify-between items-center rounded-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border border-destructive/50 flex items-center justify-center bg-background text-destructive text-xs font-cinzel">X</div>
-            <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive">{npc.nome}</span>
+        <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-60 grayscale flex justify-between items-center gap-2 rounded-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 shrink-0 rounded-full border border-destructive/50 flex items-center justify-center bg-background text-destructive text-xs font-cinzel">X</div>
+            <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive truncate">{npc.nome}</span>
           </div>
-          <span className="text-[12px] text-destructive tracking-widest border border-destructive/50 px-2 py-1 bg-destructive/10 rounded-sm">FALECIDO</span>
+          <span className="text-[12px] text-destructive tracking-widest border border-destructive/50 px-2 py-1 bg-destructive/10 rounded-sm shrink-0">FALECIDO</span>
         </div>
       );
     }
@@ -149,13 +149,13 @@ export function People() {
         <div className="flex-1 p-2 sm:p-3.5">
           <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-cinzel font-bold text-lg shadow-inner border-2 border-background"
+              <div
+                className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-cinzel font-bold text-lg shadow-inner border-2 border-background"
                 style={{ backgroundColor: rarityColor }}
               >
                 {domLetter}
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                   <span className="font-bold text-foreground text-base sm:text-lg font-inter truncate">{npc.nome}</span>
                   <span className="text-[12px] shrink-0" style={{ color: rarityColor }}>{getRarityStars(npc.raridade)}</span>
@@ -220,7 +220,7 @@ export function People() {
                 </div>
               </div>
             </div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest`}>{fStatus.label}</span>
+            <span className={`text-xs font-bold px-2 py-1 rounded-sm border ${fStatus.color} tracking-widest shrink-0`}>{fStatus.label}</span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-2">
@@ -238,11 +238,11 @@ export function People() {
           {isExpanded && (
             <div className="mt-4 pt-4 border-t border-white/5">
               {/* Retrato: humor com motivo + fama (o motor de vida visível) */}
-              <div className="flex items-center justify-between gap-2 mb-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-3 text-xs">
                 <span className={humorCor}>
                   {humor.tom === 'bom' ? '😊' : humor.tom === 'critico' ? '😰' : humor.tom === 'ruim' ? '😟' : '😐'} {humor.rotulo}
                 </span>
-                <span className="text-white/50 text-right">
+                <span className="text-white/50 text-right min-w-0">
                   <span className="text-secondary tracking-wider">{TITULO_LABEL[tituloNobreza(state.npcs, npc)].toUpperCase()} · </span>
                   {npc.sobrenome && (
                     <span className="text-primary/80">⚜ CASA {npc.sobrenome.toUpperCase()}
@@ -254,10 +254,21 @@ export function People() {
                 </span>
               </div>
 
+              {/* Luto visível: a perda pesa no retrato enquanto durar */}
+              {npc.luto && npc.luto.ateDia > state.dia && (
+                <div className="mb-3 text-xs text-white/60 bg-black/25 border border-white/10 rounded-sm px-2 py-1.5 flex items-center gap-1.5">
+                  <span className="shrink-0">🕯</span>
+                  <span className="min-w-0">
+                    De luto por <span className="text-foreground/80 font-bold">{npc.luto.nome}</span>
+                    <span className="text-white/35"> · {npc.luto.ateDia - state.dia}d</span>
+                  </span>
+                </div>
+              )}
+
               {/* Juramento: a quem este morador serve (troca com fôlego de 10 dias) */}
               {!npc.emprestado && !npc.reforco && (
-                <div className="flex items-center justify-between gap-2 mb-3 text-xs" onClick={e => e.stopPropagation()}>
-                  <span className="text-white/50 min-w-0 truncate">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-3 text-xs" onClick={e => e.stopPropagation()}>
+                  <span className="text-white/50 min-w-0">
                     {npc.juramento === 'escalada' ? '🗡 Jurou à Escalada — descansa 25% mais rápido'
                       : npc.juramento === 'oficio' ? `⚒ ${oficioDe(npc)} — jurou ao Ofício, +15% no posto`
                       : 'Ainda não jurou diante da Fogueira'}
@@ -286,8 +297,8 @@ export function People() {
               )}
               {/* Vocação da Casa — só o Cabeça declara; alinhados rendem +5% */}
               {npc.sobrenome && tituloNobreza(state.npcs, npc) === 'cabeca' && (
-                <div className="flex items-center justify-between gap-2 mb-3 text-xs" onClick={e => e.stopPropagation()}>
-                  <span className="text-white/50 min-w-0 truncate">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-3 text-xs" onClick={e => e.stopPropagation()}>
+                  <span className="text-white/50 min-w-0">
                     ⚜ Vocação da Casa: {state.casasVocacao?.[npc.sobrenome]
                       ? (state.casasVocacao[npc.sobrenome] === 'escalada' ? '🗡 Escalada' : '⚒ Ofício') + ' (+5% aos alinhados)'
                       : 'não declarada'}
@@ -388,6 +399,19 @@ export function People() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+                {(npc.cronica?.length ?? 0) > 0 && (
+                  <div>
+                    <div className="text-xs text-secondary tracking-widest mb-1">CRÔNICA</div>
+                    <div className="space-y-0.5">
+                      {[...(npc.cronica ?? [])].reverse().slice(0, 6).map((c, i) => (
+                        <div key={i} className="text-[12px] text-white/50 leading-snug">
+                          <span className="text-primary/60 font-cinzel">Dia {c.dia}</span> — {c.texto}
+                          {(c.vezes ?? 1) > 1 && <span className="text-white/35"> (×{c.vezes})</span>}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -737,6 +761,7 @@ export function People() {
                 <span className="text-sm shrink-0">{emojiHumor(n)}</span>
                 <span className="font-bold text-sm text-foreground truncate">{n.nome}</span>
                 {n.juramento && <span className="text-[12px] shrink-0 opacity-70" title={n.juramento === 'escalada' ? 'Jurou à Escalada' : 'Jurou ao Ofício'}>{n.juramento === 'escalada' ? '🗡' : '⚒'}</span>}
+                {n.luto && n.luto.ateDia > state.dia && <span className="text-[12px] shrink-0" title={`De luto por ${n.luto.nome}`}>🕯</span>}
                 {n.posto && <Hammer size={11} className="text-success shrink-0" />}
                 {(n.emprestado || n.reforco) && <UserPlus size={11} className="text-[#4A9EFF] shrink-0" />}
                 <span className="ml-auto flex items-center gap-2 shrink-0">
@@ -943,11 +968,11 @@ export function People() {
           {mostrarMortos && (
             <div className="space-y-2 mt-2">
 {state.npcs.filter(n => !n.vivo).map(npc => (
-                <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-55 grayscale flex justify-between items-center rounded-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[12px] font-cinzel">✕</div>
-                    <div>
-                      <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm">{npc.nome}</span>
+                <div key={npc.id} className="bg-[#0D1117] border border-destructive/20 p-3 opacity-55 grayscale flex justify-between items-center gap-2 rounded-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 shrink-0 rounded-full border border-destructive/40 flex items-center justify-center bg-background text-destructive text-[12px] font-cinzel">✕</div>
+                    <div className="min-w-0">
+                      <span className="font-bold font-inter text-muted-foreground line-through decoration-destructive text-sm truncate block">{npc.nome}</span>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/30 rounded-sm flex items-center gap-1 uppercase tracking-wider font-bold">
                           {getProfIcon(getProfissao(npc))} {PROFISSOES[getProfissao(npc)].nome}

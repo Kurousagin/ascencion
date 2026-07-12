@@ -156,6 +156,11 @@ export interface NPC {
   // (+15% de rendimento no posto). Troca tem fôlego de 10 dias (juramentoDia).
   juramento?: 'escalada' | 'oficio';
   juramentoDia?: number;
+  // Crônica pessoal: biografia por evento (feitos, ascensão, juramentos, luto).
+  // Cap pequeno (npc-engine/cronica.ts) — entradas repetidas viram contador.
+  cronica?: { dia: number; texto: string; vezes?: number }[];
+  // Luto visível: presente enquanto o morador carrega a perda (até `ateDia`).
+  luto?: { nome: string; ateDia: number };
 }
 
 // Campos base do NPC transportados na rede (sem os marcadores locais de empréstimo/reforço).

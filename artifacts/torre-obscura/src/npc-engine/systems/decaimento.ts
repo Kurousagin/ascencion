@@ -57,10 +57,11 @@ export const sistemaDecaimento: SistemaVida = {
       n.fadiga = Math.max(0, n.fadiga - rec);
     });
 
-    // 4. Passivas diárias.
+    // 4. Passivas diárias + expiração de luto (mantém o save limpo).
     vivos.forEach(n => {
       if (n.habilidade === 'berserker') n.lealdade = Math.max(0, n.lealdade - 1);
       if (n.habilidade === 'oraculo')   n.sanidade = Math.min(100, n.sanidade + 5);
+      if (n.luto && n.luto.ateDia <= draft.dia) delete n.luto;
     });
 
     // 5. Variação de lealdade pela moral geral + clamps finais.

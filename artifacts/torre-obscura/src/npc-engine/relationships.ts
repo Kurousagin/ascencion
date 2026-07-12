@@ -36,6 +36,23 @@ export function ajustarAfinidade(state: GameState, a: string, b: string, delta: 
   return valor;
 }
 
+// ─── Momentos vividos — fontes de vínculo além do convívio diário ────────────
+// Sobreviver junto a uma expedição com mortes, vencer câmara/guerra lado a
+// lado, ser orientado num treino ou dividir um luto aproxima as pessoas.
+export const MOMENTO_TRAUMA = 4;             // voltaram vivos de onde alguém caiu
+export const MOMENTO_CONQUISTA = 3;          // venceram câmara/guerra juntos
+export const MOMENTO_MENTOR = 3;             // instrutor ↔ aluno numa sessão
+export const MOMENTO_LUTO_COMPARTILHADO = 2; // choram o mesmo morto
+
+// Aproxima todos os pares de um grupo que viveu o mesmo momento.
+export function aproximarPorMomento(state: GameState, ids: string[], delta: number): void {
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      ajustarAfinidade(state, ids[i], ids[j], delta);
+    }
+  }
+}
+
 export interface Vinculo {
   id: string;        // id do outro NPC
   afinidade: number; // −100..100

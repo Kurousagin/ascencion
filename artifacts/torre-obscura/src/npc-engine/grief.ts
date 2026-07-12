@@ -5,7 +5,9 @@
 // autoExplorar) para o GameContext registrar; e limpa os vínculos do morto.
 
 import type { GameState, LogTipo } from '../lib/game-data';
-import { getAfinidade, parKey } from './relationships';
+import { getAfinidade, parKey, aproximarPorMomento, MOMENTO_LUTO_COMPARTILHADO } from './relationships';
+import { anotarCronica } from './cronica';
+import { CRONICA_LORE } from '../lib/lore-content';
 
 export interface LogIntent { tipo: LogTipo; mensagem: string; }
 
@@ -14,7 +16,7 @@ const LIMIAR_LUTO = 15;
 
 export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string): LogIntent[] {
   const logs: LogIntent[] = [];
-  const enlutados: { nome: string; af: number }[] = [];
+  const enlutados: { id: string; nome: string; af: number }[] = [];
 
   for (const n of draft.npcs) {
     if (!n.vivo || n.id === mortoId) continue;
@@ -26,8 +28,18 @@ export function aplicarLuto(draft: GameState, mortoId: string, mortoNome: string
     const lealPenalty = Math.round(af / 20) * viuvez;      // af 100 → −5 lealdade
     n.sanidade = Math.max(0, n.sanidade - sanPenalty);
     n.lealdade = Math.max(0, n.lealdade - lealPenalty);
-    enlutados.push({ nome: n.nome, af });
+    // Luto visível no retrato: duração proporcional à afinidade (romance dobra).
+    const dias = Math.min(20, Math.round(3 + af / 10) * viuvez);
+    n.luto = { nome: mortoNome, ateDia: draft.dia + dias };
+    // Perdas que marcam a biografia: vínculo forte ou romance.
+    if (af >= 40 || viuvez === 2) {
+      anotarCronica(n, draft.dia, CRONICA_LORE.luto.replaceAll('{nome}', mortoNome));
+    }
+    enlutados.push({ id: n.id, nome: n.nome, af });
   }
+
+  // Chorar o mesmo morto aproxima os enlutados entre si.
+  aproximarPorMomento(draft, enlutados.map(e => e.id), MOMENTO_LUTO_COMPARTILHADO);
 
   // Limpa os vínculos do morto para não deixar fantasmas nos mapas.
   if (draft.relacionamentos) {

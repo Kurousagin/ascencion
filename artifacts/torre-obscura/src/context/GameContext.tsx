@@ -28,7 +28,7 @@ import {
 import { climaDoDia } from '../lib/clima';
 import { gerarRelato } from '../lib/relatos';
 import { sortearSussurroLugar } from '../lib/lugar';
-import { ASCENSAO_LORE, JURAMENTO_LORE } from '../lib/lore-content';
+import { ASCENSAO_LORE, JURAMENTO_LORE, CRONICA_LORE } from '../lib/lore-content';
 import { multFolego, multCadeia, usarFolego } from '../lib/folego';
 import { estacaoDoDia, multEstacao } from '../lib/estacao';
 import { eventoDoDia, multEventoParaAndar, multCustoEvento } from '../lib/eventos-andar';
@@ -37,8 +37,9 @@ import {
   METAS_DIARIAS_META, type HabitanteAndar, type QuestOculta, type MetaDiariaId,
 } from '../quest-engine';
 import {
-  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, FAMA_NOTAVEL, bonusMentor,
-  fatorHumor, getAfinidade, AF_AMIZADE,
+  tickNpcs, aplicarLuto, promoverParaNobre, registrarFeito, anotarCronica, FAMA_NOTAVEL, bonusMentor,
+  fatorHumor, getAfinidade, AF_AMIZADE, ajustarAfinidade, aproximarPorMomento,
+  MOMENTO_TRAUMA, MOMENTO_CONQUISTA, MOMENTO_MENTOR,
   type PromocaoResultado, type FeitoId,
 } from '../npc-engine';
 import type { LancamentoTemporada, NpcLancamento } from '../lib/lancamento';
@@ -226,10 +227,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // morador à nobreza (Raro+ sem casa), aplica adoção/fundação de casa e narra.
   const promoverEnobrecer = (s: GameState, npc: NPC, feito: FeitoId | null = 'treino_concluido') => {
     const famaAntes = npc.fama ?? 0;
-    if (feito) registrarFeito(npc, feito);
+    if (feito) {
+      registrarFeito(npc, feito);
+      anotarCronica(npc, s.dia, CRONICA_LORE.feitos[feito]);
+    }
     // Primeiro degrau: a cidadela passa a notar quem cruza FAMA_NOTAVEL.
     if (!npc.sobrenome && famaAntes < FAMA_NOTAVEL && (npc.fama ?? 0) >= FAMA_NOTAVEL) {
       registrarAcontecimento(s, 'descoberta', ASCENSAO_LORE.notavel.replaceAll('{nome}', npc.nome.toUpperCase()));
+      anotarCronica(npc, s.dia, CRONICA_LORE.notavel);
     }
     const promo: PromocaoResultado | null = promoverParaNobre(s, npc);
     if (!promo) return;
@@ -241,6 +246,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       .replaceAll('{casa}', promo.casa)
       .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : '');
     registrarAcontecimento(s, promo.tipo === 'propria' ? 'descoberta' : 'vitoria', msg);
+    anotarCronica(npc, s.dia, CRONICA_LORE[promo.tipo]
+      .replaceAll('{casa}', promo.casa)
+      .replaceAll('{padrinho}', promo.tipo === 'adocao' ? promo.padrinho.nome : ''));
   };
 
   // Juramento diante da Fogueira: troca tem fôlego de 10 dias (anti min-max).
@@ -253,6 +261,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (n.juramentoDia != null && s.dia - n.juramentoDia < JURAMENTO_COOLDOWN) return;
     n.juramento = juramento;
     n.juramentoDia = s.dia;
+    anotarCronica(n, s.dia, juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
     addLog(s, 'evento', JURAMENTO_LORE[juramento].replaceAll('{nome}', n.nome.toUpperCase()));
     saveState(s);
   };
@@ -267,6 +276,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     vivosL.filter(n => !n.juramento).forEach(n => {
       n.juramento = decidirJuramento(vivosL, n);
       n.juramentoDia = s.dia;
+      anotarCronica(n, s.dia, n.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
       jurados++;
     });
     if (jurados === 0) return;
@@ -484,6 +494,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const n = draft.npcs.find(x => x.id === id);
       if (n) promoverEnobrecer(draft, n, 'guerra_vencida');
     });
+    // Vencer a guerra lado a lado aproxima os que marcharam juntos.
+    if (diaGuerra.vitoriaIds && diaGuerra.vitoriaIds.length >= 2) {
+      aproximarPorMomento(draft, diaGuerra.vitoriaIds, MOMENTO_CONQUISTA);
+    }
 
     // 9.6 Invasão pendente: decrementa o prazo de resposta.
     //     Se expirar sem resposta → auto-defesa (todos os aptos marcham) ou
@@ -1058,6 +1072,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             const novo = generateNPC(Math.random() < 0.1);
             novo.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), novo);
             novo.juramentoDia = s.dia;
+            anotarCronica(novo, s.dia, novo.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
             s.npcs.push(novo);
             resgatado = { nome: novo.nome, raridade: novo.raridade };
             addLog(s, 'descoberta', `SOBREVIVENTE RESGATADO no andar ${floorData.floor}: ${novo.nome.toUpperCase()} juntou-se ao grupo.`);
@@ -1135,6 +1150,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         }
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
+
+      // Trauma compartilhado: quem voltou de onde alguém caiu fica mais próximo.
+      if (resultVitoria.mortos.length > 0) {
+        const sobreviventes = group.filter(n => n.vivo);
+        if (sobreviventes.length >= 2) {
+          aproximarPorMomento(s, sobreviventes.map(n => n.id), MOMENTO_TRAUMA);
+          addLog(s, 'evento', `Os que voltaram do Andar ${floorData.floor} carregam o mesmo silêncio — e estão mais próximos por ele.`);
+        }
+      }
 
       // PISTA de câmara: só a(s) câmara(s) do ANDAR recém-explorado podem ter a
       // pista revelada nesta volta — fruto de explorar aquele andar e, no retorno,
@@ -1233,6 +1257,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       });
       group.forEach(n => { if (n.reforco && n.vivo) n.reforcoConcluido = true; });
 
+      // Trauma compartilhado: quem voltou de onde alguém caiu fica mais próximo.
+      if (resultFalha.mortos.length > 0) {
+        const sobreviventes = group.filter(n => n.vivo);
+        if (sobreviventes.length >= 2) {
+          aproximarPorMomento(s, sobreviventes.map(n => n.id), MOMENTO_TRAUMA);
+          addLog(s, 'evento', `Os que voltaram do Andar ${floorData.floor} carregam o mesmo silêncio — e estão mais próximos por ele.`);
+        }
+      }
+
       // Relato de derrota: quem voltou conta o que a Torre não deixou levar (~45%).
       if (Math.random() < 0.45) {
         const vivosDoGrupo = group.filter(n => n.vivo).map(n => n.nome);
@@ -1266,6 +1299,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Autonomia: o recém-chegado jura por vontade própria, pelo seu perfil.
       npc.juramento = decidirJuramento(s.npcs.filter(n => n.vivo), npc);
       npc.juramentoDia = s.dia;
+      anotarCronica(npc, s.dia, npc.juramento === 'escalada' ? CRONICA_LORE.juramento_escalada : CRONICA_LORE.juramento_oficio);
       s.npcs.push(npc);
       novos.push(npc);
     }
@@ -1626,6 +1660,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} ${statLabel} permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    // A sessão orientada aproxima aluno e instrutor (semente de mentoria).
+    if (instrutor) ajustarAfinidade(s, npc.id, instrutor.id, MOMENTO_MENTOR);
     promoverEnobrecer(s, npc);
     saveState(s);
   };
@@ -1681,6 +1717,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     addLog(s, 'info',
       `${npc.nome.toUpperCase()} ESTUDOU NO ${local} — +${ganho} INT permanente${instrutorStr}${mentorStr}. [${npc.treinamentos}/${MAX_TREINAMENTOS} sessões]`
     );
+    // A sessão orientada aproxima aluno e instrutor (semente de mentoria).
+    if (instrutor) ajustarAfinidade(s, npc.id, instrutor.id, MOMENTO_MENTOR);
     promoverEnobrecer(s, npc);
     saveState(s);
     setState(s);
@@ -1838,6 +1876,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (sucesso) {
       est.encontrada = true;
       group.forEach(n => promoverEnobrecer(s, n, 'camara_vencida'));
+      // Vencer uma câmara selada lado a lado aproxima o grupo.
+      aproximarPorMomento(s, group.map(n => n.id), MOMENTO_CONQUISTA);
       const floorData = FLOORS[camara.floor - 1];
 
       // Recompensa primária escalada ao andar (bem acima dos valores fixos legados).
