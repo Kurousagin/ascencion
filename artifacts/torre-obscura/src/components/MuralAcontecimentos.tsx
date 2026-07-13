@@ -6,7 +6,7 @@ import { ScrollText } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { visualDe } from './acontecimento-visual';
 
-export function MuralAcontecimentos() {
+export function MuralAcontecimentos({ limite = 7, onVerTodas }: { limite?: number; onVerTodas?: () => void }) {
   const { state } = useGame();
   const feed = state?.feed ?? [];
 
@@ -23,7 +23,7 @@ export function MuralAcontecimentos() {
         </p>
       ) : (
         <ul className="space-y-2">
-          {feed.slice(0, 7).map(ac => {
+          {feed.slice(0, limite).map(ac => {
             const v = visualDe(ac.tipo);
             return (
               <li key={ac.id} className={`flex items-start gap-2.5 border-l-2 ${v.borda} pl-2.5 py-0.5`}>
@@ -36,6 +36,16 @@ export function MuralAcontecimentos() {
             );
           })}
         </ul>
+      )}
+
+      {/* Ponte para o log completo — sub-aba tem baixa descoberta em mobile */}
+      {onVerTodas && (
+        <button
+          onClick={onVerTodas}
+          className="w-full mt-2.5 pt-2 border-t border-white/5 text-[11px] text-primary/70 tracking-widest text-center touch-manipulation hover:text-primary transition-colors"
+        >
+          VER CRÔNICAS COMPLETAS →
+        </button>
       )}
     </div>
   );

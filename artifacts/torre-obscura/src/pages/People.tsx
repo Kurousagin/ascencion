@@ -10,7 +10,12 @@ export function People() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [mostrarMortos, setMostrarMortos] = useState(false);
   // Censo: filtro de triagem ativo (null = todos) e critério de ordenação.
-  const [filtro, setFiltro] = useState<string | null>(null);
+  // Deep-link: os alertas do Observatório abrem esta aba já com a triagem certa.
+  const [filtro, setFiltro] = useState<string | null>(() => {
+    const f = sessionStorage.getItem('torre_povo_filtro');
+    if (f) sessionStorage.removeItem('torre_povo_filtro');
+    return f;
+  });
   const [ordem, setOrdem] = useState<'poder' | 'fadiga' | 'lealdade' | 'nome'>('poder');
   // Quadro de Postos: edifício cuja vaga está sendo preenchida (null = fechado).
   const [vagaPicker, setVagaPicker] = useState<EdificioTipo | null>(null);
